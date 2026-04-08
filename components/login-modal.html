@@ -1,0 +1,60 @@
+<!-- ============================================================
+     components/login-modal.html
+     Modal de login — se inyecta via cargar() desde components.js
+     ============================================================ -->
+
+<div class="lm-overlay" id="loginOverlay" role="dialog" aria-modal="true" aria-label="Iniciar Sesión">
+
+  <div class="lm-card">
+
+    <!-- Cerrar -->
+    <button class="lm-close" id="loginClose" aria-label="Cerrar">&times;</button>
+
+    <!-- Cabecera -->
+    <div class="lm-header">
+      <span class="lm-icon">🔧</span>
+      <h2 class="lm-title">Ferretería<strong>Jamarraya</strong></h2>
+      <p class="lm-sub">Ingresa con tu cuenta</p>
+    </div>
+
+    <!-- Formulario -->
+    <form class="lm-form" id="loginForm" novalidate>
+
+      <div class="lm-field">
+        <label for="lm-email">Correo electrónico</label>
+        <input type="email" id="lm-email" name="email"
+               placeholder="correo@ejemplo.com" required autocomplete="email"/>
+      </div>
+
+      <div class="lm-field">
+        <label for="lm-pass">Contraseña</label>
+        <div class="lm-pass-wrap">
+          <input type="password" id="lm-pass" name="contrasena"
+                 placeholder="••••••••" required autocomplete="current-password"/>
+          <button type="button" class="lm-toggle-pass" id="togglePass" aria-label="Mostrar contraseña">
+            <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mensaje de error -->
+      <p class="lm-error" id="loginError" hidden></p>
+
+      <button type="submit" class="lm-btn-submit" id="loginSubmit">
+        <span class="lm-btn-text">Ingresar</span>
+        <span class="lm-spinner" hidden></span>
+      </button>
+
+    </form>
+
+    <p class="lm-footer-text">
+      ¿No tienes cuenta?
+      <a href="#" class="lm-link" id="switchToRegisterLogin">Regístrate aquí</a>
+    </p>
+
+  </div>
+</div>

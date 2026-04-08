@@ -1,0 +1,92 @@
+
+<!-- ══════════════════════════════════════════
+     MODAL CREAR USUARIO
+     Modular - Requiere: crear-usuario.js
+══════════════════════════════════════════ -->
+<style>
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 1000;
+    display: none; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal-content {
+    background: var(--dark-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 2rem;
+    max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,.5);
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .modal-header h2 { font-size: 1.3rem; font-weight: 700; margin: 0; }
+  .modal-close {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 1.5rem; cursor: pointer; padding: 0;
+  }
+  .form-group {
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .form-group label {
+    font-size: .85rem; font-weight: 600; color: var(--text-muted);
+  }
+  .form-group input,
+  .form-group select {
+    width: 100%; background: var(--dark-3); border: 1px solid var(--border);
+    border-radius: 6px; padding: .7rem; color: var(--text); font-size: .9rem;
+    outline: none; font-family: inherit;
+  }
+  .form-group input:focus,
+  .form-group select:focus { border-color: var(--orange); }
+  .form-error {
+    display: none; background: rgba(248,81,73,.15); color: var(--red);
+    padding: .75rem; border-radius: 6px; font-size: .85rem;
+    border: 1px solid rgba(248,81,73,.3);
+  }
+  .form-actions {
+    display: flex; gap: .75rem; margin-top: 1rem;
+  }
+  .form-actions button { flex: 1; }
+</style>
+
+<div id="modalCrearUsuario" class="modal-backdrop">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Crear Usuario</h2>
+      <button type="button" class="modal-close" onclick="UsuarioModal.cerrar()">✕</button>
+    </div>
+    
+    <form id="formCrearUsuario" class="form">
+      <div class="form-group">
+        <label for="usu_nombre">Nombre</label>
+        <input type="text" id="usu_nombre" required/>
+      </div>
+      
+      <div class="form-group">
+        <label for="usu_email">Email</label>
+        <input type="email" id="usu_email" required/>
+      </div>
+      
+      <div class="form-group">
+        <label for="usu_pass">Contraseña</label>
+        <input type="password" id="usu_pass" required/>
+      </div>
+      
+      <div class="form-group">
+        <label for="usu_rol">Rol</label>
+        <select id="usu_rol" required>
+          <option value="">— Selecciona rol —</option>
+          <option value="admin">Administrador</option>
+          <option value="empleado">Empleado</option>
+          <option value="cliente">Cliente</option>
+        </select>
+      </div>
+      
+      <div id="usuarioError" class="form-error"></div>
+      
+      <div class="form-actions">
+        <button type="submit" class="btn-sm btn-orange">Crear Usuario</button>
+        <button type="button" class="btn-sm btn-ghost" onclick="UsuarioModal.cerrar()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Panel Administrador — Ferretería Jamarraya</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+  /* ══════════════════════════════════════════════
+     VARIABLES & RESET
+  ══════════════════════════════════════════════ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --orange:      #F97316;
+    --orange-dk:   #C2540A;
+    --dark:        #0d1117;
+    --dark-2:      #161b22;
+    --dark-3:      #21262d;
+    --border:      rgba(255,255,255,.08);
+    --text:        #e6edf3;
+    --text-muted:  #7d8590;
+    --green:       #3fb950;
+    --yellow:      #d29922;
+    --red:         #f85149;
+    --blue:        #58a6ff;
+    --font-d:      'Barlow Condensed', sans-serif;
+    --font-b:      'Barlow', sans-serif;
+    --radius:      10px;
+    --sidebar-w:   240px;
+  }
+
+  html, body { height: 100%; background: var(--dark); color: var(--text); font-family: var(--font-b); }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  button { cursor: pointer; font-family: inherit; }
+
+  /* ══════════════════════════════════════════════
+     LAYOUT PRINCIPAL
+  ══════════════════════════════════════════════ */
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ══════════════════════════════════════════════
+     SIDEBAR
+  ══════════════════════════════════════════════ */
+  .sidebar {
+    width: var(--sidebar-w); flex-shrink: 0;
+    background: var(--dark-2);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .sidebar__brand {
+    padding: 1.4rem 1.2rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar__brand-name {
+    font-family: var(--font-d); font-size: 1.3rem; font-weight: 700;
+    color: var(--text);
+  }
+  .sidebar__brand-name strong { color: var(--orange); }
+  .sidebar__role {
+    display: inline-block; margin-top: .35rem;
+    background: rgba(249,115,22,.15); color: var(--orange);
+    font-size: .7rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: 20px;
+    border: 1px solid rgba(249,115,22,.3);
+  }
+
+  .sidebar__nav { padding: .75rem 0; flex: 1; }
+
+  .nav-section {
+    padding: .6rem 1.2rem .3rem;
+    font-size: .65rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .65rem 1.2rem;
+    font-size: .9rem; font-weight: 500; color: var(--text-muted);
+    border-left: 3px solid transparent;
+    transition: all .2s; cursor: pointer;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,.04); }
+  .nav-item.active {
+    color: var(--orange); background: rgba(249,115,22,.08);
+    border-left-color: var(--orange);
+  }
+  .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+  .nav-badge {
+    margin-left: auto; background: var(--red);
+    color: #fff; font-size: .65rem; font-weight: 700;
+    padding: .1rem .45rem; border-radius: 20px; min-width: 20px; text-align: center;
+  }
+
+  .sidebar__footer {
+    padding: 1rem 1.2rem;
+    border-top: 1px solid var(--border);
+  }
+  .sidebar__user {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .6rem .75rem; border-radius: var(--radius);
+    background: var(--dark-3);
+  }
+  .sidebar__avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--orange); display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-d); font-weight: 700; font-size: .9rem; color: #fff; flex-shrink: 0;
+  }
+  .sidebar__user-info { flex: 1; min-width: 0; }
+  .sidebar__user-name { font-size: .85rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidebar__user-role { font-size: .72rem; color: var(--text-muted); }
+  .sidebar__logout {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 1rem; padding: .25rem; border-radius: 4px;
+    transition: color .2s;
+  }
+  .sidebar__logout:hover { color: var(--red); }
+
+  /* ══════════════════════════════════════════════
+     CONTENIDO PRINCIPAL
+  ══════════════════════════════════════════════ */
+  .main {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--dark-2); flex-shrink: 0;
+  }
+  .topbar__title {
+    font-family: var(--font-d); font-size: 1.4rem; font-weight: 700;
+    color: var(--text); flex: 1;
+  }
+  .topbar__date { font-size: .8rem; color: var(--text-muted); }
+
+  .btn-sm {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .45rem 1rem; border-radius: 6px; border: none;
+    font-family: var(--font-d); font-size: .9rem; font-weight: 700;
+    letter-spacing: .03em; transition: all .2s;
+  }
+  .btn-orange { background: var(--orange); color: #fff; }
+  .btn-orange:hover { background: var(--orange-dk); }
+  .btn-ghost { background: var(--dark-3); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--orange); color: var(--orange); }
+
+  /* ── Scroll area ── */
+  .content {
+    flex: 1; overflow-y: auto; padding: 1.5rem;
+    display: flex; flex-direction: column; gap: 1.5rem;
+  }
+
+  /* ── Secciones ── */
+  .section { display: none; }
+  .section.active { display: contents; }
+
+  /* ══════════════════════════════════════════════
+     TARJETAS KPI
+  ══════════════════════════════════════════════ */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  .kpi {
+    background: var(--dark-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.2rem 1.4rem;
+    display: flex; flex-direction: column; gap: .5rem;
+    position: relative; overflow: hidden;
+    transition: border-color .2s;
+  }
+  .kpi:hover { border-color: rgba(249,115,22,.3); }
+  .kpi::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--kpi-color, var(--orange));
+  }
+  .kpi__label {
+    font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  .kpi__value {
+    font-family: var(--font-d); font-size: 2rem; font-weight: 700;
+    color: var(--text); line-height: 1;
+  }
+  .kpi__value.loading { color: var(--text-muted); font-size: 1rem; font-weight: 400; }
+  .kpi__icon {
+    position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
+    font-size: 2rem; opacity: .12;
+  }
+  .kpi__sub { font-size: .78rem; color: var(--text-muted); }
+
+  /* ══════════════════════════════════════════════
+     PANELS / CARDS
+  ══════════════════════════════════════════════ */
+  .panel {
+    background: var(--dark-2); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .panel__head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel__title {
+    font-family: var(--font-d); font-size: 1rem; font-weight: 700;
+    letter-spacing: .03em; color: var(--text);
+  }
+  .panel__body { padding: 1.25rem; }
+
+  /* ══════════════════════════════════════════════
+     TABLAS
+  ══════════════════════════════════════════════ */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+  thead tr { border-bottom: 1px solid var(--border); }
+  th {
+    padding: .6rem .75rem; text-align: left;
+    font-size: .7rem; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  td { padding: .7rem .75rem; border-bottom: 1px solid rgba(255,255,255,.04); color: var(--text); }
+  tbody tr:hover { background: rgba(255,255,255,.025); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* ══════════════════════════════════════════════
+     BADGES / TAGS
+  ══════════════════════════════════════════════ */
+  .badge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .2rem .6rem; border-radius: 20px;
+    font-size: .72rem; font-weight: 700; letter-spacing: .04em;
+  }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge-green  { background: rgba(63,185,80,.15);  color: var(--green); }
+  .badge-yellow { background: rgba(210,153,34,.15); color: var(--yellow); }
+  .badge-red    { background: rgba(248,81,73,.15);  color: var(--red); }
+  .badge-blue   { background: rgba(88,166,255,.15); color: var(--blue); }
+  .badge-orange { background: rgba(249,115,22,.15); color: var(--orange); }
+
+  /* ══════════════════════════════════════════════
+     ALERTAS
+  ══════════════════════════════════════════════ */
+  .alert-list { display: flex; flex-direction: column; gap: .6rem; }
+  .alert-item {
+    display: flex; align-items: flex-start; gap: .85rem;
+    padding: .85rem 1rem; border-radius: 8px;
+    border: 1px solid var(--al-border, rgba(255,255,255,.1));
+    background: var(--al-bg, rgba(255,255,255,.03));
+  }
+  .alert-item.rojo    { --al-bg: rgba(248,81,73,.07);  --al-border: rgba(248,81,73,.25); }
+  .alert-item.amarillo{ --al-bg: rgba(210,153,34,.07); --al-border: rgba(210,153,34,.25); }
+  .alert-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: .3rem;
+    background: var(--al-dot, var(--text-muted));
+  }
+  .alert-item.rojo     .alert-dot { --al-dot: var(--red); }
+  .alert-item.amarillo .alert-dot { --al-dot: var(--yellow); }
+  .alert-info { flex: 1; }
+  .alert-nombre { font-size: .875rem; font-weight: 600; color: var(--text); }
+  .alert-detalle { font-size: .78rem; color: var(--text-muted); margin-top: .15rem; }
+  .alert-tag {
+    font-size: .65rem; font-weight: 700; letter-spacing: .06em;
+    padding: .15rem .5rem; border-radius: 4px;
+    background: var(--al-bg); color: var(--al-dot, var(--text-muted));
+    border: 1px solid var(--al-border); flex-shrink: 0;
+  }
+
+  /* ══════════════════════════════════════════════
+     GRIDS
+  ══════════════════════════════════════════════ */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  @media (max-width: 900px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+  /* ══════════════════════════════════════════════
+     ESTADO VACÍO / CARGANDO
+  ══════════════════════════════════════════════ */
+  .empty {
+    text-align: center; padding: 2.5rem 1rem;
+    color: var(--text-muted); font-size: .875rem;
+  }
+  .empty span { font-size: 2rem; display: block; margin-bottom: .5rem; }
+
+  /* ══════════════════════════════════════════════
+     FILTRO DE FECHAS (REPORTES)
+  ══════════════════════════════════════════════ */
+  .filter-bar {
+    display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+  }
+  .filter-bar label { font-size: .8rem; font-weight: 600; color: var(--text-muted); }
+  .filter-bar input, .filter-bar select {
+    background: var(--dark-3); border: 1px solid var(--border);
+    border-radius: 6px; padding: .45rem .75rem;
+    color: var(--text); font-size: .85rem; outline: none;
+    transition: border-color .2s;
+  }
+  .filter-bar input:focus, .filter-bar select:focus { border-color: var(--orange); }
+
+  /* ══════════════════════════════════════════════
+     MOBILE TOGGLE
+  ══════════════════════════════════════════════ */
+  .menu-toggle {
+    display: none; background: none; border: none;
+    color: var(--text); font-size: 1.4rem; padding: .25rem;
+  }
+  @media (max-width: 768px) {
+    .menu-toggle { display: block; }
+    .sidebar {
+      position: fixed; left: -100%; top: 0; bottom: 0; z-index: 500;
+      transition: left .3s; width: var(--sidebar-w);
+    }
+    .sidebar.open { left: 0; }
+    .sidebar-backdrop {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 499;
+    }
+    .sidebar-backdrop.open { display: block; }
+  }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ══════════ SIDEBAR ══════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <div class="sidebar__brand-name">Ferretería<strong>Jamarraya</strong></div>
+      <span class="sidebar__role">Administrador</span>
+    </div>
+
+    <nav class="sidebar__nav">
+
+      <div class="nav-section">Principal</div>
+      <div class="nav-item active" data-section="inicio">
+        <span class="icon">📊</span> Inicio
+      </div>
+
+      <div class="nav-section">Operaciones</div>
+      <div class="nav-item" data-section="ventas">
+        <span class="icon">🛒</span> Ventas
+      </div>
+      <div class="nav-item" data-section="alquileres">
+        <span class="icon">🔧</span> Alquileres
+      </div>
+      <div class="nav-item" data-section="inventario">
+        <span class="icon">📦</span> Inventario
+      </div>
+      <div class="nav-item" data-section="maquinaria">
+        <span class="icon">⚙️</span> Maquinaria
+      </div>
+
+      <div class="nav-section">Gestión</div>
+      <div class="nav-item" data-section="clientes">
+        <span class="icon">👥</span> Clientes
+      </div>
+      <div class="nav-item" data-section="usuarios">
+        <span class="icon">🔑</span> Usuarios
+      </div>
+      <div class="nav-item" data-section="alertas">
+        <span class="icon">🔔</span> Alertas
+        <span class="nav-badge" id="badgeAlertas">0</span>
+      </div>
+
+      <div class="nav-section">Análisis</div>
+      <div class="nav-item" data-section="reportes">
+        <span class="icon">📈</span> Reportes
+      </div>
+
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="sidebar__avatar" id="adminAvatar">A</div>
+        <div class="sidebar__user-info">
+          <div class="sidebar__user-name" id="adminNombre">Administrador</div>
+          <div class="sidebar__user-role">Administrador</div>
+        </div>
+        <button class="sidebar__logout" id="btnLogout" title="Cerrar sesión">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar__title" id="topbarTitle">Inicio — Panel General</div>
+      <span class="topbar__date" id="topbarDate"></span>
+      <button class="btn-sm btn-orange" id="topbarAccion" style="display:none"></button>
+    </div>
+
+    <!-- Área de contenido -->
+    <div class="content" id="content">
+
+      <!-- ──────────── INICIO ──────────── -->
+      <div class="section active" id="sec-inicio">
+
+        <div class="kpi-grid">
+          <div class="kpi" style="--kpi-color:var(--orange)">
+            <span class="kpi__label">Ventas hoy</span>
+            <span class="kpi__value loading" id="kpiVentasHoy">…</span>
+            <span class="kpi__sub" id="kpiIngresosHoy"></span>
+            <span class="kpi__icon">🛒</span>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--blue)">
+            <span class="kpi__label">Alquileres activos</span>
+            <span class="kpi__value loading" id="kpiAlquileres">…</span>
+            <span class="kpi__icon">🔧</span>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--red)">
+            <span class="kpi__label">Stock crítico</span>
+            <span class="kpi__value loading" id="kpiStock">…</span>
+            <span class="kpi__sub">productos bajo mínimo</span>
+            <span class="kpi__icon">📦</span>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--yellow)">
+            <span class="kpi__label">Alertas activas</span>
+            <span class="kpi__value loading" id="kpiAlertas">…</span>
+            <span class="kpi__icon">🔔</span>
+          </div>
+        </div>
+
+        <div class="two-col">
+
+          <!-- Últimas ventas -->
+          <div class="panel">
+            <div class="panel__head">
+              <span class="panel__title">Últimas ventas</span>
+              <button class="btn-sm btn-ghost" onclick="irSeccion('ventas')">Ver todas</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th>Comprobante</th><th>Cliente</th><th>Total</th><th>Fecha</th>
+                </tr></thead>
+                <tbody id="tablaVentasRecientes">
+                  <tr><td colspan="4"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Alertas resumen -->
+          <div class="panel">
+            <div class="panel__head">
+              <span class="panel__title">Alertas recientes</span>
+              <button class="btn-sm btn-ghost" onclick="irSeccion('alertas')">Ver todas</button>
+            </div>
+            <div class="panel__body">
+              <div class="alert-list" id="alertasResumen">
+                <div class="empty"><span>⏳</span>Cargando…</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /sec-inicio -->
+
+      <!-- ──────────── VENTAS ──────────── -->
+      <div class="section" id="sec-ventas">
+        <div class="panel">
+          <div class="panel__head">
+            <span class="panel__title">Gestión de Ventas</span>
+            <button class="btn-sm btn-orange" onclick="alert('Módulo: Nueva venta')">+ Nueva venta</button>
+          </div>
+          <div class="panel__body">
+            <div class="filter-bar" style="margin-bottom:1rem">
+              <label>Desde</label>
+              <input type="date" id="ventaDesde"/>
+              <label>Hasta</label>
+              <input type="date" id="ventaHasta"/>
+              <button class="btn-sm btn-orange" onclick="cargarVentas()">Filtrar</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Comprobante</th><th>Fecha</th><th>Cliente</th>
+                <th>Productos</th><th>Total</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="tablaVentas">
+                <tr><td colspan="6"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /sec-ventas -->
+
+      <!-- ──────────── ALQUILERES ──────────── -->
+      <div class="section" id="sec-alquileres">
+        <div class="panel">
+          <div class="panel__head">
+            <span class="panel__title">Gestión de Alquileres</span>
+            <button class="btn-sm btn-orange" onclick="alert('Módulo: Nuevo alquiler')">+ Nuevo alquiler</button>
+          </div>
+          <div class="panel__body">
+            <div class="filter-bar" style="margin-bottom:1rem">
+              <label>Estado</label>
+              <select id="filtroEstadoAlquiler">
+                <option value="">Todos</option>
+                <option value="activo">Activos</option>
+                <option value="finalizado">Finalizados</option>
+              </select>
+              <button class="btn-sm btn-orange" onclick="cargarAlquileres()">Filtrar</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>Cliente</th><th>Maquinaria</th>
+                <th>Inicio</th><th>Fin</th><th>Monto</th><th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="tablaAlquileres">
+                <tr><td colspan="8"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /sec-alquileres -->
+
+      <!-- ──────────── INVENTARIO ──────────── -->
+      <div class="section" id="sec-inventario">
+        <div class="panel">
+          <div class="panel__head">
+            <span class="panel__title">Inventario de Productos</span>
+            <div style="display:flex;gap:.5rem">
+              <button class="btn-sm btn-ghost" onclick="alert('Exportar CSV')">⬇ Exportar</button>
+              <button class="btn-sm btn-orange" onclick="alert('Módulo: Nuevo producto')">+ Producto</button>
+            </div>
+          </div>
+          <div class="panel__body">
+            <div class="filter-bar" style="margin-bottom:1rem">
+              <label>Categoría</label>
+              <select id="filtroCategoria">
+                <option value="">Todas</option>
+                <option>Herramientas Manuales</option>
+                <option>Herramientas Eléctricas</option>
+                <option>Tornillería</option>
+                <option>Pinturas</option>
+                <option>Plomería</option>
+                <option>Construcción</option>
+              </select>
+              <label>
+                <input type="checkbox" id="soloBajoStock"> Solo stock bajo
+              </label>
+              <button class="btn-sm btn-orange" onclick="cargarInventario()">Filtrar</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Código</th><th>Nombre</th><th>Categoría</th>
+                <th>Precio</th><th>Stock</th><th>Mín.</th><th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="tablaInventario">
+                <tr><td colspan="8"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /sec-inventario -->
+
+      <!-- ──────────── MAQUINARIA ──────────── -->
+      <div class="section" id="sec-maquinaria">
+        <div class="panel">
+          <div class="panel__head">
+            <span class="panel__title">Maquinaria para Alquiler</span>
+            <button class="btn-sm btn-orange" onclick="alert('Módulo: Nueva maquinaria')">+ Maquinaria</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>Nombre</th><th>Descripción</th>
+                <th>Tarifa/día</th><th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="tablaMaquinaria">
+                <tr><td colspan="6"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /sec-maquinaria -->
+
+      <!-- ──────────── CLIENTES ──────────── -->
+      <div class="section" id="sec-clientes">
+        <div class="panel">
+          <div class="panel__head">
+            <span class="panel__title">Gestión de Clientes</span>
+            <button class="btn-sm btn-orange" onclick="ClienteModal.abrir()">+ Cliente</button>
+          </div>
+          <div class="panel__body">
+            <div class="filter-bar" style="margin-bottom:1rem">
+              <input type="text" id="buscarCliente" placeholder="Buscar por nombre o ID…" style="flex:1;min-width:200px"/>
+              <button class="btn-sm btn-orange" onclick="cargarClientes()">Buscar</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>Nombre</th><th>Identificación</th>
+                <th>Teléfono</th><th>Email</th><th>Compras</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="tablaClientes">
+                <tr><td colspan="7"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /sec-clientes -->
+
+      <!-- ──────────── USUARIOS ──────────── -->
+      <div class="section" id="sec-usuarios">
+        <div class="panel">
+          <div class="panel__head">
+            <span class="panel__title">Gestión de Usuarios del Sistema</span>
+            <button class="btn-sm btn-orange" onclick="UsuarioModal.abrir()">+ Usuario</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>Nombre</th><th>Email</th>
+                <th>Rol</th><th>Creado</th><th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="tablaUsuarios">
+                <tr><td colspan="7"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /sec-usuarios -->
+
+      <!-- ──────────── ALERTAS ──────────── -->
+      <div class="section" id="sec-alertas">
+        <div class="kpi-grid">
+          <div class="kpi" style="--kpi-color:var(--red)">
+            <span class="kpi__label">Stock bajo</span>
+            <span class="kpi__value" id="alertKpiStock">0</span>
+            <span class="kpi__icon">📦</span>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--yellow)">
+            <span class="kpi__label">Por vencer (2 días)</span>
+            <span class="kpi__value" id="alertKpiPorVencer">0</span>
+            <span class="kpi__icon">⏰</span>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--red)">
+            <span class="kpi__label">Alquileres vencidos</span>
+            <span class="kpi__value" id="alertKpiVencidos">0</span>
+            <span class="kpi__icon">⚠️</span>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel__head">
+            <span class="panel__title">Todas las alertas</span>
+            <button class="btn-sm btn-ghost" onclick="cargarDashboard()">🔄 Actualizar</button>
+          </div>
+          <div class="panel__body">
+            <div class="alert-list" id="alertasTodas">
+              <div class="empty"><span>⏳</span>Cargando…</div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /sec-alertas -->
+
+      <!-- ──────────── REPORTES ──────────── -->
+      <div class="section" id="sec-reportes">
+        <div class="three-col">
+
+          <!-- Reporte ventas -->
+          <div class="panel">
+            <div class="panel__head"><span class="panel__title">📈 Reporte de Ventas</span></div>
+            <div class="panel__body" style="display:flex;flex-direction:column;gap:.75rem">
+              <div class="filter-bar" style="flex-direction:column;align-items:stretch">
+                <select id="rpVentasPeriodo">
+                  <option value="dia">Hoy</option>
+                  <option value="semana">Esta semana</option>
+                  <option value="mes" selected>Este mes</option>
+                </select>
+              </div>
+              <button class="btn-sm btn-orange" onclick="generarReporteVentas()">Generar</button>
+              <div id="rpVentasResult" class="empty" style="padding:1rem 0">
+                <span>📊</span>Selecciona período
+              </div>
+            </div>
+          </div>
+
+          <!-- Reporte inventario -->
+          <div class="panel">
+            <div class="panel__head"><span class="panel__title">📦 Reporte Inventario</span></div>
+            <div class="panel__body" style="display:flex;flex-direction:column;gap:.75rem">
+              <p style="font-size:.85rem;color:var(--text-muted)">Listado completo con stock actual y valor del inventario.</p>
+              <button class="btn-sm btn-orange" onclick="generarReporteInventario()">Generar</button>
+              <button class="btn-sm btn-ghost" onclick="alert('Exportar a CSV')">⬇ CSV</button>
+              <div id="rpInvResult" class="empty" style="padding:1rem 0">
+                <span>📦</span>Presiona Generar
+              </div>
+            </div>
+          </div>
+
+          <!-- Balance general -->
+          <div class="panel">
+            <div class="panel__head"><span class="panel__title">💰 Balance General</span></div>
+            <div class="panel__body" style="display:flex;flex-direction:column;gap:.75rem">
+              <div class="filter-bar" style="flex-direction:column;align-items:stretch">
+                <input type="month" id="rpBalanceMes"/>
+              </div>
+              <button class="btn-sm btn-orange" onclick="generarBalance()">Generar</button>
+              <div id="rpBalanceResult" class="empty" style="padding:1rem 0">
+                <span>💰</span>Selecciona mes
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /sec-reportes -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+
+
+/* ============================================================
+   dashboard-admin.js (inline)
+   ============================================================ */
+
+const API = {
+  dashboard:  '/Ferreteria_Jamarraya/php/dashboard.php',
+  usuarios:   '/Ferreteria_Jamarraya/php/usuarios.php',
+  productos:  '/Ferreteria_Jamarraya/php/api/productos.php',
+  ventas:     '/Ferreteria_Jamarraya/php/api/ventas.php',
+  alquileres: '/Ferreteria_Jamarraya/php/api/alquileres.php',
+  clientes:   '/Ferreteria_Jamarraya/php/api/clientes.php',
+  maquinaria: '/Ferreteria_Jamarraya/php/api/maquinaria.php',
+  reportes:   '/Ferreteria_Jamarraya/php/api/reportes.php',
+};
+
+/* ── Verificar sesión y rol ── */
+async function verificarAcceso() {
+  try {
+    // Verificar primero en sessionStorage
+    const nombre = sessionStorage.getItem('jm_nombre');
+    const rol    = sessionStorage.getItem('jm_rol');
+    
+    if (!nombre || rol !== 'admin') {
+      // Si no está en sessionStorage, verificar en servidor
+      const r = await fetch(API.usuarios + '?accion=verificar');
+      const d = await r.json();
+      
+      if (!d.ok || d.rol !== 'admin') {
+        window.location.href = '/Ferreteria_Jamarraya/pages/index.html';
+        return;
+      }
+      
+      // Actualizar sessionStorage desde servidor
+      sessionStorage.setItem('jm_nombre', d.nombre);
+      sessionStorage.setItem('jm_rol', d.rol);
+      document.getElementById('adminNombre').textContent = d.nombre;
+      document.getElementById('adminAvatar').textContent = d.nombre.charAt(0).toUpperCase();
+    } else {
+      // Usar datos de sessionStorage
+      document.getElementById('adminNombre').textContent = nombre;
+      document.getElementById('adminAvatar').textContent = nombre.charAt(0).toUpperCase();
+    }
+  } catch (e) {
+    console.error('Error verificando acceso:', e);
+    window.location.href = '/Ferreteria_Jamarraya/pages/index.html';
+  }
+}
+
+/* ── Navegación por secciones ── */
+const TITULOS = {
+  inicio:     'Inicio — Panel General',
+  ventas:     'Gestión de Ventas',
+  alquileres: 'Gestión de Alquileres',
+  inventario: 'Inventario de Productos',
+  maquinaria: 'Maquinaria para Alquiler',
+  clientes:   'Gestión de Clientes',
+  usuarios:   'Usuarios del Sistema',
+  alertas:    'Centro de Alertas',
+  reportes:   'Reportes y Estadísticas',
+};
+
+function irSeccion(id) {
+  // Nav items
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector(`[data-section="${id}"]`)?.classList.add('active');
+
+  // Secciones
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(`sec-${id}`)?.classList.add('active');
+
+  document.getElementById('topbarTitle').textContent = TITULOS[id] || id;
+
+  // Cerrar sidebar en mobile
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('open');
+
+  // Cargar datos de la sección
+  const cargadores = {
+    inicio:     cargarDashboard,
+    ventas:     cargarVentas,
+    alquileres: cargarAlquileres,
+    inventario: cargarInventario,
+    maquinaria: cargarMaquinaria,
+    clientes:   cargarClientes,
+    usuarios:   cargarUsuarios,
+    alertas:    () => {}, // ya cargado en dashboard
+  };
+  cargadores[id]?.();
+}
+
+/* ── Helpers ── */
+const fmt$ = n => new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', minimumFractionDigits:0 }).format(n);
+const fmtFecha = s => new Date(s).toLocaleDateString('es-CO', { day:'2-digit', month:'2-digit', year:'numeric' });
+
+function estadoBadge(estado) {
+  const map = {
+    activo:'green', disponible:'green', finalizado:'blue',
+    alquilada:'orange', mantenimiento:'yellow', inactivo:'red',
+  };
+  return `<span class="badge badge-${map[estado]||'blue'}">${estado}</span>`;
+}
+
+function filaVacia(cols, msg) {
+  return `<tr><td colspan="${cols}"><div class="empty"><span>📭</span>${msg}</div></td></tr>`;
+}
+
+/* ══════════════════════════════════════════
+   CARGAR DASHBOARD (inicio + alertas)
+══════════════════════════════════════════ */
+async function cargarDashboard() {
+  try {
+    const r = await fetch(API.dashboard);
+    if (r.status === 401) { window.location.href='/Ferreteria_Jamarraya/pages/index.html'; return; }
+    const d = await r.json();
+
+    // KPIs
+    document.getElementById('kpiVentasHoy').textContent  = d.ventas_hoy;
+    document.getElementById('kpiIngresosHoy').textContent = fmt$(d.ingresos_hoy);
+    document.getElementById('kpiAlquileres').textContent  = d.alquileres_activos;
+    document.getElementById('kpiStock').textContent       = d.stock_critico;
+    document.getElementById('kpiAlertas').textContent     = d.alertas.length;
+
+    // Badge sidebar
+    document.getElementById('badgeAlertas').textContent = d.alertas.length;
+
+    // Ventas recientes
+    const tv = document.getElementById('tablaVentasRecientes');
+    tv.innerHTML = d.ventas_recientes.length
+      ? d.ventas_recientes.map(v => `
+          <tr>
+            <td><code style="color:var(--orange);font-size:.8rem">${v.comprobante}</code></td>
+            <td>${v.cliente}</td>
+            <td>${fmt$(v.total)}</td>
+            <td style="color:var(--text-muted);font-size:.8rem">${v.fecha}</td>
+          </tr>`).join('')
+      : filaVacia(4, 'Sin ventas hoy');
+
+    // Alertas resumen (máx 5)
+    renderAlertas(d.alertas.slice(0,5), 'alertasResumen');
+
+    // Alertas completas
+    renderAlertas(d.alertas, 'alertasTodas');
+
+    // KPIs alertas section
+    const stock   = d.alertas.filter(a=>a.etiqueta==='Stock bajo').length;
+    const pVencer = d.alertas.filter(a=>a.etiqueta==='Por vencer').length;
+    const vencido = d.alertas.filter(a=>a.etiqueta==='Vencido').length;
+    document.getElementById('alertKpiStock').textContent     = stock;
+    document.getElementById('alertKpiPorVencer').textContent = pVencer;
+    document.getElementById('alertKpiVencidos').textContent  = vencido;
+
+    // Quitar clase loading
+    document.querySelectorAll('.kpi__value.loading')
+      .forEach(el => el.classList.remove('loading'));
+
+  } catch (e) {
+    console.error('Error dashboard:', e);
+  }
+}
+
+function renderAlertas(alertas, contenedorId) {
+  const el = document.getElementById(contenedorId);
+  if (!el) return;
+  el.innerHTML = alertas.length
+    ? alertas.map(a => `
+        <div class="alert-item ${a.tipo}">
+          <div class="alert-dot"></div>
+          <div class="alert-info">
+            <div class="alert-nombre">${a.nombre}</div>
+            <div class="alert-detalle">${a.detalle}</div>
+          </div>
+          <span class="alert-tag">${a.etiqueta}</span>
+        </div>`).join('')
+    : '<div class="empty"><span>✅</span>Sin alertas activas</div>';
+}
+
+/* ══════════════════════════════════════════
+   VENTAS
+══════════════════════════════════════════ */
+async function cargarVentas() {
+  const desde = document.getElementById('ventaDesde')?.value || '';
+  const hasta = document.getElementById('ventaHasta')?.value || '';
+  let url = API.ventas + '?accion=listar';
+  if (desde) url += `&desde=${desde}`;
+  if (hasta) url += `&hasta=${hasta}`;
+
+  const tbody = document.getElementById('tablaVentas');
+  tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>`;
+
+  try {
+    const r = await fetch(url);
+    const ventas = await r.json();
+    tbody.innerHTML = ventas.length
+      ? ventas.map(v => `
+          <tr>
+            <td><code style="color:var(--orange);font-size:.8rem">${v.comprobante||v.id}</code></td>
+            <td style="font-size:.82rem;color:var(--text-muted)">${fmtFecha(v.fecha)}</td>
+            <td>${v.cliente||'—'}</td>
+            <td style="font-size:.82rem">${v.num_productos||'—'} item(s)</td>
+            <td style="font-weight:600">${fmt$(v.total)}</td>
+            <td>
+              <button class="btn-sm btn-ghost" onclick="alert('Ver detalle venta ${v.id}')">Ver</button>
+            </td>
+          </tr>`).join('')
+      : filaVacia(6, 'No hay ventas en el período seleccionado');
+  } catch {
+    tbody.innerHTML = filaVacia(6, 'Error cargando ventas');
+  }
+}
+
+/* ══════════════════════════════════════════
+   ALQUILERES
+══════════════════════════════════════════ */
+async function cargarAlquileres() {
+  const estado = document.getElementById('filtroEstadoAlquiler')?.value || '';
+  let url = API.alquileres + '?accion=listar';
+  if (estado) url += `&estado=${estado}`;
+
+  const tbody = document.getElementById('tablaAlquileres');
+  tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>`;
+
+  try {
+    const r = await fetch(url);
+    const alq = await r.json();
+    tbody.innerHTML = alq.length
+      ? alq.map(a => `
+          <tr>
+            <td style="color:var(--text-muted);font-size:.8rem">#${a.id}</td>
+            <td>${a.cliente||'—'}</td>
+            <td>${a.maquinaria||'—'}</td>
+            <td style="font-size:.8rem">${fmtFecha(a.fecha_inicio)}</td>
+            <td style="font-size:.8rem">${fmtFecha(a.fecha_fin)}</td>
+            <td style="font-weight:600">${fmt$(a.monto)}</td>
+            <td>${estadoBadge(a.estado)}</td>
+            <td>
+              <button class="btn-sm btn-ghost" onclick="alert('Detalle alquiler ${a.id}')">Ver</button>
+              ${a.estado==='activo' ? `<button class="btn-sm btn-orange" style="margin-left:.3rem" onclick="alert('Devolver alquiler ${a.id}')">Devolver</button>` : ''}
+            </td>
+          </tr>`).join('')
+      : filaVacia(8, 'Sin alquileres');
+  } catch {
+    tbody.innerHTML = filaVacia(8, 'Error cargando alquileres');
+  }
+}
+
+/* ══════════════════════════════════════════
+   INVENTARIO
+══════════════════════════════════════════ */
+async function cargarInventario() {
+  const cat   = document.getElementById('filtroCategoria')?.value || '';
+  const solo  = document.getElementById('soloBajoStock')?.checked;
+  let url = API.productos + (cat ? `?categoria=${encodeURIComponent(cat)}` : '');
+
+  const tbody = document.getElementById('tablaInventario');
+  tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>`;
+
+  try {
+    const r = await fetch(url);
+    let prods = await r.json();
+    if (solo) prods = prods.filter(p => p.stock_actual < (p.stock_minimo||0));
+
+    tbody.innerHTML = prods.length
+      ? prods.map(p => {
+          const bajo = p.stock_actual < (p.stock_minimo||0);
+          return `
+          <tr ${bajo ? 'style="background:rgba(248,81,73,.04)"' : ''}>
+            <td><code style="font-size:.78rem;color:var(--text-muted)">${p.codigo||'—'}</code></td>
+            <td style="font-weight:500">${p.nombre}</td>
+            <td style="font-size:.8rem;color:var(--text-muted)">${p.categoria||'—'}</td>
+            <td>${fmt$(p.precio)}</td>
+            <td style="font-weight:700;color:${bajo?'var(--red)':'var(--green)'}">${p.stock_actual}</td>
+            <td style="color:var(--text-muted)">${p.stock_minimo||0}</td>
+            <td>${bajo ? '<span class="badge badge-red">Bajo stock</span>' : '<span class="badge badge-green">OK</span>'}</td>
+            <td>
+              <button class="btn-sm btn-ghost" onclick="alert('Editar producto ${p.id}')">Editar</button>
+            </td>
+          </tr>`;}).join('')
+      : filaVacia(8, 'Sin productos');
+  } catch {
+    tbody.innerHTML = filaVacia(8, 'Error cargando inventario');
+  }
+}
+
+/* ══════════════════════════════════════════
+   MAQUINARIA
+══════════════════════════════════════════ */
+async function cargarMaquinaria() {
+  const tbody = document.getElementById('tablaMaquinaria');
+  tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>`;
+  try {
+    const r = await fetch(API.maquinaria + '?accion=listar');
+    const maq = await r.json();
+    tbody.innerHTML = maq.length
+      ? maq.map(m => `
+          <tr>
+            <td style="color:var(--text-muted)">${m.id}</td>
+            <td style="font-weight:500">${m.nombre}</td>
+            <td style="font-size:.82rem;color:var(--text-muted)">${m.descripcion||'—'}</td>
+            <td>${fmt$(m.tarifa_alquiler)}/día</td>
+            <td>${estadoBadge(m.estado)}</td>
+            <td>
+              <button class="btn-sm btn-ghost" onclick="alert('Editar maquinaria ${m.id}')">Editar</button>
+            </td>
+          </tr>`).join('')
+      : filaVacia(6, 'Sin maquinaria registrada');
+  } catch {
+    tbody.innerHTML = filaVacia(6, 'Error cargando maquinaria');
+  }
+}
+
+/* ══════════════════════════════════════════
+   CLIENTES
+══════════════════════════════════════════ */
+async function cargarClientes() {
+  const busq = document.getElementById('buscarCliente')?.value || '';
+  const url = API.clientes + `?accion=listar${busq ? '&buscar='+encodeURIComponent(busq) : ''}`;
+
+  const tbody = document.getElementById('tablaClientes');
+  tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>`;
+  try {
+    const r = await fetch(url);
+    const clientes = await r.json();
+    tbody.innerHTML = clientes.length
+      ? clientes.map(c => `
+          <tr>
+            <td style="color:var(--text-muted)">${c.id}</td>
+            <td style="font-weight:500">${c.nombre}</td>
+            <td style="font-size:.82rem">${c.identificacion||'—'}</td>
+            <td>${c.telefono||'—'}</td>
+            <td style="font-size:.82rem;color:var(--text-muted)">${c.email||'—'}</td>
+            <td>${c.total_compras||0}</td>
+            <td>
+              <button class="btn-sm btn-ghost" onclick="ClienteVerModal.abrir(${c.id})">Ver</button>
+              <button class="btn-sm btn-ghost" style="margin-left:.3rem" onclick="ClienteEditModal.abrir(${c.id})">Editar</button>
+            </td>
+          </tr>`).join('')
+      : filaVacia(7, 'Sin clientes registrados');
+  } catch {
+    tbody.innerHTML = filaVacia(7, 'Error cargando clientes');
+  }
+}
+
+/* ══════════════════════════════════════════
+   USUARIOS
+══════════════════════════════════════════ */
+async function cargarUsuarios() {
+  const tbody = document.getElementById('tablaUsuarios');
+  tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>`;
+  try {
+    const r = await fetch(API.usuarios + '?accion=listar');
+    const users = await r.json();
+    
+    // Guardar usuarios globalmente para acceso desde modales
+    window.usuariosData = {};
+    users.forEach(u => {
+      window.usuariosData[u.id] = u;
+    });
+    
+    tbody.innerHTML = users.length
+      ? users.map(u => `
+          <tr>
+            <td style="color:var(--text-muted)">${u.id}</td>
+            <td style="font-weight:500">${u.nombre}</td>
+            <td style="font-size:.82rem;color:var(--text-muted)">${u.email}</td>
+            <td>${estadoBadge(u.rol)}</td>
+            <td style="font-size:.8rem">${u.fecha_creacion ? fmtFecha(u.fecha_creacion) : '—'}</td>
+            <td>${u.activo ? '<span class="badge badge-green">Activo</span>' : '<span class="badge badge-red">Inactivo</span>'}</td>
+            <td>
+              <button class="btn-sm btn-ghost" onclick="UsuarioEditModal.abrir(${u.id})">Editar</button>
+            </td>
+          </tr>`).join('')
+      : filaVacia(7, 'Sin usuarios');
+  } catch {
+    tbody.innerHTML = filaVacia(7, 'Error cargando usuarios');
+  }
+}
+
+/* ══════════════════════════════════════════
+   REPORTES
+══════════════════════════════════════════ */
+async function generarReporteVentas() {
+  const periodo = document.getElementById('rpVentasPeriodo').value;
+  const el = document.getElementById('rpVentasResult');
+  el.innerHTML = '<div class="empty"><span>⏳</span>Generando…</div>';
+  try {
+    const r = await fetch(API.reportes + `?tipo=ventas&periodo=${periodo}`);
+    const d = await r.json();
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:.6rem;font-size:.875rem">
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">Total ventas</span>
+          <strong>${d.total_ventas ?? '—'}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">Ingresos</span>
+          <strong style="color:var(--green)">${d.ingresos ? fmt$(d.ingresos) : '—'}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">Top producto</span>
+          <strong>${d.top_producto ?? '—'}</strong>
+        </div>
+      </div>`;
+  } catch {
+    el.innerHTML = '<div class="empty"><span>❌</span>Error generando reporte</div>';
+  }
+}
+
+async function generarReporteInventario() {
+  const el = document.getElementById('rpInvResult');
+  el.innerHTML = '<div class="empty"><span>⏳</span>Generando…</div>';
+  try {
+    const r = await fetch(API.reportes + '?tipo=inventario');
+    const d = await r.json();
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:.6rem;font-size:.875rem">
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">Total productos</span>
+          <strong>${d.total_productos ?? '—'}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">Valor total</span>
+          <strong style="color:var(--blue)">${d.valor_total ? fmt$(d.valor_total) : '—'}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">Bajo stock</span>
+          <strong style="color:var(--red)">${d.bajo_stock ?? '—'}</strong>
+        </div>
+      </div>`;
+  } catch {
+    el.innerHTML = '<div class="empty"><span>❌</span>Error generando reporte</div>';
+  }
+}
+
+async function generarBalance() {
+  const mes = document.getElementById('rpBalanceMes').value;
+  const el  = document.getElementById('rpBalanceResult');
+  if (!mes) { el.innerHTML = '<div class="empty"><span>⚠️</span>Selecciona un mes</div>'; return; }
+  el.innerHTML = '<div class="empty"><span>⏳</span>Generando…</div>';
+  try {
+    const r = await fetch(API.reportes + `?tipo=balance&mes=${mes}`);
+    const d = await r.json();
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:.6rem;font-size:.875rem">
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">Ventas</span>
+          <strong>${d.ventas ? fmt$(d.ventas) : '—'}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">Alquileres</span>
+          <strong>${d.alquileres ? fmt$(d.alquileres) : '—'}</strong>
+        </div>
+        <hr style="border-color:var(--border)"/>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">Total</span>
+          <strong style="color:var(--green);font-size:1.1rem">${d.total ? fmt$(d.total) : '—'}</strong>
+        </div>
+        ${d.variacion !== undefined ? `
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">vs mes anterior</span>
+          <strong style="color:${d.variacion>=0?'var(--green)':'var(--red)'}">${d.variacion>=0?'+':''}${d.variacion}%</strong>
+        </div>` : ''}
+      </div>`;
+  } catch {
+    el.innerHTML = '<div class="empty"><span>❌</span>Error generando balance</div>';
+  }
+}
+
+/* ══════════════════════════════════════════
+   LOGOUT
+══════════════════════════════════════════ */
+document.getElementById('btnLogout').addEventListener('click', async () => {
+  await fetch(API.usuarios + '?accion=logout').catch(()=>{});
+  sessionStorage.clear();
+  window.location.href = '/Ferreteria_Jamarraya/pages/index.html';
+});
+
+/* ══════════════════════════════════════════
+   NAV CLICK
+══════════════════════════════════════════ */
+document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+  item.addEventListener('click', () => irSeccion(item.dataset.section));
+});
+
+/* ══════════════════════════════════════════
+   MOBILE SIDEBAR
+══════════════════════════════════════════ */
+document.getElementById('menuToggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarBackdrop').classList.toggle('open');
+});
+document.getElementById('sidebarBackdrop').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('open');
+});
+
+/* ══════════════════════════════════════════
+   FECHA EN TOPBAR
+══════════════════════════════════════════ */
+document.getElementById('topbarDate').textContent =
+  new Date().toLocaleDateString('es-CO', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+/* ══════════════════════════════════════════
+   CALLBACKS DE MÓDULOS
+══════════════════════════════════════════ */
+// Cuando se crea un usuario, recargar tabla
+window.onUsuarioCreado = () => {
+  cargarUsuarios();
+  alert('✓ Usuario creado exitosamente');
+};
+
+// Cuando se edita un usuario, recargar tabla
+window.onUsuarioEditado = () => {
+  cargarUsuarios();
+  alert('✓ Usuario actualizado correctamente');
+};
+
+// Cuando se crea un cliente, recargar tabla
+window.onClienteCreado = (data) => {
+  cargarClientes();
+  alert('✓ Cliente registrado exitosamente');
+};
+
+// Cuando se actualiza un cliente, recargar tabla
+window.onClienteActualizado = (data) => {
+  cargarClientes();
+  alert('✓ Cliente actualizado correctamente');
+};
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+(async function init() {
+  await verificarAcceso();
+  await cargarDashboard();
+  await cargarInventario();  // pre-carga para alertas de stock
+})();
+</script>
+
+<!-- Cargar módulos de componentes -->
+<div id="modulosContainer"></div>
+<script>
+// Cargar modales y scripts de módulos
+(async () => {
+  try {
+    // Cargar modal de crear usuario
+    const respCrear = await fetch('/Ferreteria_Jamarraya/components/crear-usuario-modal.html');
+    const htmlCrear = await respCrear.text();
+    document.getElementById('modulosContainer').innerHTML += htmlCrear;
+    
+    // Cargar modal de editar usuario
+    const respEditar = await fetch('/Ferreteria_Jamarraya/components/editar-usuario-modal.html');
+    const htmlEditar = await respEditar.text();
+    document.getElementById('modulosContainer').innerHTML += htmlEditar;
+    
+    // Cargar modal de crear cliente
+    const respCrearCliente = await fetch('/Ferreteria_Jamarraya/components/crear-cliente-modal.html');
+    const htmlCrearCliente = await respCrearCliente.text();
+    document.getElementById('modulosContainer').innerHTML += htmlCrearCliente;
+    
+    // Cargar modal de editar cliente
+    const respEditarCliente = await fetch('/Ferreteria_Jamarraya/components/editar-cliente-modal.html');
+    const htmlEditarCliente = await respEditarCliente.text();
+    document.getElementById('modulosContainer').innerHTML += htmlEditarCliente;
+    
+    // Cargar modal de ver cliente
+    const respVerCliente = await fetch('/Ferreteria_Jamarraya/components/ver-cliente-modal.html');
+    const htmlVerCliente = await respVerCliente.text();
+    document.getElementById('modulosContainer').innerHTML += htmlVerCliente;
+    
+    // Cargar scripts de lógica
+    const scriptCrear = document.createElement('script');
+    scriptCrear.src = '/Ferreteria_Jamarraya/js/crear-usuario.js';
+    document.body.appendChild(scriptCrear);
+    
+    const scriptEditar = document.createElement('script');
+    scriptEditar.src = '/Ferreteria_Jamarraya/js/editar-usuario.js';
+    document.body.appendChild(scriptEditar);
+    
+    const scriptCrearCliente = document.createElement('script');
+    scriptCrearCliente.src = '/Ferreteria_Jamarraya/js/crear-cliente.js';
+    document.body.appendChild(scriptCrearCliente);
+    
+    const scriptEditarCliente = document.createElement('script');
+    scriptEditarCliente.src = '/Ferreteria_Jamarraya/js/editar-cliente.js';
+    document.body.appendChild(scriptEditarCliente);
+    
+    const scriptVerCliente = document.createElement('script');
+    scriptVerCliente.src = '/Ferreteria_Jamarraya/js/ver-cliente.js';
+    document.body.appendChild(scriptVerCliente);
+  } catch (e) {
+    console.error('Error cargando módulos:', e);
+  }
+})();
+</script>
+
+</body>
+</html>

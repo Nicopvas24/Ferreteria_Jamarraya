@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Ferretería Jamarraya</title>
+    <link rel="stylesheet" href="../css/estilos.css">
+    <style>
+        .tarjetas-resumen {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .tarjeta-stat {
+            background: #fff;
+            border-radius: 10px;
+            padding: 1.2rem 1.4rem;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+            border-left: 4px solid #ccc;
+        }
+        .tarjeta-stat.rojo    { border-left-color: #c0392b; }
+        .tarjeta-stat.verde   { border-left-color: #27ae60; }
+        .tarjeta-stat.amarillo{ border-left-color: #f39c12; }
+        .tarjeta-stat.azul    { border-left-color: #2980b9; }
+        .tarjeta-stat .numero {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #222;
+            line-height: 1;
+        }
+        .tarjeta-stat .etiqueta {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.3rem;
+        }
+
+        .dos-columnas {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        @media (max-width: 768px) {
+            .dos-columnas { grid-template-columns: 1fr; }
+        }
+
+        .alerta-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.88rem;
+        }
+        .alerta-item:last-child { border-bottom: none; }
+        .alerta-item .nombre { font-weight: 600; color: #222; }
+        .alerta-item .detalle { color: #666; font-size: 0.82rem; }
+
+        .sin-datos {
+            text-align: center;
+            color: #aaa;
+            padding: 1.5rem 0;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout">
+
+    <!-- Barra lateral -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <h2>Ferretería Jamarraya</h2>
+            <small>Apía, Risaralda</small>
+        </div>
+        <nav>
+            <a href="dashboard.html" class="activo">Dashboard</a>
+            <a href="ventas.html">Ventas</a>
+            <a href="inventario.html">Inventario</a>
+            <a href="alquileres.html">Alquileres</a>
+            <a href="clientes.html">Clientes</a>
+            <a href="reportes.html">Reportes</a>
+        </nav>
+        <div class="sidebar-footer">
+            <strong id="nombre-usuario">Cargando...</strong>
+            <span id="rol-usuario"></span>
+            <button onclick="cerrarSesion()">Cerrar sesión</button>
+        </div>
+    </aside>
+
+    <!-- Contenido -->
+    <main class="contenido">
+        <h1 class="page-titulo">Dashboard</h1>
+
+        <!-- Tarjetas resumen -->
+        <div class="tarjetas-resumen">
+            <div class="tarjeta-stat rojo">
+                <div class="numero" id="stat-ventas-hoy">—</div>
+                <div class="etiqueta">Ventas hoy</div>
+            </div>
+            <div class="tarjeta-stat verde">
+                <div class="numero" id="stat-ingresos-hoy">—</div>
+                <div class="etiqueta">Ingresos hoy</div>
+            </div>
+            <div class="tarjeta-stat amarillo">
+                <div class="numero" id="stat-alquileres-activos">—</div>
+                <div class="etiqueta">Alquileres activos</div>
+            </div>
+            <div class="tarjeta-stat azul">
+                <div class="numero" id="stat-stock-critico">—</div>
+                <div class="etiqueta">Productos stock bajo</div>
+            </div>
+        </div>
+
+        <!-- Alertas + Últimas ventas -->
+        <div class="dos-columnas">
+
+            <!-- Alertas -->
+            <div class="card">
+                <div class="flex-entre mb-2">
+                    <strong>Alertas</strong>
+                </div>
+                <div id="lista-alertas">
+                    <p class="sin-datos">Cargando alertas...</p>
+                </div>
+            </div>
+
+            <!-- Últimas 5 ventas -->
+            <div class="card">
+                <div class="flex-entre mb-2">
+                    <strong>Últimas ventas</strong>
+                    <a href="ventas.html" style="font-size:0.85rem">Ver todas</a>
+                </div>
+                <div id="lista-ventas-recientes">
+                    <p class="sin-datos">Cargando...</p>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+</div>
+
+<script>
+    // ---- Verificar sesión ----
+    fetch('../php/usuarios.php?accion=verificar')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.ok) {
+                window.location.href = 'login.html';
+                return;
+            }
+            document.getElementById('nombre-usuario').textContent = data.nombre;
+            document.getElementById('rol-usuario').textContent    = data.rol;
+            cargarDashboard();
+        });
+
+    // ---- Cerrar sesión ----
+    function cerrarSesion() {
+        fetch('../php/usuarios.php', {
+            method: 'POST',
+            body: new URLSearchParams({ accion: 'logout' })
+        }).then(() => window.location.href = 'login.html');
+    }
+
+    // ---- Cargar datos del dashboard ----
+    function cargarDashboard() {
+        fetch('../php/dashboard.php')
+            .then(r => r.json())
+            .then(data => {
+                // Estadísticas
+                document.getElementById('stat-ventas-hoy').textContent        = data.ventas_hoy ?? 0;
+                document.getElementById('stat-ingresos-hoy').textContent      = '$' + formatNum(data.ingresos_hoy ?? 0);
+                document.getElementById('stat-alquileres-activos').textContent = data.alquileres_activos ?? 0;
+                document.getElementById('stat-stock-critico').textContent     = data.stock_critico ?? 0;
+
+                // Alertas
+                renderAlertas(data.alertas ?? []);
+
+                // Últimas ventas
+                renderVentasRecientes(data.ventas_recientes ?? []);
+            })
+            .catch(() => {
+                document.getElementById('lista-alertas').innerHTML        = '<p class="sin-datos">Error al cargar alertas.</p>';
+                document.getElementById('lista-ventas-recientes').innerHTML = '<p class="sin-datos">Error al cargar ventas.</p>';
+            });
+    }
+
+    function renderAlertas(alertas) {
+        const el = document.getElementById('lista-alertas');
+        if (!alertas.length) {
+            el.innerHTML = '<p class="sin-datos">Sin alertas por ahora ✓</p>';
+            return;
+        }
+        el.innerHTML = alertas.map(a => `
+            <div class="alerta-item">
+                <div>
+                    <div class="nombre">${a.nombre}</div>
+                    <div class="detalle">${a.detalle}</div>
+                </div>
+                <span class="badge ${a.tipo === 'rojo' ? 'badge-rojo' : 'badge-amarillo'}">${a.etiqueta}</span>
+            </div>
+        `).join('');
+    }
+
+    function renderVentasRecientes(ventas) {
+        const el = document.getElementById('lista-ventas-recientes');
+        if (!ventas.length) {
+            el.innerHTML = '<p class="sin-datos">No hay ventas hoy.</p>';
+            return;
+        }
+        el.innerHTML = ventas.map(v => `
+            <div class="alerta-item">
+                <div>
+                    <div class="nombre">${v.cliente}</div>
+                    <div class="detalle">${v.comprobante} · ${v.fecha}</div>
+                </div>
+                <span style="font-weight:600;color:#27ae60">$${formatNum(v.total)}</span>
+            </div>
+        `).join('');
+    }
+
+    function formatNum(n) {
+        return Number(n).toLocaleString('es-CO');
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!-- ══════════════════════════════════════════
+     MODAL EDITAR CLIENTE
+     Modular - Requiere: editar-cliente.js
+══════════════════════════════════════════ -->
+<style>
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 1000;
+    display: none; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal-content {
+    background: var(--dark-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 2rem;
+    max-width: 450px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,.5);
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .modal-header h2 { font-size: 1.3rem; font-weight: 700; margin: 0; }
+  .modal-close {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 1.5rem; cursor: pointer; padding: 0;
+  }
+  .form-group {
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .form-group label {
+    font-size: .85rem; font-weight: 600; color: var(--text-muted);
+  }
+  .form-group input,
+  .form-group textarea {
+    width: 100%; background: var(--dark-3); border: 1px solid var(--border);
+    border-radius: 6px; padding: .7rem; color: var(--text); font-size: .9rem;
+    outline: none; font-family: inherit;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus { border-color: var(--orange); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-error {
+    display: none; background: rgba(248,81,73,.15); color: var(--red);
+    padding: .75rem; border-radius: 6px; font-size: .85rem;
+    border: 1px solid rgba(248,81,73,.3);
+  }
+  .form-actions {
+    display: flex; gap: .75rem; margin-top: 1rem;
+  }
+  .form-actions button { flex: 1; }
+  .form-readonly {
+    background: var(--dark-4); color: var(--text-muted); cursor: not-allowed;
+  }
+  .form-readonly:focus { border-color: var(--border); }
+</style>
+
+<div id="modalEditarCliente" class="modal-backdrop">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Editar Cliente</h2>
+      <button type="button" class="modal-close" onclick="ClienteEditModal.cerrar()">✕</button>
+    </div>
+    
+    <form id="formEditarCliente" class="form">
+      <div class="form-group">
+        <label for="edt_cli_nombre">Nombre *</label>
+        <input type="text" id="edt_cli_nombre" required/>
+      </div>
+      
+      <div class="form-group">
+        <label for="edt_cli_identificacion">Identificación (Cédula/NIT) *</label>
+        <input type="text" id="edt_cli_identificacion" required/>
+      </div>
+      
+      <div class="form-group">
+        <label for="edt_cli_email">Email</label>
+        <input type="email" id="edt_cli_email"/>
+      </div>
+      
+      <div class="form-group">
+        <label for="edt_cli_telefono">Teléfono</label>
+        <input type="tel" id="edt_cli_telefono"/>
+      </div>
+      
+      <div class="form-group">
+        <label for="edt_cli_direccion">Dirección</label>
+        <textarea id="edt_cli_direccion"></textarea>
+      </div>
+      
+      <div id="editarClienteError" class="form-error"></div>
+      
+      <div class="form-actions">
+        <button type="submit" class="btn-sm btn-orange">Guardar Cambios</button>
+        <button type="button" class="btn-sm btn-ghost" onclick="ClienteEditModal.cerrar()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>

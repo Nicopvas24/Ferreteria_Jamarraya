@@ -1,0 +1,88 @@
+<!-- ============================================================
+     components/registro-modal.html
+     Modal de registro — se inyecta via login.js
+     ============================================================ -->
+
+<div class="lm-overlay" id="registroOverlay" role="dialog" aria-modal="true" aria-label="Registrarse">
+
+  <div class="lm-card">
+
+    <!-- Cerrar -->
+    <button class="lm-close" id="registroClose" aria-label="Cerrar">&times;</button>
+
+    <!-- Cabecera -->
+    <div class="lm-header">
+      <span class="lm-icon">🔧</span>
+      <h2 class="lm-title">Ferretería<strong>Jamarraya</strong></h2>
+      <p class="lm-sub">Crea tu cuenta</p>
+    </div>
+
+    <!-- Formulario -->
+    <form class="lm-form" id="registroForm" novalidate>
+
+      <div class="lm-field">
+        <label for="reg-nombre">Nombre completo *</label>
+        <input type="text" id="reg-nombre" name="nombre"
+               placeholder="Tu nombre" required autocomplete="name"/>
+      </div>
+
+      <div class="lm-field">
+        <label for="reg-identificacion">Identificación (Cédula/NIT) *</label>
+        <input type="text" id="reg-identificacion" name="identificacion"
+               placeholder="1234567890" required/>
+      </div>
+
+      <div class="lm-field">
+        <label for="reg-email">Correo electrónico *</label>
+        <input type="email" id="reg-email" name="email"
+               placeholder="correo@ejemplo.com" required autocomplete="email"/>
+      </div>
+
+      <div class="lm-field">
+        <label for="reg-pass">Contraseña</label>
+        <div class="lm-pass-wrap">
+          <input type="password" id="reg-pass" name="contrasena"
+                 placeholder="••••••••" required autocomplete="new-password"/>
+          <button type="button" class="lm-toggle-pass" id="togglePassReg" aria-label="Mostrar contraseña">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <small style="color: var(--text-muted); margin-top: 0.3rem; display: block;">Mínimo 6 caracteres</small>
+      </div>
+
+      <div class="lm-field">
+        <label for="reg-confirmar">Confirmar contraseña</label>
+        <div class="lm-pass-wrap">
+          <input type="password" id="reg-confirmar" name="confirmar"
+                 placeholder="••••••••" required autocomplete="new-password"/>
+          <button type="button" class="lm-toggle-pass" id="togglePassReg2" aria-label="Mostrar contraseña">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mensaje de error -->
+      <p class="lm-error" id="registroError" hidden></p>
+
+      <button type="submit" class="lm-btn-submit" id="registroSubmit">
+        <span class="lm-btn-text">Crear cuenta</span>
+        <span class="lm-spinner" hidden></span>
+      </button>
+
+    </form>
+
+    <p class="lm-footer-text">
+      ¿Ya tienes cuenta?
+      <a href="#" class="lm-link" id="switchToLoginReg">Inicia sesión aquí</a>
+    </p>
+
+  </div>
+</div>

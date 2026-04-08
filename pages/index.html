@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ferreteria Jamarraya</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero__bg"></div>
+    <div class="hero__content">
+      <p class="hero__eyebrow">Tu ferretería de confianza</p>
+      <h1 class="hero__title">Construye sin<br><span>límites.</span></h1>
+      <p class="hero__subtitle">Herramientas, materiales y equipos para profesionales y aficionados. Calidad garantizada en cada producto.</p>
+      <div class="hero__cta">
+        <a href="productos.html" class="btn btn--primary btn--lg">Ver Productos</a>
+        <a href="#cotizar" class="btn btn--outline btn--lg">Solicitar Cotización</a>
+      </div>
+      <div class="hero__stats">
+        <div class="stat"><span class="stat__num">+5,000</span><span class="stat__label">Productos</span></div>
+        <div class="stat__divider"></div>
+        <div class="stat"><span class="stat__num">20+</span><span class="stat__label">Años de experiencia</span></div>
+        <div class="stat__divider"></div>
+        <div class="stat"><span class="stat__num">98%</span><span class="stat__label">Clientes satisfechos</span></div>
+      </div>
+    </div>
+    <div class="hero__badge"><span>Envío</span><strong>GRATIS</strong><span>+$150.000</span></div>
+  </section>
+
+  <!-- CATEGORÍAS -->
+  <section class="categories" id="productos">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Categorías <span>Destacadas</span></h2>
+        <a href="#" class="link-all">Ver todo →</a>
+      </div>
+      <div class="categories__grid">
+        <a href="#" class="cat-card"><div class="cat-card__icon">🔧</div><h3>Herramientas</h3><p>Manuales y eléctricas</p></a>
+        <a href="#" class="cat-card"><div class="cat-card__icon">🏗️</div><h3>Construcción</h3><p>Materiales y estructuras</p></a>
+        <a href="#" class="cat-card"><div class="cat-card__icon">🔩</div><h3>Tornillería</h3><p>Fijaciones y anclajes</p></a>
+        <a href="#" class="cat-card"><div class="cat-card__icon">🎨</div><h3>Pinturas</h3><p>Acabados y recubrimientos</p></a>
+        <a href="#" class="cat-card"><div class="cat-card__icon">🚰</div><h3>Tuberia</h3><p>Tuberías y accesorios</p></a>
+        <a href="#" class="cat-card"><div class="cat-card__icon">⚡</div><h3>Eléctrico</h3><p>Cables y protecciones</p></a>
+      </div>
+    </div>
+  </section>
+
+  
+
+  <!-- COTIZAR -->
+  <section class="cotizar" id="cotizar">
+    <div class="container">
+      <div class="section-header section-header--center">
+        <h2 class="section-title">Solicita tu <span>Cotización</span></h2>
+        <p>Cuéntanos qué necesitas y te respondemos en menos de 24 horas</p>
+      </div>
+      <div class="cotizar__form-wrap">
+        <div class="form-grid">
+          <div class="form-group"><label>Nombre completo</label><input type="text" placeholder="Tu nombre" /></div>
+          <div class="form-group"><label>Correo electrónico</label><input type="email" placeholder="correo@ejemplo.com" /></div>
+          <div class="form-group"><label>Teléfono</label><input type="tel" placeholder="+57 300 000 0000" /></div>
+          <div class="form-group">
+            <label>Tipo de proyecto</label>
+            <select><option value="">Selecciona...</option><option>Construcción residencial</option><option>Construcción comercial</option><option>Remodelación</option><option>Mantenimiento industrial</option><option>Otro</option></select>
+          </div>
+          <div class="form-group form-group--full"><label>Descripción de lo que necesitas</label><textarea placeholder="Describe los productos o servicios que requieres..." rows="4"></textarea></div>
+          <div class="form-group form-group--full"><button class="btn btn--primary btn--lg btn--full" id="btnCotizar">Enviar Solicitud</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- CONTACTO -->
+  <section class="contacto" id="contacto">
+    <div class="container">
+      <div class="section-header section-header--center">
+        <h2 class="section-title">¿Cómo <span>Contactarnos?</span></h2>
+      </div>
+      <div class="contacto__grid">
+        <div class="contacto-card"><span class="contacto-card__icon">📍</span><h4>Dirección</h4><p>calle 10-19<br>Apia, Risaralda</p></div>
+        <div class="contacto-card"><span class="contacto-card__icon">📞</span><h4>Teléfono</h4><p>+57 3212345678<br>+57 3134568901</p></div>
+        <div class="contacto-card"><span class="contacto-card__icon">✉️</span><h4>Correo</h4><p>ventas@ferreteriaJamarrya.com<br>info@ferreteriaJamarrya.com</p></div>
+        <div class="contacto-card"><span class="contacto-card__icon">🕐</span><h4>Horario</h4><p>Lun – Sáb: 7:00am – 6:00pm<br>Dom: 8:00am – 1:00pm</p></div>
+      </div>
+    </div>
+  </section>
+
+ <div id="footer"></div>
+
+  <script src="../assets/js/include.js"></script>
+  <script src="../assets/js/main.js"></script>
+</body>
+</html>

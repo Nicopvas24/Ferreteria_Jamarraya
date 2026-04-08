@@ -1,0 +1,145 @@
+<!-- ══════════════════════════════════════════
+     MODAL VER CLIENTE
+     Modular - Requiere: ver-cliente.js
+══════════════════════════════════════════ -->
+<style>
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 1000;
+    display: none; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal-content {
+    background: var(--dark-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 2rem;
+    max-width: 600px; width: 90%; max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,.5);
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .modal-header h2 { font-size: 1.3rem; font-weight: 700; margin: 0; }
+  .modal-close {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 1.5rem; cursor: pointer; padding: 0;
+  }
+  .cliente-info {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem;
+    margin-bottom: 1.5rem; padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .info-field {
+    display: flex; flex-direction: column; gap: 0.3rem;
+  }
+  .info-label {
+    font-size: .75rem; font-weight: 700; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  .info-value {
+    font-size: .95rem; color: var(--text); font-weight: 500;
+  }
+  .info-value.secondary { color: var(--text-muted); font-size: .85rem; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+  thead tr { border-bottom: 1px solid var(--border); }
+  th {
+    padding: .6rem .75rem; text-align: left;
+    font-size: .7rem; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  td { padding: .7rem .75rem; border-bottom: 1px solid rgba(255,255,255,.04); color: var(--text); }
+  tbody tr:hover { background: rgba(255,255,255,.025); }
+  tbody tr:last-child td { border-bottom: none; }
+  .section-title {
+    font-size: .9rem; font-weight: 700; color: var(--text);
+    margin: 1rem 0 0.75rem 0; padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .empty-state {
+    text-align: center; padding: 1rem;
+    color: var(--text-muted); font-size: .85rem;
+  }
+  .modal-footer {
+    display: flex; gap: .75rem; margin-top: 1.5rem; padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+  .modal-footer button { flex: 1; }
+</style>
+
+<div id="modalVerCliente" class="modal-backdrop">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Detalles del Cliente</h2>
+      <button type="button" class="modal-close" onclick="ClienteVerModal.cerrar()">✕</button>
+    </div>
+    
+    <!-- Info básica -->
+    <div class="cliente-info">
+      <div class="info-field">
+        <span class="info-label">Nombre</span>
+        <span class="info-value" id="ver_cli_nombre">—</span>
+      </div>
+      <div class="info-field">
+        <span class="info-label">Identificación</span>
+        <span class="info-value" id="ver_cli_identificacion">—</span>
+      </div>
+      <div class="info-field">
+        <span class="info-label">Email</span>
+        <span class="info-value" id="ver_cli_email">—</span>
+      </div>
+      <div class="info-field">
+        <span class="info-label">Teléfono</span>
+        <span class="info-value" id="ver_cli_telefono">—</span>
+      </div>
+      <div class="info-field" style="grid-column: 1 / -1;">
+        <span class="info-label">Dirección</span>
+        <span class="info-value" id="ver_cli_direccion">—</span>
+      </div>
+    </div>
+
+    <!-- Historial compras -->
+    <div>
+      <h3 class="section-title">📦 Últimas Compras</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Comprobante</th>
+              <th>Fecha</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody id="tablaCompras">
+            <tr><td colspan="3" class="empty-state">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Historial alquileres -->
+    <div>
+      <h3 class="section-title">🔧 Últimos Alquileres</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Maquinaria</th>
+              <th>Período</th>
+              <th>Monto</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="tablaAlquileres">
+            <tr><td colspan="5" class="empty-state">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-sm btn-orange" onclick="ClienteEditModal.abrir(ClienteVerModal.getCurrentId())">Editar</button>
+      <button class="btn-sm btn-ghost" onclick="ClienteVerModal.cerrar()">Cerrar</button>
+    </div>
+  </div>
+</div>
