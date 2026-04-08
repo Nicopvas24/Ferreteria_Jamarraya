@@ -1,1 +1,0 @@
-ya hice el logeo en tabla para bd

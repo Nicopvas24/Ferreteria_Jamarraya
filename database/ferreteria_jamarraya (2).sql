@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 07-04-2026 a las 00:46:51
+-- Tiempo de generación: 07-04-2026 a las 01:02:54
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -20,6 +20,8 @@ SET time_zone = "+00:00";
 --
 -- Base de datos: `ferreteria_jamarraya`
 --
+CREATE DATABASE IF NOT EXISTS `ferreteria_jamarraya` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `ferreteria_jamarraya`;
 
 -- --------------------------------------------------------
 
@@ -27,8 +29,9 @@ SET time_zone = "+00:00";
 -- Estructura de tabla para la tabla `alquileres`
 --
 
-CREATE TABLE `alquileres` (
-  `id` int(11) NOT NULL,
+DROP TABLE IF EXISTS `alquileres`;
+CREATE TABLE IF NOT EXISTS `alquileres` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `id_cliente` int(11) NOT NULL,
   `id_maquinaria` int(11) NOT NULL,
   `id_usuario` int(11) NOT NULL,
@@ -36,12 +39,19 @@ CREATE TABLE `alquileres` (
   `fecha_fin` date NOT NULL,
   `monto` decimal(10,2) NOT NULL CHECK (`monto` >= 0),
   `estado` enum('activo','finalizado','vencido') NOT NULL DEFAULT 'activo',
-  `fecha_registro` datetime NOT NULL DEFAULT current_timestamp()
+  `fecha_registro` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `fk_alquileres_maquinaria` (`id_maquinaria`),
+  KEY `fk_alquileres_usuario` (`id_usuario`),
+  KEY `idx_alquileres_estado` (`estado`),
+  KEY `idx_alquileres_fecha_fin` (`fecha_fin`),
+  KEY `idx_alquileres_cliente` (`id_cliente`)
 ) ;
 
 --
 -- Disparadores `alquileres`
 --
+DROP TRIGGER IF EXISTS `trg_maquinaria_alquilada`;
 DELIMITER $$
 CREATE TRIGGER `trg_maquinaria_alquilada` AFTER INSERT ON `alquileres` FOR EACH ROW BEGIN
     IF NEW.estado = 'activo' THEN
@@ -52,6 +62,7 @@ CREATE TRIGGER `trg_maquinaria_alquilada` AFTER INSERT ON `alquileres` FOR EACH 
 END
 $$
 DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_maquinaria_devuelta`;
 DELIMITER $$
 CREATE TRIGGER `trg_maquinaria_devuelta` AFTER UPDATE ON `alquileres` FOR EACH ROW BEGIN
     IF NEW.estado IN ('finalizado', 'vencido') AND OLD.estado = 'activo' THEN
@@ -69,14 +80,18 @@ DELIMITER ;
 -- Estructura de tabla para la tabla `clientes`
 --
 
-CREATE TABLE `clientes` (
-  `id` int(11) NOT NULL,
+DROP TABLE IF EXISTS `clientes`;
+CREATE TABLE IF NOT EXISTS `clientes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `id_usuario` int(11) DEFAULT NULL,
   `nombre` varchar(100) NOT NULL,
   `identificacion` varchar(20) NOT NULL,
   `telefono` varchar(20) DEFAULT NULL,
   `email` varchar(150) DEFAULT NULL,
-  `direccion` varchar(255) DEFAULT NULL
+  `direccion` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_clientes_identificacion` (`identificacion`),
+  KEY `fk_clientes_usuario` (`id_usuario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -85,18 +100,23 @@ CREATE TABLE `clientes` (
 -- Estructura de tabla para la tabla `detalle_venta`
 --
 
-CREATE TABLE `detalle_venta` (
-  `id` int(11) NOT NULL,
+DROP TABLE IF EXISTS `detalle_venta`;
+CREATE TABLE IF NOT EXISTS `detalle_venta` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `id_venta` int(11) NOT NULL,
   `id_producto` int(11) NOT NULL,
   `cantidad` int(11) NOT NULL CHECK (`cantidad` > 0),
   `precio_unitario` decimal(10,2) NOT NULL CHECK (`precio_unitario` >= 0),
-  `subtotal` decimal(12,2) NOT NULL CHECK (`subtotal` >= 0)
+  `subtotal` decimal(12,2) NOT NULL CHECK (`subtotal` >= 0),
+  PRIMARY KEY (`id`),
+  KEY `fk_detalle_venta_venta` (`id_venta`),
+  KEY `fk_detalle_venta_producto` (`id_producto`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Disparadores `detalle_venta`
 --
+DROP TRIGGER IF EXISTS `trg_actualizar_total_venta`;
 DELIMITER $$
 CREATE TRIGGER `trg_actualizar_total_venta` AFTER INSERT ON `detalle_venta` FOR EACH ROW BEGIN
     UPDATE ventas
@@ -109,12 +129,14 @@ CREATE TRIGGER `trg_actualizar_total_venta` AFTER INSERT ON `detalle_venta` FOR 
 END
 $$
 DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_calcular_subtotal`;
 DELIMITER $$
 CREATE TRIGGER `trg_calcular_subtotal` BEFORE INSERT ON `detalle_venta` FOR EACH ROW BEGIN
     SET NEW.subtotal = NEW.cantidad * NEW.precio_unitario;
 END
 $$
 DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_descontar_stock`;
 DELIMITER $$
 CREATE TRIGGER `trg_descontar_stock` AFTER INSERT ON `detalle_venta` FOR EACH ROW BEGIN
     UPDATE productos
@@ -130,15 +152,18 @@ DELIMITER ;
 -- Estructura de tabla para la tabla `logs`
 --
 
-CREATE TABLE `logs` (
-  `id` int(11) NOT NULL,
+DROP TABLE IF EXISTS `logs`;
+CREATE TABLE IF NOT EXISTS `logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `id_usuario` int(11) DEFAULT NULL,
   `accion` varchar(100) NOT NULL,
   `tabla_afectada` varchar(50) DEFAULT NULL,
   `id_registro` int(11) DEFAULT NULL,
   `detalle` text DEFAULT NULL,
   `ip_origen` varchar(45) DEFAULT NULL,
-  `fecha` datetime NOT NULL DEFAULT current_timestamp()
+  `fecha` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_logs_usuario_fecha` (`id_usuario`,`fecha`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -147,13 +172,15 @@ CREATE TABLE `logs` (
 -- Estructura de tabla para la tabla `maquinaria`
 --
 
-CREATE TABLE `maquinaria` (
-  `id` int(11) NOT NULL,
+DROP TABLE IF EXISTS `maquinaria`;
+CREATE TABLE IF NOT EXISTS `maquinaria` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
   `descripcion` text DEFAULT NULL,
   `estado` enum('disponible','alquilada','mantenimiento') NOT NULL DEFAULT 'disponible',
   `tarifa_alquiler` decimal(10,2) NOT NULL CHECK (`tarifa_alquiler` >= 0),
-  `activo` tinyint(1) NOT NULL DEFAULT 1
+  `activo` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -162,8 +189,9 @@ CREATE TABLE `maquinaria` (
 -- Estructura de tabla para la tabla `productos`
 --
 
-CREATE TABLE `productos` (
-  `id` int(11) NOT NULL,
+DROP TABLE IF EXISTS `productos`;
+CREATE TABLE IF NOT EXISTS `productos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `codigo` varchar(50) NOT NULL,
   `nombre` varchar(150) NOT NULL,
   `descripcion` text DEFAULT NULL,
@@ -172,8 +200,12 @@ CREATE TABLE `productos` (
   `stock_actual` int(11) NOT NULL DEFAULT 0 CHECK (`stock_actual` >= 0),
   `stock_minimo` int(11) NOT NULL DEFAULT 0 CHECK (`stock_minimo` >= 0),
   `activo` tinyint(1) NOT NULL DEFAULT 1,
-  `img` varchar(150) DEFAULT 'nombreimagen.png'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `img` varchar(150) DEFAULT 'nombreimagen.png',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_productos_codigo` (`codigo`),
+  KEY `idx_productos_stock` (`stock_actual`,`stock_minimo`),
+  KEY `idx_productos_categoria` (`categoria`)
+) ENGINE=InnoDB AUTO_INCREMENT=2010 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `productos`
@@ -190,15 +222,18 @@ INSERT INTO `productos` (`id`, `codigo`, `nombre`, `descripcion`, `categoria`, `
 -- Estructura de tabla para la tabla `usuarios`
 --
 
-CREATE TABLE `usuarios` (
-  `id` int(11) NOT NULL,
+DROP TABLE IF EXISTS `usuarios`;
+CREATE TABLE IF NOT EXISTS `usuarios` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
   `email` varchar(150) NOT NULL,
   `contrasena_hash` varchar(255) NOT NULL,
   `rol` enum('admin','empleado','cliente') NOT NULL DEFAULT 'cliente',
   `fecha_creacion` datetime NOT NULL DEFAULT current_timestamp(),
-  `activo` tinyint(1) NOT NULL DEFAULT 1
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `activo` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_usuarios_email` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `usuarios`
@@ -214,136 +249,20 @@ INSERT INTO `usuarios` (`id`, `nombre`, `email`, `contrasena_hash`, `rol`, `fech
 -- Estructura de tabla para la tabla `ventas`
 --
 
-CREATE TABLE `ventas` (
-  `id` int(11) NOT NULL,
+DROP TABLE IF EXISTS `ventas`;
+CREATE TABLE IF NOT EXISTS `ventas` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `id_cliente` int(11) NOT NULL,
   `id_usuario` int(11) NOT NULL,
   `fecha` datetime NOT NULL DEFAULT current_timestamp(),
   `total` decimal(12,2) NOT NULL DEFAULT 0.00 CHECK (`total` >= 0),
-  `comprobante` varchar(50) NOT NULL
+  `comprobante` varchar(50) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ventas_comprobante` (`comprobante`),
+  KEY `fk_ventas_usuario` (`id_usuario`),
+  KEY `idx_ventas_fecha` (`fecha`),
+  KEY `idx_ventas_cliente` (`id_cliente`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Índices para tablas volcadas
---
-
---
--- Indices de la tabla `alquileres`
---
-ALTER TABLE `alquileres`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_alquileres_maquinaria` (`id_maquinaria`),
-  ADD KEY `fk_alquileres_usuario` (`id_usuario`),
-  ADD KEY `idx_alquileres_estado` (`estado`),
-  ADD KEY `idx_alquileres_fecha_fin` (`fecha_fin`),
-  ADD KEY `idx_alquileres_cliente` (`id_cliente`);
-
---
--- Indices de la tabla `clientes`
---
-ALTER TABLE `clientes`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_clientes_identificacion` (`identificacion`),
-  ADD KEY `fk_clientes_usuario` (`id_usuario`);
-
---
--- Indices de la tabla `detalle_venta`
---
-ALTER TABLE `detalle_venta`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_detalle_venta_venta` (`id_venta`),
-  ADD KEY `fk_detalle_venta_producto` (`id_producto`);
-
---
--- Indices de la tabla `logs`
---
-ALTER TABLE `logs`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_logs_usuario_fecha` (`id_usuario`,`fecha`);
-
---
--- Indices de la tabla `maquinaria`
---
-ALTER TABLE `maquinaria`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `productos`
---
-ALTER TABLE `productos`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_productos_codigo` (`codigo`),
-  ADD KEY `idx_productos_stock` (`stock_actual`,`stock_minimo`),
-  ADD KEY `idx_productos_categoria` (`categoria`);
-
---
--- Indices de la tabla `usuarios`
---
-ALTER TABLE `usuarios`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_usuarios_email` (`email`);
-
---
--- Indices de la tabla `ventas`
---
-ALTER TABLE `ventas`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_ventas_comprobante` (`comprobante`),
-  ADD KEY `fk_ventas_usuario` (`id_usuario`),
-  ADD KEY `idx_ventas_fecha` (`fecha`),
-  ADD KEY `idx_ventas_cliente` (`id_cliente`);
-
---
--- AUTO_INCREMENT de las tablas volcadas
---
-
---
--- AUTO_INCREMENT de la tabla `alquileres`
---
-ALTER TABLE `alquileres`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `clientes`
---
-ALTER TABLE `clientes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `detalle_venta`
---
-ALTER TABLE `detalle_venta`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `logs`
---
-ALTER TABLE `logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `maquinaria`
---
-ALTER TABLE `maquinaria`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `productos`
---
-ALTER TABLE `productos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2010;
-
---
--- AUTO_INCREMENT de la tabla `usuarios`
---
-ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT de la tabla `ventas`
---
-ALTER TABLE `ventas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Restricciones para tablas volcadas
