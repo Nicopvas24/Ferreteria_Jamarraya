@@ -4,7 +4,7 @@
    ============================================================ */
 
 const UsuarioModal = (() => {
-  const API = '/Ferreteria_Jamarraya/php/usuarios.php';
+  const API = '/Ferreteria_Jamarraya/backend/usuarios.php';
   
   // Elementos - serán obtenidos cuando se inicialice
   let modal, form, errorEl;

@@ -41,11 +41,11 @@ function cargar(id, archivo, css = null) {
 // Rutas absolutas — funcionan igual desde cualquier página
 // Solo cargar componentes si sus contenedores existen en la página
 if (document.getElementById('navbar')) {
-  cargar("navbar", "/Ferreteria_Jamarraya/components/navbar.html", "/Ferreteria_Jamarraya/assets/css/header.css");
+  cargar("navbar", "/Ferreteria_Jamarraya/components/layout/navbar.html", "/Ferreteria_Jamarraya/assets/css/header.css");
 }
 
 if (document.getElementById('footer')) {
-  cargar("footer", "/Ferreteria_Jamarraya/components/footer.html", "/Ferreteria_Jamarraya/assets/css/footer.css");
+  cargar("footer", "/Ferreteria_Jamarraya/components/layout/footer.html", "/Ferreteria_Jamarraya/assets/css/footer.css");
 }
 
 

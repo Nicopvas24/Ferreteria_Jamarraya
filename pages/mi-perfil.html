@@ -134,13 +134,13 @@
 
   <script src="../assets/js/include.js"></script>
   <script>
-    const API_CLIENTE = '/Ferreteria_Jamarraya/php/api/clientes.php';
+    const API_CLIENTE = '/Ferreteria_Jamarraya/backend/api/clientes.php';
 
     // Al cargar la página, obtener datos del perfil
     async function cargarPerfil() {
       try {
         // Verificar sesión primero
-        const resVerify = await fetch('/Ferreteria_Jamarraya/php/usuarios.php?accion=verificar');
+        const resVerify = await fetch('/Ferreteria_Jamarraya/backend/usuarios.php?accion=verificar');
         const dataVerify = await resVerify.json();
         
         if (!dataVerify.ok) {

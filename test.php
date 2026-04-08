@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/php/conexion.php';
+require_once __DIR__ . '/backend/conexion.php';
 
 $pdo  = conectar();
 $stmt = $pdo->prepare("SELECT contrasena_hash FROM usuarios WHERE email = 'admin@jamarraya.com'");

@@ -1,7 +1,7 @@
 <?php
 // debug-clientes.php - Verifica si hay clientes en la BD
 
-require_once __DIR__ . '/php/conexion.php';
+require_once __DIR__ . '/backend/conexion.php';
 
 session_start();
 $_SESSION['id_usuario'] = 1; // Simular sesión

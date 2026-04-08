@@ -15,10 +15,10 @@
     cliente:  '/Ferreteria_Jamarraya/pages/index.html',   // index del catálogo
   };
  
-  const API_LOGIN  = '/Ferreteria_Jamarraya/php/usuarios.php';
-  const MODAL_HTML = '/Ferreteria_Jamarraya/components/login-modal.html';
+  const API_LOGIN  = '/Ferreteria_Jamarraya/backend/usuarios.php';
+  const MODAL_HTML = '/Ferreteria_Jamarraya/components/modals/login-modal.html';
   const MODAL_REGISTRO_HTML = '/Ferreteria_Jamarraya/components/registro-modal.html';
-  const MODAL_CSS  = '/Ferreteria_Jamarraya/components/login-modal.css';
+  const MODAL_CSS  = '/Ferreteria_Jamarraya/components/modals/login-modal.css';
   
  
   /* ── Inyectar CSS una sola vez ────────────────────────────── */

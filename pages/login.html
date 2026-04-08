@@ -136,7 +136,7 @@
     });
 
     // Si ya hay sesión activa, redirigir directo al dashboard
-    fetch('../php/usuarios.php?accion=verificar')
+    fetch('../backend/usuarios.php?accion=verificar')
         .then(r => r.json())
         .then(data => {
             if (data.ok) redirigirSegunRol(data.rol);
@@ -163,7 +163,7 @@
         datos.append('email',      email);
         datos.append('contrasena', contrasena);
 
-        fetch('../php/usuarios.php', { method: 'POST', body: datos })
+        fetch('../backend/usuarios.php', { method: 'POST', body: datos })
             .then(r => r.json())
             .then(data => {
                 if (data.ok) {

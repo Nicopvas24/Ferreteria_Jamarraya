@@ -473,7 +473,7 @@ nextBtn?.addEventListener('click', () => {
 ══════════════════════════════════════════ */
 async function cargarProductos() {
   try {
-    const res = await fetch('../php/api/productos.php');
+    const res = await fetch('../backend/api/productos.php');
     if (!res.ok) throw new Error('Error servidor');
 
     const raw = await res.json();

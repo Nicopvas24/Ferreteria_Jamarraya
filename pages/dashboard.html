@@ -144,7 +144,7 @@
 
 <script>
     // ---- Verificar sesión ----
-    fetch('../php/usuarios.php?accion=verificar')
+    fetch('../backend/usuarios.php?accion=verificar')
         .then(r => r.json())
         .then(data => {
             if (!data.ok) {
@@ -158,7 +158,7 @@
 
     // ---- Cerrar sesión ----
     function cerrarSesion() {
-        fetch('../php/usuarios.php', {
+        fetch('../backend/usuarios.php', {
             method: 'POST',
             body: new URLSearchParams({ accion: 'logout' })
         }).then(() => window.location.href = 'login.html');
@@ -166,7 +166,7 @@
 
     // ---- Cargar datos del dashboard ----
     function cargarDashboard() {
-        fetch('../php/dashboard.php')
+        fetch('../backend/dashboard.php')
             .then(r => r.json())
             .then(data => {
                 // Estadísticas
