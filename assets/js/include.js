@@ -1,3 +1,7 @@
+/* ════════════════════════════════════════════════════════════
+   include.js — Carga componentes globales (navbar, footer, login)
+════════════════════════════════════════════════════════════ */
+
 function cargar(id, archivo, css = null) {
   // Inyectar CSS con ID único para evitar duplicados
   if (css) {
@@ -31,24 +35,22 @@ function cargar(id, archivo, css = null) {
         });
 
       } else {
-        console.error(`❌ No existe el elemento con id: "${id}"`);
+        console.error(`❌ No existe elemento con id: "${id}"`);
       }
     })
-    .catch(err => console.error('❌ Error cargando componente:', err));
+    .catch(err => console.error(`❌ Error cargando "${archivo}":`, err));
 }
 
-
-// Rutas absolutas — funcionan igual desde cualquier página
-// Solo cargar componentes si sus contenedores existen en la página
+// Cargar componentes globales (rutas relativas funcionan desde cualquier página)
 if (document.getElementById('navbar')) {
-  cargar("navbar", "/Ferreteria_Jamarraya/components/layout/navbar.html", "/Ferreteria_Jamarraya/assets/css/header.css");
+  cargar("navbar", "../components/layout/navbar.html", "../assets/css/header.css");
 }
 
 if (document.getElementById('footer')) {
-  cargar("footer", "/Ferreteria_Jamarraya/components/layout/footer.html", "/Ferreteria_Jamarraya/assets/css/footer.css");
+  cargar("footer", "../components/layout/footer.html", "../assets/css/footer.css");
 }
 
-
-const s = document.createElement('script');
-s.src = '/Ferreteria_Jamarraya/assets/js/login.js';
-document.body.appendChild(s);
+// Cargar módulo de login
+const loginScript = document.createElement('script');
+loginScript.src = '../assets/js/login.js';
+document.body.appendChild(loginScript);

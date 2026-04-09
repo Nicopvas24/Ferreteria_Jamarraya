@@ -4,7 +4,7 @@
    ============================================================ */
 
 const UsuarioEditModal = (() => {
-  const API = '/Ferreteria_Jamarraya/backend/usuarios.php';
+  const API = '../backend/usuarios.php';
   
   // Elementos - serán obtenidos cuando se inicialice
   let modal, form, errorEl;

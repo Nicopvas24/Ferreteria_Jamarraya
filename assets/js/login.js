@@ -10,15 +10,15 @@
      Ajusta si tu estructura de carpetas cambia
   ─────────────────────────────────────────────────────────── */
   const RUTAS_ROL = {
-    admin:    '/Ferreteria_Jamarraya/pages/dashboard-admin.html',
-    empleado: '/Ferreteria_Jamarraya/pages/dashboard-empleado.html',
-    cliente:  '/Ferreteria_Jamarraya/pages/index.html',   // index del catálogo
+    admin:    './dashboard-admin.html',
+    empleado: './dashboard-empleado.html',
+    cliente:  './index.html',   // index del catálogo
   };
  
-  const API_LOGIN  = '/Ferreteria_Jamarraya/backend/usuarios.php';
-  const MODAL_HTML = '/Ferreteria_Jamarraya/components/modals/login-modal.html';
-  const MODAL_REGISTRO_HTML = '/Ferreteria_Jamarraya/components/registro-modal.html';
-  const MODAL_CSS  = '/Ferreteria_Jamarraya/components/modals/login-modal.css';
+  const API_LOGIN  = '../backend/usuarios.php';
+  const MODAL_HTML = '../components/modals/login-modal.html';
+  const MODAL_REGISTRO_HTML = '../components/registro-modal.html';
+  const MODAL_CSS  = '../components/modals/login-modal.css';
   
  
   /* ── Inyectar CSS una sola vez ────────────────────────────── */
@@ -429,7 +429,7 @@
             .finally(() => {
               sessionStorage.clear();
               // Recargar para resetear el navbar
-              window.location.href = '/Ferreteria_Jamarraya/pages/index.html';
+              window.location.href = './index.html';
             });
         });
       }

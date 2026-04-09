@@ -391,11 +391,11 @@
 
 <script>
 const API = {
-  dashboard:  '/Ferreteria_Jamarraya/backend/dashboard.php',
-  usuarios:   '/Ferreteria_Jamarraya/backend/usuarios.php',
-  productos:  '/Ferreteria_Jamarraya/backend/api/productos.php',
-  ventas:     '/Ferreteria_Jamarraya/backend/api/ventas.php',
-  alquileres: '/Ferreteria_Jamarraya/backend/api/alquileres.php',
+  dashboard:  '../backend/dashboard.php',
+  usuarios:   '../backend/usuarios.php',
+  productos:  '../backend/api/productos.php',
+  ventas:     '../backend/api/ventas.php',
+  alquileres: '../backend/api/alquileres.php',
 };
 
 async function verificarAcceso() {
@@ -410,7 +410,7 @@ async function verificarAcceso() {
       const d = await r.json();
       
       if (!d.ok || d.rol !== 'empleado') {
-        window.location.href = '/Ferreteria_Jamarraya/pages/index.html';
+        window.location.href = './index.html';
         return;
       }
       
@@ -426,7 +426,7 @@ async function verificarAcceso() {
     }
   } catch (e) {
     console.error('Error verificando acceso:', e);
-    window.location.href = '/Ferreteria_Jamarraya/pages/index.html';
+    window.location.href = './index.html';
   }
 }
 
@@ -462,7 +462,7 @@ function estadoBadge(estado) {
 async function cargarDashboard() {
   try {
     const r = await fetch(API.dashboard);
-    if (r.status === 401) { window.location.href='/Ferreteria_Jamarraya/pages/index.html'; return; }
+    if (r.status === 401) { window.location.href='./index.html'; return; }
     const d = await r.json();
 
     document.getElementById('kpiVentasHoy').textContent  = d.ventas_hoy;
@@ -579,7 +579,7 @@ async function cargarInventario() {
 document.getElementById('btnLogout').addEventListener('click', async () => {
   await fetch(API.usuarios + '?accion=logout').catch(()=>{});
   sessionStorage.clear();
-  window.location.href = '/Ferreteria_Jamarraya/pages/index.html';
+  window.location.href = './index.html';
 });
 
 document.querySelectorAll('.nav-item[data-section]').forEach(item => {

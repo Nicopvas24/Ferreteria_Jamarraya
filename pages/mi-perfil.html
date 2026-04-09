@@ -5,244 +5,128 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mi Perfil — Ferreteria Jamarraya</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../assets/css/styles.css" />
-  <style>
-    .perfil-container {
-      max-width: 600px; margin: 2rem auto; padding: 0 1rem;
-      background: var(--dark-2); border: 1px solid rgba(255,255,255,.1);
-      border-radius: 8px; padding: 2rem;
-    }
-    .perfil-header {
-      margin-bottom: 2rem; text-align: center;
-    }
-    .perfil-header h1 {
-      font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;
-      color: var(--text);
-    }
-    .perfil-header p {
-      font-size: 0.9rem; color: var(--text-muted);
-    }
-    .form-group {
-      display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;
-    }
-    .form-group label {
-      font-size: 0.85rem; font-weight: 600; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: 0.05em;
-    }
-    .form-group input, .form-group textarea {
-      background: var(--dark-3); border: 1px solid rgba(255,255,255,.1);
-      border-radius: 6px; padding: 0.75rem; color: var(--text);
-      font-size: 0.95rem; outline: none;
-    }
-    .form-group input:focus, .form-group textarea:focus {
-      border-color: var(--orange); box-shadow: 0 0 0 3px rgba(249,115,22,.1);
-    }
-    .form-group textarea { resize: vertical; min-height: 100px; }
-    .form-group.readonly input {
-      background: var(--dark-4); color: var(--text-muted); cursor: not-allowed;
-    }
-    .form-group.readonly input:focus {
-      border-color: rgba(255,255,255,.1);
-    }
-    .alert {
-      padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;
-      font-size: 0.9rem;
-    }
-    .alert-error {
-      background: rgba(248,81,73,.15); color: var(--red);
-      border: 1px solid rgba(248,81,73,.3);
-    }
-    .alert-success {
-      background: rgba(63,185,80,.15); color: var(--green);
-      border: 1px solid rgba(63,185,80,.3);
-    }
-    .alert { display: none; }
-    .alert.show { display: block; }
-    .form-actions {
-      display: flex; gap: 0.75rem; margin-top: 2rem;
-    }
-    .btn {
-      flex: 1; padding: 0.75rem 1.5rem; border: none;
-      border-radius: 6px; font-weight: 600; cursor: pointer;
-      transition: all 0.25s;
-    }
-    .btn-primary {
-      background: var(--orange); color: white;
-    }
-    .btn-primary:hover { background: var(--orange-dark); }
-    .btn-ghost {
-      background: transparent; color: var(--text); 
-      border: 1px solid rgba(255,255,255,.2);
-    }
-    .btn-ghost:hover { border-color: var(--orange); color: var(--orange); }
-    .loading { opacity: 0.6; pointer-events: none; }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/header.css" />
+  <link rel="stylesheet" href="../assets/css/perfil.css" />
 </head>
 <body>
+
   <div id="navbar"></div>
 
-  <section class="perfil-container" style="margin-top: 100px;">
-    <div class="perfil-header">
-      <h1>Mi Perfil</h1>
-      <p>Actualiza tus datos de cliente</p>
+  <div id="perfil-page">
+
+    <!-- ── HERO ── -->
+    <div class="pf-hero">
+      <div class="pf-hero-bg"></div>
+      <div class="pf-container">
+        <span class="pf-badge">Cuenta</span>
+        <h1>Mi <em>Perfil</em></h1>
+        <p>Consulta y actualiza tus datos de contacto.</p>
+      </div>
     </div>
 
-    <div id="alertError" class="alert alert-error"></div>
-    <div id="alertSuccess" class="alert alert-success"></div>
+    <div class="pf-container pf-layout">
 
-    <form id="formPerfil" novalidate>
-      <!-- Datos de usuario (solo lectura) -->
-      <h3 style="color:var(--text-muted);font-size:0.9rem;text-transform:uppercase;margin-bottom:1rem;margin-top:1rem">Datos de Cuenta</h3>
+      <!-- ── SIDEBAR USUARIO ── -->
+      <aside class="pf-sidebar">
+        <div class="pf-avatar">
+          <span id="pf-avatar-letra">?</span>
+        </div>
+        <h3 id="pf-sidebar-nombre">Cargando...</h3>
+        <span class="pf-rol-badge" id="pf-rol-badge">—</span>
 
-      <div class="form-group readonly">
-        <label for="per_nombre">Nombre Completo</label>
-        <input type="text" id="per_nombre" readonly/>
+        <nav class="pf-nav">
+          <a href="#datos-cuenta" class="pf-nav-link active">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Datos de cuenta
+          </a>
+          <a href="#datos-contacto" class="pf-nav-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 3.07 10.8 19.79 19.79 0 0 1 .22 2.18 2 2 0 0 1 2.18 0h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L6.91 7.91a16 16 0 0 0 6.29 6.29l1.28-1.28a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Datos de contacto
+          </a>
+          <a href="#" class="pf-nav-link pf-logout" id="pf-logout">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Cerrar sesión
+          </a>
+        </nav>
+      </aside>
+
+      <!-- ── FORMULARIO ── -->
+      <div class="pf-content">
+
+        <div id="pf-alert-error"   class="pf-alert pf-alert-error"></div>
+        <div id="pf-alert-success" class="pf-alert pf-alert-success"></div>
+
+        <form id="pf-form" novalidate>
+
+          <!-- Datos cuenta (solo lectura) -->
+          <div class="pf-card" id="datos-cuenta">
+            <div class="pf-card-header">
+              <span class="pf-section-label">01 / Datos de cuenta</span>
+              <span class="pf-readonly-tag">Solo lectura</span>
+            </div>
+            <div class="pf-grid-2">
+              <div class="pf-field pf-readonly">
+                <label>Nombre completo</label>
+                <input type="text" id="per_nombre" readonly placeholder="—" />
+              </div>
+              <div class="pf-field pf-readonly">
+                <label>Correo electrónico</label>
+                <input type="email" id="per_email" readonly placeholder="—" />
+              </div>
+              <div class="pf-field pf-readonly">
+                <label>Identificación (Cédula / NIT)</label>
+                <input type="text" id="per_identificacion" readonly placeholder="—" />
+              </div>
+              <div class="pf-field pf-readonly">
+                <label>Rol</label>
+                <input type="text" id="per_rol" readonly placeholder="—" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Datos contacto (editables) -->
+          <div class="pf-card" id="datos-contacto">
+            <div class="pf-card-header">
+              <span class="pf-section-label">02 / Datos de contacto</span>
+              <span class="pf-editable-tag">Editable</span>
+            </div>
+            <div class="pf-grid-2">
+              <div class="pf-field">
+                <label for="per_telefono">Teléfono / WhatsApp</label>
+                <input type="tel" id="per_telefono" placeholder="+57 300 000 0000" />
+              </div>
+              <div class="pf-field">
+                <label for="per_ciudad">Ciudad</label>
+                <input type="text" id="per_ciudad" placeholder="Apia, Risaralda" />
+              </div>
+              <div class="pf-field pf-field-full">
+                <label for="per_direccion">Dirección</label>
+                <textarea id="per_direccion" rows="3" placeholder="Calle 10 # 20-30"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="pf-actions">
+            <button type="submit" class="pf-btn-primary" id="pf-submit">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Guardar cambios
+            </button>
+            <button type="button" class="pf-btn-ghost" onclick="window.history.back()">
+              Atrás
+            </button>
+          </div>
+
+        </form>
       </div>
 
-      <div class="form-group readonly">
-        <label for="per_email">Email</label>
-        <input type="email" id="per_email" readonly/>
-      </div>
-
-      <div class="form-group readonly">
-        <label for="per_identificacion">Identificación (Cédula/NIT)</label>
-        <input type="text" id="per_identificacion" readonly/>
-      </div>
-
-      <!-- Datos de cliente (editables) -->
-      <h3 style="color:var(--text-muted);font-size:0.9rem;text-transform:uppercase;margin-bottom:1rem;margin-top:2rem">Datos de Contacto</h3>
-
-      <div class="form-group">
-        <label for="per_telefono">Teléfono</label>
-        <input type="tel" id="per_telefono" placeholder="+57 300 000 0000"/>
-      </div>
-
-      <div class="form-group">
-        <label for="per_direccion">Dirección</label>
-        <textarea id="per_direccion" placeholder="Calle 10 # 20-30"></textarea>
-      </div>
-
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-        <button type="button" class="btn btn-ghost" onclick="window.history.back()">Atrás</button>
-      </div>
-    </form>
-  </section>
+    </div>
+  </div><!-- /#perfil-page -->
 
   <div id="footer"></div>
 
   <script src="../assets/js/include.js"></script>
-  <script>
-    const API_CLIENTE = '/Ferreteria_Jamarraya/backend/api/clientes.php';
-
-    // Al cargar la página, obtener datos del perfil
-    async function cargarPerfil() {
-      try {
-        // Verificar sesión primero
-        const resVerify = await fetch('/Ferreteria_Jamarraya/backend/usuarios.php?accion=verificar');
-        const dataVerify = await resVerify.json();
-        
-        if (!dataVerify.ok) {
-          alert('Debes iniciar sesión primero');
-          window.location.href = '/Ferreteria_Jamarraya/pages/index.html';
-          return;
-        }
-
-        // Si es cliente, obtener su perfil
-        if (dataVerify.rol === 'cliente') {
-          // Obtener ID de usuario desde sessionStorage
-          const nombreUsuario = sessionStorage.getItem('jm_nombre');
-          
-          // Cargar perfil del cliente 
-          // Realmente necesitaríamos el ID del cliente, que obtenemos del API de búsqueda
-          const resClientes = await fetch(`${API_CLIENTE}?accion=listar&buscar=${encodeURIComponent(nombreUsuario)}`);
-          const clientes = await resClientes.json();
-          
-          if (clientes.length > 0) {
-            const cliente = clientes[0];
-            document.getElementById('per_nombre').value = cliente.nombre || '';
-            document.getElementById('per_email').value = cliente.email || '';
-            document.getElementById('per_identificacion').value = cliente.identificacion || '';
-            document.getElementById('per_telefono').value = cliente.telefono || '';
-            document.getElementById('per_direccion').value = cliente.direccion || '';
-
-            // Guardar ID del cliente para luego
-            window.clienteId = cliente.id;
-            window.usuarioNombre = nombreUsuario;
-          }
-        }
-      } catch (error) {
-        console.error('Error cargando perfil:', error);
-        mostrarError('Error al cargar tu perfil');
-      }
-    }
-
-    function mostrarError(msg) {
-      const el = document.getElementById('alertError');
-      el.textContent = msg;
-      el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), 5000);
-    }
-
-    function mostrarExito(msg) {
-      const el = document.getElementById('alertSuccess');
-      el.textContent = msg;
-      el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), 5000);
-    }
-
-    // Handle submit del formulario
-    document.getElementById('formPerfil').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      if (!window.clienteId) {
-        mostrarError('No se encontró tu perfil de cliente');
-        return;
-      }
-
-      const form = e.target;
-      form.classList.add('loading');
-
-      try {
-        const response = await fetch(API_CLIENTE, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            accion: 'editar',
-            id: window.clienteId,
-            nombre: document.getElementById('per_nombre').value,
-            identificacion: document.getElementById('per_identificacion').value,
-            email: document.getElementById('per_email').value,
-            telefono: document.getElementById('per_telefono').value || null,
-            direccion: document.getElementById('per_direccion').value || null
-          })
-        });
-
-        const data = await response.json();
-
-        if (data.ok) {
-          mostrarExito('✓ Perfil actualizado correctamente');
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
-        } else {
-          mostrarError(data.error || data.mensaje || 'Error al actualizar');
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        mostrarError('Error de conexión');
-      } finally {
-        form.classList.remove('loading');
-      }
-    });
-
-    // Cargar perfil cuando la página esté lista
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', cargarPerfil);
-    } else {
-      cargarPerfil();
-    }
-  </script>
+  <script src="../assets/js/perfil.js"></script>
 </body>
 </html>

@@ -269,6 +269,11 @@ switch ($accion) {
             echo json_encode(['ok' => false, 'mensaje' => 'Error al registrar: ' . $e->getMessage()]);
         }
         break;
+
+    // ----------------------------------------------------------
+    //  LOGOUT
+    // ----------------------------------------------------------
+    case 'logout':
         session_destroy();
         echo json_encode(['ok' => true]);
         break;
