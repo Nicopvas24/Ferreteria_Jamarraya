@@ -9,19 +9,51 @@ require_once __DIR__ . '/../conexion.php';
 
 session_start();
 
-if (!isset($_SESSION['id_usuario'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'No autorizado']);
-    exit;
-}
-
 $pdo    = conectar();
-$accion = $_GET['accion'] ?? $_POST['accion'] ?? 'listar';
+$accion = $_GET['accion'] ?? $_POST['accion'] ?? 'equipos';
 
 switch ($accion) {
 
     // ----------------------------------------------------------
-    //  LISTAR
+    //  LISTAR EQUIPOS DISPONIBLES (DEFAULT)
+    // ----------------------------------------------------------
+    case 'equipos':
+        $cat = $_GET['categoria'] ?? null;
+
+        try {
+            // Traer equipos desde tabla maquinaria
+            // Campos: id, nombre, descripcion, estado, tarifa_alquiler, activo, img
+            $stmt = $pdo->query("
+                SELECT id, nombre, descripcion, estado,
+                       tarifa_alquiler, activo, img
+                FROM maquinaria
+                WHERE activo = 1
+                ORDER BY nombre ASC
+            ");
+
+            $equipos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($equipos as &$e) {
+                $e['id']           = (int)$e['id'];
+                $e['tarifa_diaria']= (float)$e['tarifa_alquiler'];
+                $e['stock_actual'] = (int)$e['activo'];
+                $e['disponible']   = (bool)$e['activo'];
+                $e['img']          = $e['img'] ?? 'default.png';
+                // Remover campos originales
+                unset($e['tarifa_alquiler']);
+                unset($e['activo']);
+            }
+
+            echo json_encode($equipos);
+
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al consultar equipos']);
+        }
+        break;
+
+    // ----------------------------------------------------------
+    //  LISTAR ALQUILERES REALIZADOS
     // ----------------------------------------------------------
     case 'listar':
         $estado = $_GET['estado'] ?? null;

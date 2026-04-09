@@ -1,0 +1,991 @@
+/* ══════════════════════════════════════════
+   FERRETERÍA JAMARRAYA – Alquileres
+   Prefijo "alq-" para aislar estilos.
+   Scope: #alq-page
+══════════════════════════════════════════ */
+
+#alq-page *, #alq-page *::before, #alq-page *::after { box-sizing: border-box; }
+
+#alq-page {
+  background: #0f0f0f;
+  color: #ffffff;
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── CONTAINER ── */
+#alq-page .alq-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ══════════════════════════════════════════
+   HERO
+══════════════════════════════════════════ */
+#alq-page .alq-hero {
+  position: relative;
+  padding: 80px 0 52px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  overflow: hidden;
+}
+#alq-page .alq-hero-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(63,185,80,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(63,185,80,0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+  pointer-events: none;
+}
+#alq-page .alq-hero .alq-badge {
+  display: inline-block;
+  border: 1.5px solid rgba(255,107,0,0.45);
+  color: #FF6B00;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 5px 16px;
+  border-radius: 100px;
+  margin-bottom: 16px;
+}
+#alq-page .alq-hero h1 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(2.4rem, 6vw, 4.2rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 1;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+  color: #fff;
+}
+#alq-page .alq-hero h1 em { font-style: normal; color: #FF6B00; }
+#alq-page .alq-hero p { color: rgba(255,255,255,0.5); font-size: 1rem; }
+
+/* ══════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════ */
+#alq-page .alq-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 36px;
+  padding-top: 36px;
+  padding-bottom: 60px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  #alq-page .alq-layout { grid-template-columns: 1fr; }
+}
+
+/* ══════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════ */
+#alq-page .alq-sidebar {
+  background: #141414;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 24px;
+  position: sticky;
+  top: 84px;
+}
+@media (max-width: 900px) {
+  #alq-page .alq-sidebar {
+    position: static;
+    display: none;
+  }
+  #alq-page .alq-sidebar.open { display: block; }
+}
+#alq-page .alq-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+#alq-page .alq-sidebar-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+#alq-page .alq-clear-filters {
+  background: none;
+  border: none;
+  color: #FF6B00;
+  font-family: 'Barlow', sans-serif;
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity .2s;
+}
+#alq-page .alq-clear-filters:hover { opacity: .7; }
+
+#alq-page .alq-filter-group { margin-bottom: 24px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px; }
+#alq-page .alq-filter-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 12px;
+}
+
+/* Categorías */
+#alq-page .alq-cat-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+#alq-page .alq-cat-btn {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-family: 'Barlow', sans-serif;
+  font-size: .92rem;
+  font-weight: 500;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+#alq-page .alq-cat-btn:hover { background: rgba(63,185,80,0.08); color: #fff; }
+#alq-page .alq-cat-btn.active {
+  background: rgba(255,107,0,0.14);
+  color: #FF6B00;
+  font-weight: 700;
+}
+
+/* Rango precio */
+#alq-page .alq-range {
+  width: 100%;
+  accent-color: #FF6B00;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+#alq-page .alq-price-display {
+  display: flex;
+  justify-content: space-between;
+  font-size: .82rem;
+  color: rgba(255,255,255,0.5);
+}
+#alq-page #alq-price-val { color: #FF6B00; font-weight: 700; }
+
+/* Checkbox */
+#alq-page .alq-check-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: .92rem;
+  color: rgba(255,255,255,0.7);
+  user-select: none;
+}
+#alq-page .alq-check { display: none; }
+#alq-page .alq-checkmark {
+  width: 18px; height: 18px;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .2s, background .2s;
+}
+#alq-page .alq-check:checked + .alq-checkmark {
+  background: #FF6B00;
+  border-color: #FF6B00;
+}
+#alq-page .alq-check:checked + .alq-checkmark::after {
+  content: '✓';
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Badge filters */
+#alq-page .alq-badge-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+#alq-page .alq-badge-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
+  font-family: 'Barlow', sans-serif;
+  font-size: .78rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all .2s;
+}
+#alq-page .alq-badge-btn:hover,
+#alq-page .alq-badge-btn.active {
+  background: rgba(255,107,0,0.15);
+  border-color: rgba(255,107,0,0.4);
+  color: #FF6B00;
+}
+
+/* ══════════════════════════════════════════
+   TOPBAR
+══════════════════════════════════════════ */
+#alq-page .alq-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+#alq-page .alq-results-info {
+  font-size: .88rem;
+  color: rgba(255,255,255,0.45);
+  font-weight: 500;
+}
+#alq-page .alq-topbar-right { display: flex; align-items: center; gap: 10px; }
+
+#alq-page .alq-sort {
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  font-family: 'Barlow', sans-serif;
+  font-size: .88rem;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  outline: none;
+}
+#alq-page .alq-sort:focus { border-color: #FF6B00; }
+
+#alq-page .alq-view-toggle { display: flex; gap: 4px; }
+#alq-page .alq-view-btn {
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.4);
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all .2s;
+}
+#alq-page .alq-view-btn.active,
+#alq-page .alq-view-btn:hover { border-color: #FF6B00; color: #FF6B00; }
+
+#alq-page .alq-filter-toggle {
+  display: none;
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  font-family: 'Barlow', sans-serif;
+  font-size: .85rem;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  gap: 6px;
+  align-items: center;
+}
+@media (max-width: 900px) { #alq-page .alq-filter-toggle { display: flex; } }
+
+/* ══════════════════════════════════════════
+   GRILLA DE EQUIPOS
+══════════════════════════════════════════ */
+#alq-page .alq-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+@media (max-width: 1100px) { #alq-page .alq-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px)  { #alq-page .alq-grid { grid-template-columns: 1fr; } }
+
+/* Vista lista */
+#alq-page .alq-grid.list-view {
+  grid-template-columns: 1fr;
+}
+#alq-page .alq-grid.list-view .alq-card {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 0;
+}
+#alq-page .alq-grid.list-view .alq-card-img-wrap { aspect-ratio: 1; }
+#alq-page .alq-grid.list-view .alq-card-body { padding: 20px 24px; display: flex; flex-direction: column; justify-content: space-between; }
+
+/* ── TARJETA ── */
+#alq-page .alq-card {
+  background: #141414;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .25s, transform .25s, box-shadow .25s;
+  position: relative;
+}
+#alq-page .alq-card:hover {
+  border-color: rgba(255,107,0,0.35);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+
+/* Imagen */
+#alq-page .alq-card-img-wrap {
+  position: relative;
+  aspect-ratio: 4/3;
+  background: #1c1c1c;
+  overflow: hidden;
+}
+#alq-page .alq-card-img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  padding: 16px;
+  transition: transform .35s ease;
+}
+#alq-page .alq-card:hover .alq-card-img { transform: scale(1.05); }
+
+/* Badge */
+#alq-page .alq-card-tag {
+  position: absolute;
+  top: 10px; left: 10px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  z-index: 2;
+}
+#alq-page .alq-card-tag.diario    { background: #FF6B00; color: #fff; }
+#alq-page .alq-card-tag.semanal   { background: #58a6ff; color: #fff; }
+#alq-page .alq-card-tag.mensual   { background: #d29922; color: #000; }
+
+/* Disponibilidad badge */
+#alq-page .alq-availability-tag {
+  position: absolute;
+  bottom: 10px; left: 10px;
+  background: rgba(255,107,0,0.18);
+  border: 1px solid rgba(255,107,0,0.35);
+  color: #FF6B00;
+  font-size: .72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 4px;
+  letter-spacing: .5px;
+}
+
+/* Cuerpo tarjeta */
+#alq-page .alq-card-body { padding: 16px; }
+#alq-page .alq-card-brand {
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 4px;
+  display: block;
+}
+#alq-page .alq-card-name {
+  font-family: 'Barlow', sans-serif;
+  font-size: .95rem;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.4;
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+#alq-page .alq-card-price {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #FF6B00;
+}
+#alq-page .alq-card-price-old {
+  font-size: .82rem;
+  color: rgba(255,255,255,0.3);
+  text-decoration: line-through;
+  margin-left: 6px;
+}
+#alq-page .alq-card-price-label {
+  font-size: .7rem;
+  color: rgba(255,255,255,0.4);
+  display: block;
+  margin-top: 2px;
+}
+#alq-page .alq-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+#alq-page .alq-card-stock {
+  font-size: .75rem;
+  color: rgba(255,255,255,0.35);
+}
+#alq-page .alq-card-stock.ok { color: #4caf50; }
+#alq-page .alq-card-stock.low { color: #ff9800; }
+#alq-page .alq-card-stock.out { color: rgba(255,255,255,0.25); }
+
+#alq-page .alq-add-btn {
+  background: #FF6B00;
+  color: #fff;
+  border: none;
+  font-family: 'Barlow', sans-serif;
+  font-size: .8rem;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .2s, transform .15s;
+  white-space: nowrap;
+}
+#alq-page .alq-add-btn:hover { background: #FF8C33; transform: scale(1.04); }
+#alq-page .alq-add-btn:disabled {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.25);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Sin resultados */
+#alq-page .alq-empty {
+  grid-column: 1/-1;
+  text-align: center;
+  padding: 80px 20px;
+  color: rgba(255,255,255,0.3);
+}
+#alq-page .alq-empty svg { stroke: rgba(63,185,80,0.3); margin-bottom: 16px; }
+#alq-page .alq-empty p { font-size: 1rem; }
+
+/* ══════════════════════════════════════════
+   PAGINACIÓN
+══════════════════════════════════════════ */
+#alq-page .alq-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 40px;
+  flex-wrap: wrap;
+}
+#alq-page .alq-page-btn {
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
+  font-family: 'Barlow', sans-serif;
+  font-size: .85rem;
+  font-weight: 600;
+  padding: 9px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all .2s;
+}
+#alq-page .alq-page-btn:hover:not(:disabled) { border-color: #FF6B00; color: #FF6B00; }
+#alq-page .alq-page-btn:disabled { opacity: .3; cursor: not-allowed; }
+#alq-page .alq-pages { display: flex; gap: 6px; }
+#alq-page .alq-page-num {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: rgba(255,255,255,0.6);
+  transition: all .2s;
+}
+#alq-page .alq-page-num.active,
+#alq-page .alq-page-num:hover { background: #FF6B00; border-color: #FF6B00; color: #fff; }
+
+/* ══════════════════════════════════════════
+   MODAL DETALLE
+══════════════════════════════════════════ */
+#alq-page .alq-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .25s, visibility .25s;
+  z-index: 100;
+}
+#alq-page .alq-modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+#alq-page .alq-modal {
+  background: #141414;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  position: relative;
+}
+@media (max-width: 600px) {
+  #alq-page .alq-modal {
+    grid-template-columns: 1fr;
+    max-height: 95vh;
+  }
+}
+#alq-page .alq-modal-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  z-index: 101;
+  transition: color .2s;
+}
+#alq-page .alq-modal-close:hover { color: #FF6B00; }
+#alq-page .alq-modal-img-wrap {
+  background: #1c1c1c;
+  aspect-ratio: 1;
+  position: relative;
+  overflow: hidden;
+}
+#alq-page .alq-modal-img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  padding: 20px;
+}
+#alq-page .alq-modal-badge-tag {
+  position: absolute;
+  top: 12px; left: 12px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 4px;
+  background: #FF6B00;
+  color: #fff;
+}
+#alq-page .alq-modal-info {
+  padding: 24px;
+}
+#alq-page .alq-modal-cat {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  display: block;
+  margin-bottom: 6px;
+}
+#alq-page .alq-modal-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+#alq-page .alq-modal-brand {
+  font-size: .82rem;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 12px;
+}
+#alq-page .alq-modal-desc {
+  font-size: .85rem;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+#alq-page .alq-modal-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+#alq-page .alq-modal-price {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #FF6B00;
+}
+#alq-page .alq-modal-stock {
+  font-size: .8rem;
+  color: rgba(255,255,255,0.4);
+}
+
+/* Selectores de fecha para alquiler */
+#alq-page .alq-modal-date-range {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+#alq-page .alq-modal-date-range label {
+  font-size: .8rem;
+  color: rgba(255,255,255,0.5);
+  font-weight: 600;
+}
+#alq-page .alq-date-input {
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  font-family: 'Barlow', sans-serif;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: .85rem;
+}
+#alq-page .alq-date-input:focus {
+  outline: none;
+  border-color: #FF6B00;
+}
+
+/* Cantidad */
+#alq-page .alq-modal-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+#alq-page .alq-qty-wrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  background: #1a1a1a;
+}
+#alq-page .alq-qty-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1.1rem;
+  transition: color .2s;
+}
+#alq-page .alq-qty-btn:hover { color: #FF6B00; }
+#alq-page .alq-qty-val {
+  display: inline-block;
+  width: 40px;
+  text-align: center;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Botón agregar/solicitar */
+#alq-page .alq-add-cart-big {
+  flex: 1;
+  background: #FF6B00;
+  color: #fff;
+  border: none;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .9rem;
+  font-weight: 700;
+  padding: 12px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: background .2s;
+}
+#alq-page .alq-add-cart-big:hover { background: #FF8C33; }
+
+/* ══════════════════════════════════════════
+   CARRITO FLOTANTE
+══════════════════════════════════════════ */
+#alq-page .alq-cart-fab {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  width: 56px; height: 56px;
+  background: #FF6B00;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(63,185,80,0.3);
+  transition: all .2s;
+  z-index: 50;
+}
+#alq-page .alq-cart-fab:hover { background: #FF8C33; transform: scale(1.08); }
+#alq-page .alq-cart-fab svg { stroke: #fff; }
+#alq-page .alq-cart-count {
+  position: absolute;
+  top: -6px; right: -6px;
+  background: #f85149;
+  color: #fff;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .7rem;
+  font-weight: 800;
+  border: 2px solid #0f0f0f;
+}
+
+/* ══════════════════════════════════════════
+   PANEL CARRITO
+══════════════════════════════════════════ */
+#alq-page .alq-cart-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .25s, visibility .25s;
+  z-index: 40;
+}
+#alq-page .alq-cart-overlay.active { opacity: 1; visibility: visible; }
+
+#alq-page .alq-cart-panel {
+  position: fixed;
+  right: 0; top: 0; bottom: 0;
+  width: 360px;
+  background: #0f0f0f;
+  border-left: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .25s;
+  z-index: 41;
+}
+#alq-page .alq-cart-panel.active { transform: translateX(0); }
+@media (max-width: 480px) {
+  #alq-page .alq-cart-panel { width: 100%; }
+}
+
+#alq-page .alq-cart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+#alq-page .alq-cart-header h3 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+#alq-page .alq-cart-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: rgba(255,255,255,0.3);
+  cursor: pointer;
+  transition: color .2s;
+}
+#alq-page .alq-cart-close:hover { color: #FF6B00; }
+
+#alq-page .alq-cart-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+#alq-page .alq-cart-empty {
+  text-align: center;
+  color: rgba(255,255,255,0.3);
+  padding: 40px 20px;
+  font-size: .9rem;
+}
+
+#alq-page .alq-cart-item {
+  background: #141414;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  gap: 12px;
+}
+#alq-page .alq-cart-item-img {
+  width: 60px; height: 60px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  object-fit: contain;
+  padding: 4px;
+  flex-shrink: 0;
+}
+#alq-page .alq-cart-item-info {
+  flex: 1;
+}
+#alq-page .alq-cart-item-name {
+  font-size: .8rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+#alq-page .alq-cart-item-dates {
+  font-size: .7rem;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 4px;
+}
+#alq-page .alq-cart-item-price {
+  font-size: .85rem;
+  font-weight: 700;
+  color: #FF6B00;
+}
+
+#alq-page .alq-cart-footer {
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding: 16px 24px 20px;
+}
+#alq-page .alq-cart-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: .9rem;
+  color: rgba(255,255,255,0.7);
+}
+#alq-page .alq-cart-total-row strong {
+  color: #FF6B00;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.2rem;
+}
+#alq-page .alq-cart-cta {
+  width: 100%;
+  background: #FF6B00;
+  color: #fff;
+  border: none;
+  font-family: 'Barlow', sans-serif;
+  font-size: .9rem;
+  font-weight: 700;
+  padding: 12px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .2s;
+}
+#alq-page .alq-cart-cta:hover { background: #FF8C33; }
+
+/* ══════════════════════════════════════════
+   DURACIÓN DE ALQUILER
+══════════════════════════════════════════ */
+#alq-page .alq-duration-filters { 
+  display: flex; 
+  gap: 6px; 
+  flex-wrap: wrap; 
+}
+
+#alq-page .alq-duration-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
+  font-family: 'Barlow', sans-serif;
+  font-size: .78rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+#alq-page .alq-duration-btn:hover,
+#alq-page .alq-duration-btn.active {
+  background: rgba(255,107,0,0.15);
+  border-color: rgba(255,107,0,0.4);
+  color: #FF6B00;
+}
+
+/* ══════════════════════════════════════════
+   CARD PERIOD
+══════════════════════════════════════════ */
+#alq-page .alq-card-period {
+  font-size: .75rem;
+  color: rgba(255,255,255,0.4);
+  margin-left: 2px;
+}
+
+/* ══════════════════════════════════════════
+   MODAL OPEN STATE
+══════════════════════════════════════════ */
+#alq-page .alq-modal-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+#alq-page .alq-cart-panel.open {
+  transform: translateX(0);
+}
+
+#alq-page .alq-cart-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ══════════════════════════════════════════
+   CART ITEM QUANTITY CONTROLS
+══════════════════════════════════════════ */
+#alq-page .alq-cart-qty-mini {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  padding: 3px 6px;
+  margin-top: 4px;
+}
+
+#alq-page .alq-cart-qty-mini button {
+  background: none;
+  border: none;
+  color: #FF6B00;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity .2s;
+  font-size: .8rem;
+}
+
+#alq-page .alq-cart-qty-mini button:hover {
+  opacity: .7;
+}
+
+#alq-page .alq-cart-qty-mini span {
+  font-size: .75rem;
+  min-width: 20px;
+  text-align: center;
+  color: rgba(255,255,255,0.7);
+}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════ */
+@media (max-width: 1100px) {
+  #alq-page .alq-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 560px) {
+  #alq-page .alq-grid { grid-template-columns: 1fr; }
+  #alq-page .alq-layout { grid-template-columns: 1fr; }
+  #alq-page .alq-sidebar {
+    position: static;
+    display: none;
+  }
+  #alq-page .alq-sidebar.open { display: block; }
+}
