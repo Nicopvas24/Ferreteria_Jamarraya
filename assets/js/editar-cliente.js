@@ -180,7 +180,10 @@ const ClienteEditModal = (() => {
    */
   const cerrar = () => {
     const modal = document.getElementById('modalEditarCliente');
-    if (modal) modal.classList.remove('active');
+    if (modal) {
+      modal.classList.remove('active');
+      clearForm();
+    }
     clienteActualId = null;
   };
 

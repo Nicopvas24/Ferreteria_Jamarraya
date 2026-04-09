@@ -102,9 +102,16 @@
       overlay.classList.remove('active');
       document.body.style.overflow = '';
       limpiarError();
+      // Limpiar formulario
+      document.getElementById('lm-email').value = '';
+      document.getElementById('lm-pass').value = '';
     } else if (modal) {
       modal.classList.remove('open');
       document.body.style.overflow = '';
+      limpiarError();
+      // Limpiar formulario
+      document.getElementById('lm-email').value = '';
+      document.getElementById('lm-pass').value = '';
     }
   }
  
@@ -129,6 +136,30 @@
     btn.disabled = estado;
     if (texto)   texto.style.display  = estado ? 'none'         : '';
     if (spinner) spinner.hidden        = !estado;
+  }
+ 
+  /* ── Validar contraseña según requisitos de ciberseguridad ─────────────────────────────── */
+  function validarContrasena(pass) {
+    const requisitos = {
+      minimo: pass.length >= 8,
+      mayuscula: /[A-Z]/.test(pass),
+      minuscula: /[a-z]/.test(pass),
+      numero: /[0-9]/.test(pass),
+      especial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pass)
+    };
+    
+    const cumpleTodos = Object.values(requisitos).every(r => r);
+    
+    if (!cumpleTodos) {
+      const faltantes = [];
+      if (!requisitos.minimo) faltantes.push('8+ caracteres');
+      if (!requisitos.mayuscula) faltantes.push('Mayúscula');
+      if (!requisitos.minuscula) faltantes.push('Minúscula');
+      if (!requisitos.numero) faltantes.push('Número');
+      if (!requisitos.especial) faltantes.push('Símbolo especial');
+      return { valida: false, mensaje: 'Requisitos: ' + faltantes.join(', ') };
+    }
+    return { valida: true };
   }
  
   /* ── Submit del formulario ───────────────────────────────── */
@@ -255,8 +286,9 @@
       return;
     }
 
-    if (contrasena.length < 6) {
-      mostrarErrorRegistro('La contraseña debe tener mínimo 6 caracteres.');
+    const validation = validarContrasena(contrasena);
+    if (!validation.valida) {
+      mostrarErrorRegistro(validation.mensaje);
       return;
     }
 
@@ -304,6 +336,12 @@
       overlay.classList.remove('active');
       document.body.style.overflow = '';
       limpiarErrorRegistro();
+      // Limpiar formulario de registro
+      document.getElementById('reg-nombre').value = '';
+      document.getElementById('reg-identificacion').value = '';
+      document.getElementById('reg-email').value = '';
+      document.getElementById('reg-pass').value = '';
+      document.getElementById('reg-confirmar').value = '';
     }
   }
 

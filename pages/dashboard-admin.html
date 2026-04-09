@@ -152,9 +152,9 @@
           </div>
           <div class="panel__body">
             <div class="filter-bar" style="margin-bottom:1rem">
-              <label>Desde</label>
+              <label for="ventaDesde">Desde</label>
               <input type="date" id="ventaDesde"/>
-              <label>Hasta</label>
+              <label for="ventaHasta">Hasta</label>
               <input type="date" id="ventaHasta"/>
               <button class="btn-sm btn-orange" onclick="cargarVentas()">Filtrar</button>
             </div>
@@ -182,7 +182,7 @@
           </div>
           <div class="panel__body">
             <div class="filter-bar" style="margin-bottom:1rem">
-              <label>Estado</label>
+              <label for="filtroEstadoAlquiler">Estado</label>
               <select id="filtroEstadoAlquiler">
                 <option value="">Todos</option>
                 <option value="activo">Activos</option>
@@ -217,7 +217,7 @@
           </div>
           <div class="panel__body">
             <div class="filter-bar" style="margin-bottom:1rem">
-              <label>Categoría</label>
+              <label for="filtroCategoria">Categoría</label>
               <select id="filtroCategoria">
                 <option value="">Todas</option>
                 <option>Herramientas Manuales</option>
@@ -400,48 +400,56 @@
 <!-- Contenedor para módulos (modales) -->
 <div id="modulosContainer"></div>
 
-<!-- Scripts de módulos -->
-<script src="../assets/js/crear-usuario.js"></script>
-<script src="../assets/js/editar-usuario.js"></script>
-<script src="../assets/js/crear-cliente.js"></script>
-<script src="../assets/js/editar-cliente.js"></script>
-<script src="../assets/js/ver-cliente.js"></script>
-
 <!-- Script principal del dashboard -->
 <script src="../assets/js/dashboard-admin.js"></script>
 
 <script>
-// Cargar modales HTML dinámicamente
+// Cargar modales HTML dinámicamente ANTES de los scripts de módulos
 (async () => {
   try {
     // Cargar modal de crear usuario
-    const respCrear = await fetch('../components/modals/usuario/crear-modal.html');
+    const respCrear = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/usuario/crear-modal.html');
     document.getElementById('modulosContainer').innerHTML += await respCrear.text();
     
     // Cargar modal de editar usuario
-    const respEditar = await fetch('../components/modals/usuario/editar-modal.html');
+    const respEditar = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/usuario/editar-modal.html');
     document.getElementById('modulosContainer').innerHTML += await respEditar.text();
     
     // Cargar modal de crear cliente
-    const respCrearCliente = await fetch('../components/modals/cliente/crear-modal.html');
+    const respCrearCliente = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/cliente/crear-modal.html');
     document.getElementById('modulosContainer').innerHTML += await respCrearCliente.text();
     
     // Cargar modal de editar cliente
-    const respEditarCliente = await fetch('../components/modals/cliente/editar-modal.html');
+    const respEditarCliente = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/cliente/editar-modal.html');
     document.getElementById('modulosContainer').innerHTML += await respEditarCliente.text();
     
     // Cargar modal de ver cliente
-    const respVerCliente = await fetch('../components/modals/cliente/ver-modal.html');
+    const respVerCliente = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/cliente/ver-modal.html');
     document.getElementById('modulosContainer').innerHTML += await respVerCliente.text();
     
-    // Inicializar módulos después de cargar los modales
+    // Cargar scripts de módulos DESPUÉS del HTML
+    const scripts = [
+      'http://localhost/Ferreteria_Jamarraya/assets/js/crear-usuario.js',
+      'http://localhost/Ferreteria_Jamarraya/assets/js/editar-usuario.js',
+      'http://localhost/Ferreteria_Jamarraya/assets/js/crear-cliente.js',
+      'http://localhost/Ferreteria_Jamarraya/assets/js/editar-cliente.js',
+      'http://localhost/Ferreteria_Jamarraya/assets/js/ver-cliente.js'
+    ];
+    
+    for (const src of scripts) {
+      const script = document.createElement('script');
+      script.src = src;
+      document.body.appendChild(script);
+    }
+    
+    // Inicializar módulos después de que los scripts se carguen
     setTimeout(() => {
       UsuarioModal?.init?.();
       UsuarioEditModal?.init?.();
       ClienteModal?.init?.();
       ClienteEditModal?.init?.();
       ClienteVerModal?.init?.();
-    }, 100);
+    }, 300);
   } catch (e) {
     console.error('Error cargando módulos:', e);
   }
@@ -450,3 +458,4 @@
 
 </body>
 </html>
+

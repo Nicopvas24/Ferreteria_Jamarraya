@@ -72,6 +72,31 @@ const UsuarioModal = (() => {
     }
   }
 
+  /** Valida contraseña según requisitos de ciberseguridad */
+  function validarContrasena(pass) {
+    const requisitos = {
+      minimo: pass.length >= 8,
+      mayuscula: /[A-Z]/.test(pass),
+      minuscula: /[a-z]/.test(pass),
+      numero: /[0-9]/.test(pass),
+      especial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pass)
+    };
+    
+    const cumpleTodos = Object.values(requisitos).every(r => r);
+    
+    if (!cumpleTodos) {
+      const faltantes = [];
+      if (!requisitos.minimo) faltantes.push('Mínimo 8 caracteres');
+      if (!requisitos.mayuscula) faltantes.push('Mayúscula');
+      if (!requisitos.minuscula) faltantes.push('Minúscula');
+      if (!requisitos.numero) faltantes.push('Número');
+      if (!requisitos.especial) faltantes.push('Carácter especial (!@#$%^&*...)');
+      mostrarError('Requisitos incumplidos: ' + faltantes.join(', '));
+      return false;
+    }
+    return true;
+  }
+
   /** Valida los campos */
   function validar(nombre, email, pass) {
     if (!nombre || !email || !pass) {
@@ -79,12 +104,11 @@ const UsuarioModal = (() => {
       return false;
     }
 
-    if (pass.length < 6) {
-      mostrarError('La contraseña debe tener al menos 6 caracteres');
+    if (!validarContrasena(pass)) {
       return false;
     }
 
-    const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;;
     if (!regexEmail.test(email)) {
       mostrarError('Email inválido');
       return false;

@@ -3,14 +3,14 @@
    ============================================================ */
 
 const API = {
-  dashboard:  '../backend/dashboard.php',
-  usuarios:   '../backend/usuarios.php',
-  productos:  '../backend/api/productos.php',
-  ventas:     '../backend/api/ventas.php',
-  alquileres: '../backend/api/alquileres.php',
-  clientes:   '../backend/api/clientes.php',
-  maquinaria: '../backend/api/maquinaria.php',
-  reportes:   '../backend/api/reportes.php',
+  dashboard:  'http://localhost/Ferreteria_Jamarraya/backend/dashboard.php',
+  usuarios:   'http://localhost/Ferreteria_Jamarraya/backend/usuarios.php',
+  productos:  'http://localhost/Ferreteria_Jamarraya/backend/api/productos.php',
+  ventas:     'http://localhost/Ferreteria_Jamarraya/backend/api/ventas.php',
+  alquileres: 'http://localhost/Ferreteria_Jamarraya/backend/api/alquileres.php',
+  clientes:   'http://localhost/Ferreteria_Jamarraya/backend/api/clientes.php',
+  maquinaria: 'http://localhost/Ferreteria_Jamarraya/backend/api/maquinaria.php',
+  reportes:   'http://localhost/Ferreteria_Jamarraya/backend/api/reportes.php',
 };
 
 /* ── Verificar sesión y rol ── */
@@ -539,23 +539,23 @@ window.onClienteActualizado = (data) => {
 (async () => {
   try {
     // Cargar modal de crear usuario
-    const respCrear = await fetch('/components/modals/usuario/crear-modal.html');
+    const respCrear = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/usuario/crear-modal.html');
     document.getElementById('modulosContainer').innerHTML += await respCrear.text();
     
     // Cargar modal de editar usuario
-    const respEditar = await fetch('/components/modals/usuario/editar-modal.html');
+    const respEditar = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/usuario/editar-modal.html');
     document.getElementById('modulosContainer').innerHTML += await respEditar.text();
     
     // Cargar modal de crear cliente
-    const respCrearCliente = await fetch('/components/modals/cliente/crear-modal.html');
+    const respCrearCliente = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/cliente/crear-modal.html');
     document.getElementById('modulosContainer').innerHTML += await respCrearCliente.text();
     
     // Cargar modal de editar cliente
-    const respEditarCliente = await fetch('/components/modals/cliente/editar-modal.html');
+    const respEditarCliente = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/cliente/editar-modal.html');
     document.getElementById('modulosContainer').innerHTML += await respEditarCliente.text();
     
     // Cargar modal de ver cliente
-    const respVerCliente = await fetch('/components/modals/cliente/ver-modal.html');
+    const respVerCliente = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/cliente/ver-modal.html');
     document.getElementById('modulosContainer').innerHTML += await respVerCliente.text();
     
     // Inicializar módulos después de cargar los modales

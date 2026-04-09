@@ -152,7 +152,10 @@ const ClienteModal = (() => {
    */
   const cerrar = () => {
     const modal = document.getElementById('modalCrearCliente');
-    if (modal) modal.classList.remove('active');
+    if (modal) {
+      modal.classList.remove('active');
+      clearForm();
+    }
   };
 
   // ====================
