@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 08-04-2026 a las 22:16:21
+-- Tiempo de generación: 10-04-2026 a las 21:54:49
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS `alquileres` (
   `monto` decimal(10,2) NOT NULL CHECK (`monto` >= 0),
   `estado` enum('activo','finalizado','vencido') NOT NULL DEFAULT 'activo',
   `fecha_registro` datetime NOT NULL DEFAULT current_timestamp(),
+  `img` varchar(150) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_alquileres_maquinaria` (`id_maquinaria`),
   KEY `fk_alquileres_usuario` (`id_usuario`),
@@ -92,7 +93,7 @@ CREATE TABLE IF NOT EXISTS `clientes` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_clientes_identificacion` (`identificacion`),
   KEY `fk_clientes_usuario` (`id_usuario`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `clientes`
@@ -102,7 +103,10 @@ INSERT INTO `clientes` (`id`, `id_usuario`, `nombre`, `identificacion`, `telefon
 (1, NULL, 'Juan Jose', '34555', '3137287531', 'j.gomez14@gmail.com', 'La vitgin'),
 (2, NULL, 'roche', '123', '3137287531', 'd.rivas@gmail.com', 'cll 20 31 B 41'),
 (3, NULL, 'roche', '123455', '-43137287531', 'd.1rivas@gmail.com', '44'),
-(4, 7, 'Jose', '5544112', '3137287531', 'jose@gmail.com', 'cll 20 31 B 41');
+(4, 7, 'Jose', '5544112', '3137287531', 'jose@gmail.com', 'cll 20 31 B 41'),
+(5, NULL, 'pepe', '123432', '1234', 'pep@gmail.com', 'cll 20 31 B 41'),
+(6, 8, 'pepe', '5111', '+573017213193', 'pepe@gmail.com', 'cll 20 31 B 41'),
+(7, NULL, 'eeee', 'sdd', '4444', 'ee@gmail.com', '444');
 
 -- --------------------------------------------------------
 
@@ -210,12 +214,12 @@ CREATE TABLE IF NOT EXISTS `productos` (
   `stock_actual` int(11) NOT NULL DEFAULT 0 CHECK (`stock_actual` >= 0),
   `stock_minimo` int(11) NOT NULL DEFAULT 0 CHECK (`stock_minimo` >= 0),
   `activo` tinyint(1) NOT NULL DEFAULT 1,
-  `img` varchar(150) DEFAULT 'nombreimagen.png',
+  `img` varchar(150) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_productos_codigo` (`codigo`),
   KEY `idx_productos_stock` (`stock_actual`,`stock_minimo`),
   KEY `idx_productos_categoria` (`categoria`)
-) ENGINE=InnoDB AUTO_INCREMENT=2010 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2014 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `productos`
@@ -224,7 +228,11 @@ CREATE TABLE IF NOT EXISTS `productos` (
 INSERT INTO `productos` (`id`, `codigo`, `nombre`, `descripcion`, `categoria`, `precio`, `stock_actual`, `stock_minimo`, `activo`, `img`) VALUES
 (2007, '1010', 'TALADRO ', 'TALADRA INALAMBRICO 20 wats', 'herramientas-electricas', 400000.00, 5, 1, 1, 'Taladro.png'),
 (2008, '1011', 'MANGUERA', 'MANGUERA AGUA 3 METROS', 'fontaneria', 80000.00, 30, 2, 1, 'manguera.png'),
-(2009, '1012', 'Puntillas', 'Puntilla 1/2', 'Electricidad', 5000.00, 12, 1, 1, 'puntilla.png');
+(2009, '1012', 'Puntillas', 'Puntilla 1/2', 'Electricidad', 5000.00, 12, 1, 1, 'puntilla.png'),
+(2010, '2007', 'Cable cobre 1/2\'', '11', 'electricidad', 10000.00, 5, 1, 1, 'prod_1775792288_69d870a025fb6.png'),
+(2011, '2008', 'Cable cobre 1/2\'', 'jeje', 'pintura', 10000.00, 1, 5, 1, 'prod_1775792890_69d872fa6fac6.png'),
+(2012, '2009', 'Cinta 100 m', 'Cinta muy buena', 'herramientas_manuales', 500000.00, 5, 1, 1, 'prod_1775793145_69d873f9efc2b.png'),
+(2013, '2040', 'Pulidora', 'pule madera y mucho más', 'herramientas_electricas', 500000.00, 5, 2, 1, 'prod_1775850330_69d9535a2c224.png');
 
 -- --------------------------------------------------------
 
@@ -243,7 +251,7 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   `activo` tinyint(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_usuarios_email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `usuarios`
@@ -256,7 +264,10 @@ INSERT INTO `usuarios` (`id`, `nombre`, `email`, `contrasena_hash`, `rol`, `fech
 (4, 'nico valencia', 'nico@jamarraya.com', '$2y$10$bKc/sHBlZSkVQV6jYwd0GO3Dz0QqDKhu6t/fs.P9TaicGYRyFaeNq', 'cliente', '2026-04-07 15:28:47', 1),
 (5, 'nico', 'n@gmail.com', '$2y$10$pZ0NvKtHodFdym2CvH4PluD5VKOmapD7nvZ5vPwVF5ZCoidWIVje2', 'admin', '2026-04-07 15:34:20', 1),
 (6, 'Marta', 'marta@gmail.com', '$2y$10$Ka2cfqGfULHKTHf9mcjRguoEQS6lwvLAtEuPRuAoBTuQ/nOnY3Eei', 'cliente', '2026-04-08 00:03:59', 1),
-(7, 'Jose', 'jose@gmail.com', '$2y$10$cr5RaF6.vDmhYao5DLB.LOnzgO7UaM0tdNAUBZWrvVMuzlxSq/516', 'cliente', '2026-04-08 00:11:09', 1);
+(7, 'Jose', 'jose@gmail.com', '$2y$10$cr5RaF6.vDmhYao5DLB.LOnzgO7UaM0tdNAUBZWrvVMuzlxSq/516', 'cliente', '2026-04-08 00:11:09', 1),
+(8, 'pepe', 'pepe@gmail.com', '$2y$10$hMmKD2RO7/NdnSrTFFfMJOEioIPyCxOrkDtpBY546IPN09AY/cbAK', 'cliente', '2026-04-08 20:41:53', 1),
+(9, 'll', 'dd@gmail.com', '$2y$10$8tyoSXpAuqVBSPVTwoD6ie2DnurLLTfviz0xk5VOorgFSurNJ6GY.', 'empleado', '2026-04-08 20:55:48', 1),
+(10, 'q', 'qqq@sss.com', '$2y$10$gRF0qdy2eITU86eMp8zmD.UIPRiXQwYdF7O5iAatTOm5VwolPkcea', 'cliente', '2026-04-08 21:48:53', 1);
 
 -- --------------------------------------------------------
 
