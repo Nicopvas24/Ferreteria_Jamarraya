@@ -249,7 +249,7 @@ async function cargarAlquileres() {
 async function cargarInventario() {
   const cat   = document.getElementById('filtroCategoria')?.value || '';
   const solo  = document.getElementById('soloBajoStock')?.checked;
-  let url = API.productos + (cat ? `?categoria=${encodeURIComponent(cat)}` : '');
+  let url = API.productos + '?accion=listar' + (cat ? `&categoria=${encodeURIComponent(cat)}` : '');
 
   const tbody = document.getElementById('tablaInventario');
   tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>`;
@@ -272,13 +272,27 @@ async function cargarInventario() {
             <td style="color:var(--text-muted)">${p.stock_minimo||0}</td>
             <td>${bajo ? '<span class="badge badge-red">Bajo stock</span>' : '<span class="badge badge-green">OK</span>'}</td>
             <td>
-              <button class="btn-sm btn-ghost" onclick="alert('Editar producto ${p.id}')">Editar</button>
+              <button class="btn-sm btn-ghost" onclick="editarProducto(${p.id})">Editar</button>
             </td>
           </tr>`;}).join('')
       : filaVacia(8, 'Sin productos');
   } catch {
     tbody.innerHTML = filaVacia(8, 'Error cargando inventario');
   }
+}
+
+function exportarProductosCSV() {
+  const url = API.productos + '?accion=exportar_csv';
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'productos_' + new Date().toISOString().split('T')[0] + '.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function editarProducto(id) {
+  alert('Funcionalidad de editar producto - ID: ' + id);
 }
 
 /* ══════════════════════════════════════════
@@ -535,38 +549,4 @@ window.onClienteActualizado = (data) => {
   await cargarInventario();  // pre-carga para alertas de stock
 })();
 
-/* ── Cargar modales HTML dinámicamente ── */
-(async () => {
-  try {
-    // Cargar modal de crear usuario
-    const respCrear = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/usuario/crear-modal.html');
-    document.getElementById('modulosContainer').innerHTML += await respCrear.text();
-    
-    // Cargar modal de editar usuario
-    const respEditar = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/usuario/editar-modal.html');
-    document.getElementById('modulosContainer').innerHTML += await respEditar.text();
-    
-    // Cargar modal de crear cliente
-    const respCrearCliente = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/cliente/crear-modal.html');
-    document.getElementById('modulosContainer').innerHTML += await respCrearCliente.text();
-    
-    // Cargar modal de editar cliente
-    const respEditarCliente = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/cliente/editar-modal.html');
-    document.getElementById('modulosContainer').innerHTML += await respEditarCliente.text();
-    
-    // Cargar modal de ver cliente
-    const respVerCliente = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/cliente/ver-modal.html');
-    document.getElementById('modulosContainer').innerHTML += await respVerCliente.text();
-    
-    // Inicializar módulos después de cargar los modales
-    setTimeout(() => {
-      UsuarioModal?.init?.();
-      UsuarioEditModal?.init?.();
-      ClienteModal?.init?.();
-      ClienteEditModal?.init?.();
-      ClienteVerModal?.init?.();
-    }, 100);
-  } catch (e) {
-    console.error('Error cargando módulos:', e);
-  }
-})();
+

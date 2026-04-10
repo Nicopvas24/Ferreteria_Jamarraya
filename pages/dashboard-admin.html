@@ -211,8 +211,8 @@
           <div class="panel__head">
             <span class="panel__title">Inventario de Productos</span>
             <div style="display:flex;gap:.5rem">
-              <button class="btn-sm btn-ghost" onclick="alert('Exportar CSV')">⬇ Exportar</button>
-              <button class="btn-sm btn-orange" onclick="alert('Módulo: Nuevo producto')">+ Producto</button>
+              <button class="btn-sm btn-ghost" onclick="exportarProductosCSV()">⬇ Exportar CSV</button>
+              <button class="btn-sm btn-orange" onclick="ProductoModal.abrir()">+ Producto</button>
             </div>
           </div>
           <div class="panel__body">
@@ -220,12 +220,14 @@
               <label for="filtroCategoria">Categoría</label>
               <select id="filtroCategoria">
                 <option value="">Todas</option>
-                <option>Herramientas Manuales</option>
-                <option>Herramientas Eléctricas</option>
-                <option>Tornillería</option>
-                <option>Pinturas</option>
-                <option>Plomería</option>
-                <option>Construcción</option>
+                <option value="herramientas_electricas">Herramientas Eléctricas</option>
+                <option value="herramientas_manuales">Herramientas Manuales</option>
+                <option value="materiales">Materiales</option>
+                <option value="fontaneria">Fontanería</option>
+                <option value="electricidad">Electricidad</option>
+                <option value="pintura">Pintura</option>
+                <option value="seguridad">Seguridad</option>
+                <option value="construccion">Construcción</option>
               </select>
               <label>
                 <input type="checkbox" id="soloBajoStock"> Solo stock bajo
@@ -427,13 +429,18 @@
     const respVerCliente = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/cliente/ver-modal.html');
     document.getElementById('modulosContainer').innerHTML += await respVerCliente.text();
     
+    // Cargar modal de crear producto
+    const respCrearProducto = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/producto/crear-modal.html');
+    document.getElementById('modulosContainer').innerHTML += await respCrearProducto.text();
+    
     // Cargar scripts de módulos DESPUÉS del HTML
     const scripts = [
       'http://localhost/Ferreteria_Jamarraya/assets/js/crear-usuario.js',
       'http://localhost/Ferreteria_Jamarraya/assets/js/editar-usuario.js',
       'http://localhost/Ferreteria_Jamarraya/assets/js/crear-cliente.js',
       'http://localhost/Ferreteria_Jamarraya/assets/js/editar-cliente.js',
-      'http://localhost/Ferreteria_Jamarraya/assets/js/ver-cliente.js'
+      'http://localhost/Ferreteria_Jamarraya/assets/js/ver-cliente.js',
+      'http://localhost/Ferreteria_Jamarraya/assets/js/crear-producto.js'
     ];
     
     for (const src of scripts) {
@@ -443,13 +450,38 @@
     }
     
     // Inicializar módulos después de que los scripts se carguen
-    setTimeout(() => {
-      UsuarioModal?.init?.();
-      UsuarioEditModal?.init?.();
-      ClienteModal?.init?.();
-      ClienteEditModal?.init?.();
-      ClienteVerModal?.init?.();
-    }, 300);
+    // Usar un delay más largo e intentos múltiples
+    let intentos = 0;
+    const maxIntentos = 20;
+    const intervalo = setInterval(() => {
+      intentos++;
+      
+      // Verificar que todos los módulos estén disponibles
+      const todosDisponibles = 
+        typeof UsuarioModal !== 'undefined' &&
+        typeof UsuarioEditModal !== 'undefined' &&
+        typeof ClienteModal !== 'undefined' &&
+        typeof ClienteEditModal !== 'undefined' &&
+        typeof ClienteVerModal !== 'undefined' &&
+        typeof ProductoModal !== 'undefined';
+      
+      if (todosDisponibles) {
+        clearInterval(intervalo);
+        try {
+          UsuarioModal?.init?.();
+          UsuarioEditModal?.init?.();
+          ClienteModal?.init?.();
+          ClienteEditModal?.init?.();
+          ClienteVerModal?.init?.();
+          ProductoModal?.init?.();
+        } catch (e) {
+          console.error('Error inicializando módulos:', e);
+        }
+      } else if (intentos >= maxIntentos) {
+        clearInterval(intervalo);
+        console.warn('Timeout esperando módulos. Algunos podrían no estar disponibles.');
+      }
+    }, 150);
   } catch (e) {
     console.error('Error cargando módulos:', e);
   }

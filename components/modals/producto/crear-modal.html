@@ -1,0 +1,167 @@
+<!-- ══════════════════════════════════════════
+     MODAL CREAR PRODUCTO
+     Modular - Requiere: crear-producto.js
+══════════════════════════════════════════ -->
+<style>
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 1000;
+    display: none; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal-content {
+    background: var(--dark-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 2rem;
+    max-width: 550px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,.5);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .modal-header h2 { font-size: 1.3rem; font-weight: 700; margin: 0; }
+  .modal-close {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 1.5rem; cursor: pointer; padding: 0;
+  }
+  .form-group {
+    display: flex; flex-direction: column; gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .form-group label {
+    font-size: .85rem; font-weight: 600; color: var(--text-muted);
+  }
+  .form-group.required label::after {
+    content: ' *'; color: var(--red);
+  }
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    width: 100%; background: var(--dark-3); border: 1px solid var(--border);
+    border-radius: 6px; padding: .7rem; color: var(--text); font-size: .9rem;
+    outline: none; font-family: inherit;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus { border-color: var(--orange); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+  }
+  .form-row .form-group:last-child:nth-last-of-type(odd) {
+    grid-column: 1;
+  }
+  .img-upload-group {
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .img-upload-preview {
+    width: 100%; height: 150px; background: var(--dark-3);
+    border: 2px dashed var(--border); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.3s;
+    overflow: hidden;
+  }
+  .img-upload-preview:hover {
+    border-color: var(--orange); background: rgba(255,102,0,.05);
+  }
+  .img-upload-preview img {
+    max-width: 100%; max-height: 100%; object-fit: cover;
+  }
+  .img-upload-preview.empty {
+    color: var(--text-muted); font-size: .9rem;
+  }
+  .img-upload-input {
+    display: none;
+  }
+  .form-error {
+    display: none; background: rgba(248,81,73,.15); color: var(--red);
+    padding: .75rem; border-radius: 6px; font-size: .85rem;
+    border: 1px solid rgba(248,81,73,.3);
+  }
+  .form-actions {
+    display: flex; gap: .75rem; margin-top: 1.5rem;
+  }
+  .form-actions button { flex: 1; }
+</style>
+
+<div id="modalCrearProducto" class="modal-backdrop">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Crear Producto</h2>
+      <button type="button" class="modal-close" onclick="ProductoModal.cerrar()">✕</button>
+    </div>
+    
+    <form id="formCrearProducto" class="form">
+      
+      <!-- Código y Nombre -->
+      <div class="form-row">
+        <div class="form-group required">
+          <label for="prod_codigo">Código *</label>
+          <input type="text" id="prod_codigo" required/>
+        </div>
+        <div class="form-group required">
+          <label for="prod_nombre">Nombre *</label>
+          <input type="text" id="prod_nombre" required/>
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div class="form-group">
+        <label for="prod_descripcion">Descripción</label>
+        <textarea id="prod_descripcion" placeholder="Detalles del producto..."></textarea>
+      </div>
+
+      <!-- Categoría y Precio -->
+      <div class="form-row">
+        <div class="form-group required">
+          <label for="prod_categoria">Categoría *</label>
+          <select id="prod_categoria" required>
+            <option value="">Seleccionar...</option>
+            <option value="herramientas_electricas">Herramientas Eléctricas</option>
+            <option value="herramientas_manuales">Herramientas Manuales</option>
+            <option value="materiales">Materiales</option>
+            <option value="fontaneria">Fontanería</option>
+            <option value="electricidad">Electricidad</option>
+            <option value="pintura">Pintura</option>
+            <option value="seguridad">Seguridad</option>
+            <option value="construccion">Construcción</option>
+          </select>
+        </div>
+        <div class="form-group required">
+          <label for="prod_precio">Precio ($) *</label>
+          <input type="number" id="prod_precio" min="0" step="0.01" required/>
+        </div>
+      </div>
+
+      <!-- Stock Actual y Mínimo -->
+      <div class="form-row">
+        <div class="form-group required">
+          <label for="prod_stock">Stock Actual *</label>
+          <input type="number" id="prod_stock" min="0" value="0" required/>
+        </div>
+        <div class="form-group required">
+          <label for="prod_stock_minimo">Stock Mínimo *</label>
+          <input type="number" id="prod_stock_minimo" min="0" value="0" required/>
+        </div>
+      </div>
+
+      <!-- Imagen -->
+      <div class="form-group">
+        <label for="prodImgInput">Imagen del Producto</label>
+        <div class="img-upload-group">
+          <div class="img-upload-preview empty" id="prodPreview" onclick="document.getElementById('prodImgInput').click()">
+            <span>📸 Click para subir imagen</span>
+          </div>
+          <input type="file" id="prodImgInput" class="img-upload-input" accept="image/*" />
+          <span style="font-size:.8rem;color:var(--text-muted)">Formatos: JPG, PNG, WebP (máx 5MB)</span>
+        </div>
+      </div>
+
+      <div id="productoError" class="form-error"></div>
+      
+      <div class="form-actions">
+        <button type="submit" class="btn-sm btn-orange">Crear Producto</button>
+        <button type="button" class="btn-sm btn-ghost" onclick="ProductoModal.cerrar()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
