@@ -76,10 +76,10 @@ switch ($accion) {
             http_response_code(403); echo json_encode(['error' => 'Sin permisos']); exit;
         }
 
-        $input          = json_decode(file_get_contents('php://input'), true);
-        $nombre         = trim($input['nombre']         ?? '');
-        $descripcion    = trim($input['descripcion']    ?? '');
-        $tarifa_alquiler= (float)($input['tarifa_alquiler'] ?? 0);
+        $nombre         = trim($_POST['nombre']         ?? '');
+        $descripcion    = trim($_POST['descripcion']    ?? '');
+        $tarifa_alquiler= (float)($_POST['tarifa_alquiler'] ?? 0);
+        $img            = null;
 
         if (!$nombre || !$tarifa_alquiler) {
             http_response_code(400);
@@ -87,11 +87,77 @@ switch ($accion) {
             exit;
         }
 
-        $stmt = $pdo->prepare("INSERT INTO maquinaria (nombre, descripcion, estado, tarifa_alquiler)
-                               VALUES (?, ?, 'disponible', ?)");
-        $stmt->execute([$nombre, $descripcion, $tarifa_alquiler]);
+        // Procesar imagen si existe
+        if (isset($_FILES['img']) && $_FILES['img']['error'] !== UPLOAD_ERR_NO_FILE) {
+            try {
+                $archivo = $_FILES['img'];
+                
+                // Verificar si hay errores en el upload
+                if ($archivo['error'] !== UPLOAD_ERR_OK) {
+                    $errores = [
+                        UPLOAD_ERR_INI_SIZE => 'Archivo supera tamaño máximo del servidor',
+                        UPLOAD_ERR_FORM_SIZE => 'Archivo supera tamaño máximo del formulario',
+                        UPLOAD_ERR_PARTIAL => 'Archivo se subió parcialmente',
+                        UPLOAD_ERR_NO_FILE => 'No se subió archivo',
+                        UPLOAD_ERR_NO_TMP_DIR => 'Falta carpeta temporal',
+                        UPLOAD_ERR_CANT_WRITE => 'No se puede escribir archivo',
+                        UPLOAD_ERR_EXTENSION => 'Extensión de archivo no permitida'
+                    ];
+                    throw new Exception('Error upload: ' . ($errores[$archivo['error']] ?? 'Error desconocido'));
+                }
 
-        echo json_encode(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
+                // Validar extensión
+                $ext = strtolower(pathinfo($archivo['name'], PATHINFO_EXTENSION));
+                $extsPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                if (!in_array($ext, $extsPermitidas)) {
+                    throw new Exception('Extensión no permitida: ' . $ext);
+                }
+
+                // Validar tamaño (máx 5MB)
+                if ($archivo['size'] > 5 * 1024 * 1024) {
+                    throw new Exception('Archivo supera 5MB');
+                }
+
+                // Crear directorio si no existe
+                $dirImg = __DIR__ . '/../../assets/img/maquinaria/';
+                if (!is_dir($dirImg)) {
+                    if (!@mkdir($dirImg, 0755, true)) {
+                        throw new Exception('No se pudo crear directorio de imágenes');
+                    }
+                }
+
+                if (!is_writable($dirImg)) {
+                    throw new Exception('Directorio no tiene permisos de escritura');
+                }
+
+                // Generar nombre único
+                $nombreImg = 'maq_' . time() . '_' . uniqid() . '.' . $ext;
+                $rutaImg = $dirImg . $nombreImg;
+
+                if (!@move_uploaded_file($archivo['tmp_name'], $rutaImg)) {
+                    throw new Exception('Error al guardar la imagen');
+                }
+
+                $img = $nombreImg;
+                error_log("✅ Imagen guardada: $nombreImg");
+
+            } catch (Exception $e) {
+                error_log("⚠️ Error procesando imagen: " . $e->getMessage());
+                // Continuar sin imagen
+            }
+        }
+
+        // Insertar en BD
+        try {
+            $stmt = $pdo->prepare("INSERT INTO maquinaria (nombre, descripcion, estado, tarifa_alquiler, img)
+                                   VALUES (?, ?, 'disponible', ?, ?)");
+            $stmt->execute([$nombre, $descripcion, $tarifa_alquiler, $img]);
+
+            echo json_encode(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al guardar en base de datos: ' . $e->getMessage()]);
+        }
         break;
 
     case 'editar':

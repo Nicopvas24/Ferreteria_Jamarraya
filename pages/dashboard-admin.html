@@ -178,7 +178,7 @@
         <div class="panel">
           <div class="panel__head">
             <span class="panel__title">Gestión de Alquileres</span>
-            <button class="btn-sm btn-orange" onclick="alert('Módulo: Nuevo alquiler')">+ Nuevo alquiler</button>
+            <button class="btn-sm btn-orange" onclick="crearAlquiler()">+ Nuevo alquiler</button>
           </div>
           <div class="panel__body">
             <div class="filter-bar" style="margin-bottom:1rem">
@@ -254,7 +254,7 @@
         <div class="panel">
           <div class="panel__head">
             <span class="panel__title">Maquinaria para Alquiler</span>
-            <button class="btn-sm btn-orange" onclick="alert('Módulo: Nueva maquinaria')">+ Maquinaria</button>
+            <button class="btn-sm btn-orange" onclick="crearMaquinaria()">+ Maquinaria</button>
           </div>
           <div class="table-wrap">
             <table>
@@ -411,27 +411,48 @@
   try {
     // Cargar modal de crear usuario
     const respCrear = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/usuario/crear-modal.html');
-    document.getElementById('modulosContainer').innerHTML += await respCrear.text();
+    if (respCrear.ok) document.getElementById('modulosContainer').innerHTML += await respCrear.text();
+    else console.warn('No se pudo cargar crear-usuario modal');
     
     // Cargar modal de editar usuario
     const respEditar = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/usuario/editar-modal.html');
-    document.getElementById('modulosContainer').innerHTML += await respEditar.text();
+    if (respEditar.ok) document.getElementById('modulosContainer').innerHTML += await respEditar.text();
+    else console.warn('No se pudo cargar editar-usuario modal');
     
     // Cargar modal de crear cliente
     const respCrearCliente = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/cliente/crear-modal.html');
-    document.getElementById('modulosContainer').innerHTML += await respCrearCliente.text();
+    if (respCrearCliente.ok) document.getElementById('modulosContainer').innerHTML += await respCrearCliente.text();
+    else console.warn('No se pudo cargar crear-cliente modal');
     
     // Cargar modal de editar cliente
     const respEditarCliente = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/cliente/editar-modal.html');
-    document.getElementById('modulosContainer').innerHTML += await respEditarCliente.text();
+    if (respEditarCliente.ok) document.getElementById('modulosContainer').innerHTML += await respEditarCliente.text();
+    else console.warn('No se pudo cargar editar-cliente modal');
     
     // Cargar modal de ver cliente
     const respVerCliente = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/cliente/ver-modal.html');
-    document.getElementById('modulosContainer').innerHTML += await respVerCliente.text();
+    if (respVerCliente.ok) document.getElementById('modulosContainer').innerHTML += await respVerCliente.text();
+    else console.warn('No se pudo cargar ver-cliente modal');
     
     // Cargar modal de crear producto
     const respCrearProducto = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/producto/crear-modal.html');
-    document.getElementById('modulosContainer').innerHTML += await respCrearProducto.text();
+    if (respCrearProducto.ok) document.getElementById('modulosContainer').innerHTML += await respCrearProducto.text();
+    else console.warn('No se pudo cargar crear-producto modal');
+    
+    // Cargar modal de editar producto
+    const respEditarProducto = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/producto/editar-modal.html');
+    if (respEditarProducto.ok) document.getElementById('modulosContainer').innerHTML += await respEditarProducto.text();
+    else console.warn('No se pudo cargar editar-producto modal');
+    
+    // Cargar modal de crear alquiler
+    const respCrearAlquiler = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/alquiler/crear-modal.html');
+    if (respCrearAlquiler.ok) document.getElementById('modulosContainer').innerHTML += await respCrearAlquiler.text();
+    else console.warn('No se pudo cargar crear-alquiler modal');
+    
+    // Cargar modal de crear maquinaria
+    const respCrearMaquinaria = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/maquinaria/crear-modal.html');
+    if (respCrearMaquinaria.ok) document.getElementById('modulosContainer').innerHTML += await respCrearMaquinaria.text();
+    else console.warn('No se pudo cargar crear-maquinaria modal');
     
     // Cargar scripts de módulos DESPUÉS del HTML
     const scripts = [
@@ -440,48 +461,66 @@
       'http://localhost/Ferreteria_Jamarraya/assets/js/crear-cliente.js',
       'http://localhost/Ferreteria_Jamarraya/assets/js/editar-cliente.js',
       'http://localhost/Ferreteria_Jamarraya/assets/js/ver-cliente.js',
-      'http://localhost/Ferreteria_Jamarraya/assets/js/crear-producto.js'
+      'http://localhost/Ferreteria_Jamarraya/assets/js/crear-producto.js',
+      'http://localhost/Ferreteria_Jamarraya/assets/js/editar-producto.js',
+      'http://localhost/Ferreteria_Jamarraya/assets/js/crear-alquiler.js',
+      'http://localhost/Ferreteria_Jamarraya/assets/js/crear-maquinaria.js'
     ];
     
     for (const src of scripts) {
       const script = document.createElement('script');
       script.src = src;
+      script.async = false;
+      script.onerror = () => console.error(`❌ Error cargando script: ${src}`);
+      script.onload = () => console.log(`✅ Script cargado: ${src.split('/').pop()}`);
       document.body.appendChild(script);
     }
     
     // Inicializar módulos después de que los scripts se carguen
-    // Usar un delay más largo e intentos múltiples
+    // Usar intentos con espera más larga y timeout mayor
     let intentos = 0;
-    const maxIntentos = 20;
+    const maxIntentos = 100;
     const intervalo = setInterval(() => {
       intentos++;
       
-      // Verificar que todos los módulos estén disponibles
-      const todosDisponibles = 
-        typeof UsuarioModal !== 'undefined' &&
-        typeof UsuarioEditModal !== 'undefined' &&
-        typeof ClienteModal !== 'undefined' &&
-        typeof ClienteEditModal !== 'undefined' &&
-        typeof ClienteVerModal !== 'undefined' &&
-        typeof ProductoModal !== 'undefined';
+      const modulosDisponibles = {
+        UsuarioModal: typeof window.UsuarioModal !== 'undefined',
+        UsuarioEditModal: typeof window.UsuarioEditModal !== 'undefined',
+        ClienteModal: typeof window.ClienteModal !== 'undefined',
+        ClienteEditModal: typeof window.ClienteEditModal !== 'undefined',
+        ClienteVerModal: typeof window.ClienteVerModal !== 'undefined',
+        ProductoModal: typeof window.ProductoModal !== 'undefined',
+        EditarProductoModal: typeof window.EditarProductoModal !== 'undefined',
+        CrearAlquilerModal: typeof window.CrearAlquilerModal !== 'undefined',
+        CrearMaquinariaModal: typeof window.CrearMaquinariaModal !== 'undefined'
+      };
+      
+      const todosDisponibles = Object.values(modulosDisponibles).every(v => v);
       
       if (todosDisponibles) {
         clearInterval(intervalo);
+        console.log('✅ Todos los módulos cargados (en ' + (intentos * 50) + 'ms)');
         try {
-          UsuarioModal?.init?.();
-          UsuarioEditModal?.init?.();
-          ClienteModal?.init?.();
-          ClienteEditModal?.init?.();
-          ClienteVerModal?.init?.();
-          ProductoModal?.init?.();
+          window.UsuarioModal?.init?.();
+          window.UsuarioEditModal?.init?.();
+          window.ClienteModal?.init?.();
+          window.ClienteEditModal?.init?.();
+          window.ClienteVerModal?.init?.();
+          window.ProductoModal?.init?.();
+          window.EditarProductoModal?.init?.();
+          window.CrearAlquilerModal?.init?.();
+          window.CrearMaquinariaModal?.init?.();
         } catch (e) {
-          console.error('Error inicializando módulos:', e);
+          console.error('Error inicializando:', e);
         }
       } else if (intentos >= maxIntentos) {
         clearInterval(intervalo);
-        console.warn('Timeout esperando módulos. Algunos podrían no estar disponibles.');
+        console.log('✓ Inicializando módulos disponibles (timeout en ' + (maxIntentos * 50) + 'ms)');
+        Object.entries(modulosDisponibles).forEach(([nombre, disponible]) => {
+          if (disponible) window[nombre]?.init?.();
+        });
       }
-    }, 150);
+    }, 50);
   } catch (e) {
     console.error('Error cargando módulos:', e);
   }

@@ -292,7 +292,72 @@ function exportarProductosCSV() {
 }
 
 function editarProducto(id) {
-  alert('Funcionalidad de editar producto - ID: ' + id);
+  console.log('🔧 Editando producto:', id);
+  
+  // Verificar si EditarProductoModal está disponible
+  if (typeof window.EditarProductoModal === 'undefined') {
+    console.error('❌ EditarProductoModal aún no está cargado');
+    // Intentar reinicializar  
+    if (typeof window.reinicializarEditarProductoModal === 'function') {
+      console.log('↻ Intentando reinicializar EditarProductoModal...');
+      window.reinicializarEditarProductoModal();
+      // Esperar un poco antes de intentar abrir
+      setTimeout(() => {
+        if (window.EditarProductoModal) {
+          window.EditarProductoModal.abrirConId(id);
+        } else {
+          alert('Por favor, espera a que se carguen todos los módulos');
+        }
+      }, 200);
+    } else {
+      alert('Por favor, espera a que se carguen todos los módulos');
+    }
+    return;
+  }
+  
+  if (window.EditarProductoModal && typeof window.EditarProductoModal.abrirConId === 'function') {
+    console.log('⚙️ Abriendo modal de edición...');
+    window.EditarProductoModal.abrirConId(id);
+  } else {
+    console.error('❌ EditarProductoModal.abrirConId no es una función');
+    alert('Error al cargar la funcionalidad de edición');
+  }
+}
+
+function crearAlquiler() {
+  console.log('🆕 Crear nuevo alquiler');
+  
+  if (typeof window.CrearAlquilerModal === 'undefined') {
+    console.error('❌ CrearAlquilerModal aún no está cargado');
+    alert('Por favor, espera a que se carguen todos los módulos');
+    return;
+  }
+  
+  if (window.CrearAlquilerModal && typeof window.CrearAlquilerModal.abrir === 'function') {
+    console.log('📋 Abriendo modal de crear alquiler...');
+    window.CrearAlquilerModal.abrir();
+  } else {
+    console.error('❌ CrearAlquilerModal.abrir no es una función');
+    alert('Error al cargar la funcionalidad de alquiler');
+  }
+}
+
+function crearMaquinaria() {
+  console.log('🆕 Crear nueva maquinaria');
+  
+  if (typeof window.CrearMaquinariaModal === 'undefined') {
+    console.error('❌ CrearMaquinariaModal aún no está cargado');
+    alert('Por favor, espera a que se carguen todos los módulos');
+    return;
+  }
+  
+  if (window.CrearMaquinariaModal && typeof window.CrearMaquinariaModal.abrir === 'function') {
+    console.log('⚙️ Abriendo modal de crear maquinaria...');
+    window.CrearMaquinariaModal.abrir();
+  } else {
+    console.error('❌ CrearMaquinariaModal.abrir no es una función');
+    alert('Error al cargar la funcionalidad de maquinaria');
+  }
 }
 
 /* ══════════════════════════════════════════

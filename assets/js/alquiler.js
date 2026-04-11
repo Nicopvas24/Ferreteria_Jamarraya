@@ -154,17 +154,21 @@ function renderGrid() {
 }
 
 function cardHTML(e) {
-  const agotado = e.stock <= 0;
+  const agotado = e.stock <= 0 || !e.disponible;
   const { text: stockTxt, cls: stockCls } = stockLabel(e.stock);
+  const rutaImagen = e.imagen.startsWith('http') || e.imagen.startsWith('../') 
+    ? e.imagen 
+    : `../assets/img/maquinaria/${e.imagen}`;
+  
   return `
     <div class="alq-card" data-id="${e.id}">
       <div class="alq-card-img-wrap">
         ${badgeHTML(e.badge, agotado)}
         <img
-          src="../assets/img/alquileres/${e.imagen}"
+          src="${rutaImagen}"
           alt="${e.nombre}"
           class="alq-card-img"
-          onerror="this.src='../assets/img/alquileres/default.png'"
+          onerror="this.src='../assets/img/default-maquinaria.png'"
         />
       </div>
       <div class="alq-card-body">
@@ -224,8 +228,12 @@ function abrirModal(id) {
   modalEquipo = e;
   modalQty = 1;
 
-  $('#alq-modal-img').src     = `../assets/img/alquileres/${e.imagen}`;
-  $('#alq-modal-img').onerror = () => { $('#alq-modal-img').src = '../assets/img/alquileres/default.png'; };
+  const rutaImagen = e.imagen.startsWith('http') || e.imagen.startsWith('../') 
+    ? e.imagen 
+    : `../assets/img/maquinaria/${e.imagen}`;
+  
+  $('#alq-modal-img').src     = rutaImagen;
+  $('#alq-modal-img').onerror = () => { $('#alq-modal-img').src = '../assets/img/default-maquinaria.png'; };
   $('#alq-modal-cat').textContent   = e.categoria.replace(/_/g,' ');
   $('#alq-modal-name').textContent  = e.nombre;
   $('#alq-modal-brand').textContent = e.marca;
@@ -239,7 +247,7 @@ function abrirModal(id) {
   modalQtyVal.textContent = 1;
 
   const badgeEl = $('#alq-modal-badge');
-  const agotado = e.stock <= 0;
+  const agotado = e.stock <= 0 || !e.disponible;
   if (e.badge && !agotado) {
     const map = { nuevo:'Nuevo', promocion:'Promoción', destacado:'Destacado' };
     badgeEl.textContent = map[e.badge] || '';
@@ -308,13 +316,18 @@ function renderCarrito() {
     return;
   }
 
-  cartItems.innerHTML = carrito.map(item => `
+  cartItems.innerHTML = carrito.map(item => {
+    const rutaImagen = item.imagen.startsWith('http') || item.imagen.startsWith('../') 
+      ? item.imagen 
+      : `../assets/img/maquinaria/${item.imagen}`;
+    
+    return `
     <div class="alq-cart-item" data-id="${item.id}">
       <img
-        src="../assets/img/alquileres/${item.imagen}"
+        src="${rutaImagen}"
         alt="${item.nombre}"
         class="alq-cart-item-img"
-        onerror="this.src='../assets/img/alquileres/default.png'"
+        onerror="this.src='../assets/img/default-maquinaria.png'"
       />
       <div class="alq-cart-item-info">
         <p class="alq-cart-item-name">${item.nombre}</p>
@@ -328,7 +341,8 @@ function renderCarrito() {
       <div class="alq-cart-item-qty">
         <button class="alq-cart-item-remove" data-id="${item.id}" title="Eliminar">✕</button>
       </div>
-    </div>`).join('');
+    </div>`
+  }).join('');
 
   $$('[data-action]', cartItems).forEach(btn => {
     btn.addEventListener('click', () => {
@@ -487,25 +501,28 @@ async function cargarEquipos() {
     const raw = await res.json();
 
     const equipos = raw.map(e => ({
-      id:          e.id,
-      nombre:      e.nombre,
-      marca:       'Maquinaria',
-      categoria:   e.estado ?? 'general',
-      tarifa_diaria: e.tarifa_diaria,
-      descripcion: e.descripcion  ?? '',
-      imagen:      e.img          ?? 'default.png',
-      stock:       1,
-      disponible:  e.disponible === true,
-      badge:       null,
+      id:             e.id,
+      nombre:         e.nombre,
+      marca:          'Maquinaria',
+      categoria:      'general',
+      tarifa_diaria:  parseFloat(e.tarifa_alquiler) || 0,
+      descripcion:    e.descripcion || '',
+      imagen:         e.img || 'default.png',
+      stock:          e.estado === 'disponible' ? 1 : 0,
+      disponible:     e.estado === 'disponible',
+      estado:         e.estado,
+      badge:          null,
     }));
 
     state.equipos = equipos;
     state.filtrados = equipos;
     aplicarFiltros();
     renderCarrito();
+    console.log('✅ Equipos cargados:', equipos.length);
 
   } catch (err) {
     console.warn('Error cargando equipos:', err);
+    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:2rem">Error al cargar equipos</p>';
   }
 }
 

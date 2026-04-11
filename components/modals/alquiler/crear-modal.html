@@ -1,0 +1,143 @@
+<!-- ══════════════════════════════════════════
+     MODAL CREAR ALQUILER
+     Modular - Requiere: crear-alquiler.js
+══════════════════════════════════════════ -->
+<style>
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 1000;
+    display: none; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal-content {
+    background: var(--dark-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 2rem;
+    max-width: 600px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,.5);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .modal-header h2 { font-size: 1.3rem; font-weight: 700; margin: 0; }
+  .modal-close {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 1.5rem; cursor: pointer; padding: 0;
+  }
+  .form-group {
+    display: flex; flex-direction: column; gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .form-group label {
+    font-size: .85rem; font-weight: 600; color: var(--text-muted);
+  }
+  .form-group.required label::after {
+    content: ' *'; color: var(--red);
+  }
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    width: 100%; background: var(--dark-3); border: 1px solid var(--border);
+    border-radius: 6px; padding: .7rem; color: var(--text); font-size: .9rem;
+    outline: none; font-family: inherit;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus { border-color: var(--orange); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+  }
+  .form-row .form-group:last-child:nth-last-of-type(odd) {
+    grid-column: 1;
+  }
+  .form-info {
+    background: rgba(33,150,243,.1); border: 1px solid rgba(33,150,243,.3);
+    border-radius: 6px; padding: .75rem; font-size: .85rem; color: var(--text-muted);
+    margin-bottom: 1rem;
+  }
+  .form-error {
+    display: none; background: rgba(248,81,73,.15); color: var(--red);
+    padding: .75rem; border-radius: 6px; font-size: .85rem;
+    border: 1px solid rgba(248,81,73,.3);
+  }
+  .form-success {
+    display: none; background: rgba(76,175,80,.15); color: var(--green);
+    padding: .75rem; border-radius: 6px; font-size: .85rem;
+    border: 1px solid rgba(76,175,80,.3);
+  }
+  .form-actions {
+    display: flex; gap: .75rem; margin-top: 1.5rem;
+  }
+  .form-actions button { flex: 1; }
+  .monto-automatico {
+    background: rgba(255,152,0,.1); border: 1px solid rgba(255,152,0,.3);
+    border-radius: 6px; padding: 1rem; margin-bottom: 1rem; font-size: .9rem;
+  }
+</style>
+
+<div id="modalCrearAlquiler" class="modal-backdrop">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Nuevo Alquiler</h2>
+      <button type="button" class="modal-close" onclick="CrearAlquilerModal.cerrar()">✕</button>
+    </div>
+    
+    <form id="formCrearAlquiler" class="form">
+      
+      <!-- Cliente y Maquinaria -->
+      <div class="form-row">
+        <div class="form-group required">
+          <label for="alq_cliente">Cliente *</label>
+          <select id="alq_cliente" required>
+            <option value="">Seleccionar cliente...</option>
+          </select>
+        </div>
+        <div class="form-group required">
+          <label for="alq_maquinaria">Maquinaria *</label>
+          <select id="alq_maquinaria" required>
+            <option value="">Seleccionar maquinaria...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Fechas -->
+      <div class="form-row">
+        <div class="form-group required">
+          <label for="alq_fecha_inicio">Fecha Inicio *</label>
+          <input type="date" id="alq_fecha_inicio" required/>
+        </div>
+        <div class="form-group required">
+          <label for="alq_fecha_fin">Fecha Fin *</label>
+          <input type="date" id="alq_fecha_fin" required/>
+        </div>
+      </div>
+
+      <!-- Cálculo automático de monto -->
+      <div class="monto-automatico" id="montoAutomatico" style="display: none;">
+        <div style="margin-bottom: 0.5rem;">
+          <span style="color: var(--text-muted);">Días: </span><span id="diasCount" style="font-weight: 700; color: var(--orange);">0</span>
+        </div>
+        <div>
+          <span style="color: var(--text-muted);">Tarifa: </span><span id="tarifaDisplay" style="font-weight: 700; color: var(--green);">$0</span> /día
+        </div>
+        <div style="margin-top: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.5rem;">
+          <span style="color: var(--text-muted);">Total: </span><span id="totalDisplay" style="font-weight: 700; font-size: 1.1rem; color: var(--orange);">$0</span>
+        </div>
+      </div>
+
+      <!-- Monto manual -->
+      <div class="form-group required">
+        <label for="alq_monto">Monto ($) *</label>
+        <input type="number" id="alq_monto" min="0" step="0.01" required/>
+      </div>
+
+      <div id="alquilerError" class="form-error"></div>
+      <div id="alquilerSuccess" class="form-success"></div>
+      
+      <div class="form-actions">
+        <button type="submit" class="btn-sm btn-orange">Crear Alquiler</button>
+        <button type="button" class="btn-sm btn-ghost" onclick="CrearAlquilerModal.cerrar()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>

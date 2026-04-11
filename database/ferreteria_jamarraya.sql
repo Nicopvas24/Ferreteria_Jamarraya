@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 10-04-2026 a las 21:54:49
+-- Tiempo de generación: 11-04-2026 a las 05:34:41
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -40,7 +40,6 @@ CREATE TABLE IF NOT EXISTS `alquileres` (
   `monto` decimal(10,2) NOT NULL CHECK (`monto` >= 0),
   `estado` enum('activo','finalizado','vencido') NOT NULL DEFAULT 'activo',
   `fecha_registro` datetime NOT NULL DEFAULT current_timestamp(),
-  `img` varchar(150) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_alquileres_maquinaria` (`id_maquinaria`),
   KEY `fk_alquileres_usuario` (`id_usuario`),
@@ -194,6 +193,7 @@ CREATE TABLE IF NOT EXISTS `maquinaria` (
   `estado` enum('disponible','alquilada','mantenimiento') NOT NULL DEFAULT 'disponible',
   `tarifa_alquiler` decimal(10,2) NOT NULL CHECK (`tarifa_alquiler` >= 0),
   `activo` tinyint(1) NOT NULL DEFAULT 1,
+  `img` varchar(150) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -226,11 +226,11 @@ CREATE TABLE IF NOT EXISTS `productos` (
 --
 
 INSERT INTO `productos` (`id`, `codigo`, `nombre`, `descripcion`, `categoria`, `precio`, `stock_actual`, `stock_minimo`, `activo`, `img`) VALUES
-(2007, '1010', 'TALADRO ', 'TALADRA INALAMBRICO 20 wats', 'herramientas-electricas', 400000.00, 5, 1, 1, 'Taladro.png'),
+(2007, '1010', 'TALADRO', 'TALADRA INALAMBRICO 20 wats', 'herramientas_electricas', 500000.00, 10, 3, 1, 'Taladro.png'),
 (2008, '1011', 'MANGUERA', 'MANGUERA AGUA 3 METROS', 'fontaneria', 80000.00, 30, 2, 1, 'manguera.png'),
-(2009, '1012', 'Puntillas', 'Puntilla 1/2', 'Electricidad', 5000.00, 12, 1, 1, 'puntilla.png'),
-(2010, '2007', 'Cable cobre 1/2\'', '11', 'electricidad', 10000.00, 5, 1, 1, 'prod_1775792288_69d870a025fb6.png'),
-(2011, '2008', 'Cable cobre 1/2\'', 'jeje', 'pintura', 10000.00, 1, 5, 1, 'prod_1775792890_69d872fa6fac6.png'),
+(2009, '1012', 'Caja de Puntillas', 'Puntilla 1/2', 'materiales', 5500.00, 12, 5, 1, 'puntilla.png'),
+(2010, '2007', 'Cable cobre 1/2\'', '11', 'electricidad', 10000.00, 5, 1, 1, 'prod_1775875932_69d9b75ca1500.png'),
+(2011, '2008', 'Cable cobre 1/2\'', 'jeje', 'pintura', 10000.00, 1, 5, 1, 'prod_1775875284_69d9b4d4d8a4a.png'),
 (2012, '2009', 'Cinta 100 m', 'Cinta muy buena', 'herramientas_manuales', 500000.00, 5, 1, 1, 'prod_1775793145_69d873f9efc2b.png'),
 (2013, '2040', 'Pulidora', 'pule madera y mucho más', 'herramientas_electricas', 500000.00, 5, 2, 1, 'prod_1775850330_69d9535a2c224.png');
 

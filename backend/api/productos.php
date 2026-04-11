@@ -451,6 +451,50 @@ switch ($accion) {
         }
         break;
 
+    // ==============================================================
+    // OBTENER PRODUCTO (por ID - Para edición)
+    // ==============================================================
+    case 'obtener':
+        header('Content-Type: application/json');
+        try {
+            $id = (int)($_GET['id'] ?? 0);
+
+            if (!$id) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'ID requerido']);
+                exit;
+            }
+
+            $stmt = $pdo->prepare("
+                SELECT id, codigo, nombre, descripcion, categoria, 
+                       precio, stock_actual, stock_minimo, activo, img
+                FROM productos
+                WHERE id = ?
+            ");
+            $stmt->execute([$id]);
+            $producto = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$producto) {
+                http_response_code(404);
+                echo json_encode(['ok' => false, 'error' => 'Producto no encontrado']);
+                exit;
+            }
+
+            // Convertir tipos de datos
+            $producto['id']            = (int)$producto['id'];
+            $producto['precio']        = (float)$producto['precio'];
+            $producto['stock_actual']  = (int)$producto['stock_actual'];
+            $producto['stock_minimo']  = (int)$producto['stock_minimo'];
+            $producto['activo']        = (bool)$producto['activo'];
+
+            echo json_encode($producto);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Error: ' . $e->getMessage()]);
+        }
+        break;
+
     default:
         header('Content-Type: application/json');
         http_response_code(400);
