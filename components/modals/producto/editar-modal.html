@@ -161,12 +161,25 @@
       <div class="form-group">
         <label for="prodEditImgInput">Imagen del Producto</label>
         <div class="img-upload-group">
-          <div class="img-upload-preview empty" id="prodEditPreview" onclick="document.getElementById('prodEditImgInput').click()">
+          <div class="img-upload-preview empty" id="prodEditPreview">
             <span>📸 Click para cambiar imagen</span>
           </div>
           <input type="file" id="prodEditImgInput" class="img-upload-input" accept="image/*" />
           <span style="font-size:.8rem;color:var(--text-muted)">Formatos: JPG, PNG, WebP (máx 5MB)</span>
         </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div style="background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.3); border-radius: 6px; padding: 1rem; margin: 1.5rem 0;">
+        <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--red); margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem;">
+          ⚠️ Zona de Riesgo
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0 0 0.75rem 0;" id="productoEstadoAviso">
+          Desactivar este producto lo ocultará de los catálogos.
+        </p>
+        <button type="button" id="btnToggleProd" class="btn-sm" style="background: var(--red); color: white; width: 100%; display: none;" onclick="EditarProductoModal.toggleEstado()">
+          🗑️ Desactivar Producto
+        </button>
       </div>
 
       <div id="productoError" class="form-error"></div>

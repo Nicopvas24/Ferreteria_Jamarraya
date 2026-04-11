@@ -137,7 +137,8 @@ switch ($accion) {
         header('Content-Type: application/json');
         try {
             $cat = $_GET['categoria'] ?? null;
-            $soloActivos = $_GET['solo_activos'] ?? true;
+            // Admin puede ver todos, público solo activos
+            $soloActivos = isset($_GET['solo_activos']) ? (bool)$_GET['solo_activos'] : !$esAdmin;
 
             $sql = "SELECT id, codigo, nombre, descripcion, categoria,
                            precio, stock_actual, stock_minimo, activo, img
@@ -165,7 +166,7 @@ switch ($accion) {
                 $p['precio']        = (float)$p['precio'];
                 $p['stock_actual']  = (int)$p['stock_actual'];
                 $p['stock_minimo']  = (int)$p['stock_minimo'];
-                $p['activo']        = (bool)$p['activo'];
+                $p['activo']        = (bool)$p['activo'];  // ← Convertir a bool para que se vea diferencia
             }
 
             echo json_encode($productos);
@@ -492,6 +493,44 @@ switch ($accion) {
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['error' => 'Error: ' . $e->getMessage()]);
+        }
+        break;
+
+    // ==============================================================
+    // CAMBIAR ESTADO (Activar/Desactivar)
+    // ==============================================================
+    case 'cambiar_estado':
+        header('Content-Type: application/json');
+        try {
+            $id = (int)($_POST['id'] ?? 0);
+            $activo = (int)($_POST['activo'] ?? 0);
+
+            if (!$id) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'ID requerido']);
+                exit;
+            }
+
+            // Verificar que exista
+            $stmt = $pdo->prepare("SELECT id FROM productos WHERE id = ?");
+            $stmt->execute([$id]);
+
+            if (!$stmt->fetch()) {
+                http_response_code(404);
+                echo json_encode(['ok' => false, 'error' => 'Producto no encontrado']);
+                exit;
+            }
+
+            // Cambiar estado
+            $stmt = $pdo->prepare("UPDATE productos SET activo = ? WHERE id = ?");
+            $stmt->execute([$activo, $id]);
+
+            $mensaje = $activo ? 'Producto activado correctamente' : 'Producto desactivado correctamente';
+            echo json_encode(['ok' => true, 'mensaje' => $mensaje]);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Error en BD: ' . $e->getMessage()]);
         }
         break;
 
