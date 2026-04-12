@@ -41,7 +41,6 @@ const ClienteModal = (() => {
     waitForElements().then(({ modal, form }) => {
       form.addEventListener('submit', handleSubmit);
       isInitialized = true;
-      console.log('✓ ClienteModal initialized');
     }).catch(err => {
       console.error('ClienteModal init error:', err);
     });

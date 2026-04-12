@@ -191,8 +191,6 @@
         // ── Guardar datos básicos en sessionStorage para los dashboards ──
         sessionStorage.setItem('jm_nombre', data.nombre);
         sessionStorage.setItem('jm_rol',    data.rol);
-        
-        console.log('✓ Login exitoso:', data.nombre, data.rol);
 
         // ── Actualizar navbar y cerrar modal ──
         cerrarModal();
@@ -308,8 +306,6 @@
         // ── Guardar datos en sessionStorage ──
         sessionStorage.setItem('jm_nombre', data.nombre);
         sessionStorage.setItem('jm_rol',    data.rol);
-        
-        console.log('✓ Registro exitoso:', data.nombre, data.rol);
 
         // ── Actualizar navbar y cerrar modal ──
         cerrarModalRegistro();

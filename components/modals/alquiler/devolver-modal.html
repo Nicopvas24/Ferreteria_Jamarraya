@@ -1,0 +1,41 @@
+<!-- Modal: Devolver Alquiler -->
+<div class="modal-backdrop" id="modalDevolverAlquilerBackdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Devolver Alquiler</h3>
+      <button class="modal-close" id="btnCerrarDevolverAlquiler">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info">
+        <span class="alert-icon">ℹ️</span>
+        <span>Al devolver este alquiler, la maquinaria volverá a estar disponible.</span>
+      </div>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>ID Alquiler</label>
+          <span id="devolverAlquilerId" style="font-weight:600"></span>
+        </div>
+        <div class="info-item">
+          <label>Cliente</label>
+          <span id="devolverAlquilerCliente" style="font-weight:600"></span>
+        </div>
+        <div class="info-item">
+          <label>Maquinaria</label>
+          <span id="devolverAlquilerMaquinaria" style="font-weight:600"></span>
+        </div>
+        <div class="info-item">
+          <label>Monto Total</label>
+          <span id="devolverAlquilerMonto" style="font-weight:600; color:var(--orange)"></span>
+        </div>
+        <div class="info-item">
+          <label>Estado Actual</label>
+          <span id="devolverAlquilerEstado"></span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" id="btnCerrarDevolverAlquiler2">Cancelar</button>
+      <button class="btn-sm btn-orange" id="btnConfirmarDevolver">Confirmar Devolución</button>
+    </div>
+  </div>
+</div>

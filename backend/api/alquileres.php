@@ -21,27 +21,23 @@ switch ($accion) {
         $cat = $_GET['categoria'] ?? null;
 
         try {
-            // Traer equipos desde tabla maquinaria
-            // Campos: id, nombre, descripcion, estado, tarifa_alquiler, activo, img
+            // Traer equipos ACTIVOS Y DISPONIBLES para alquilar
+            // activo = 1 → máquina no fue dada de baja del sistema
+            // estado = 'disponible' → máquina está disponible para alquilar
             $stmt = $pdo->query("
                 SELECT id, nombre, descripcion, estado,
-                       tarifa_alquiler, activo, img
+                       tarifa_alquiler, img
                 FROM maquinaria
-                WHERE activo = 1
+                WHERE activo = 1 AND estado = 'disponible'
                 ORDER BY nombre ASC
             ");
 
             $equipos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             foreach ($equipos as &$e) {
-                $e['id']           = (int)$e['id'];
-                $e['tarifa_diaria']= (float)$e['tarifa_alquiler'];
-                $e['stock_actual'] = (int)$e['activo'];
-                $e['disponible']   = (bool)$e['activo'];
-                $e['img']          = $e['img'] ?? 'default.png';
-                // Remover campos originales
-                unset($e['tarifa_alquiler']);
-                unset($e['activo']);
+                $e['id']              = (int)$e['id'];
+                $e['tarifa_alquiler'] = (float)$e['tarifa_alquiler'];
+                $e['img']             = $e['img'] ?? 'default.png';
             }
 
             echo json_encode($equipos);
@@ -92,7 +88,7 @@ switch ($accion) {
         if (!$id) { http_response_code(400); echo json_encode(['error' => 'ID requerido']); exit; }
 
         $stmt = $pdo->prepare("
-            SELECT a.*, c.nombre AS cliente, c.telefono, c.email,
+            SELECT a.*, c.nombre AS cliente, c.identificacion, c.telefono, c.email,
                    m.nombre AS maquinaria, m.tarifa_alquiler
             FROM alquileres a
             LEFT JOIN clientes   c ON c.id = a.id_cliente
@@ -115,11 +111,18 @@ switch ($accion) {
         }
 
         $input        = json_decode(file_get_contents('php://input'), true);
+        $id_usuario   = (int)($_SESSION['id_usuario'] ?? 0);  // Del admin logueado
         $id_cliente   = (int)($input['id_cliente']   ?? 0);
         $id_maquinaria= (int)($input['id_maquinaria']?? 0);
         $fecha_inicio = $input['fecha_inicio'] ?? null;
         $fecha_fin    = $input['fecha_fin']    ?? null;
         $monto        = (float)($input['monto'] ?? 0);
+
+        if (!$id_usuario) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Usuario no autenticado']);
+            exit;
+        }
 
         if (!$id_cliente || !$id_maquinaria || !$fecha_inicio || !$fecha_fin || !$monto) {
             http_response_code(400);
@@ -143,9 +146,9 @@ switch ($accion) {
 
             // Insertar alquiler
             $stmt = $pdo->prepare("INSERT INTO alquileres
-                                   (id_cliente, id_maquinaria, fecha_inicio, fecha_fin, monto, estado)
-                                   VALUES (?, ?, ?, ?, ?, 'activo')");
-            $stmt->execute([$id_cliente, $id_maquinaria, $fecha_inicio, $fecha_fin, $monto]);
+                                   (id_usuario, id_cliente, id_maquinaria, fecha_inicio, fecha_fin, monto, estado)
+                                   VALUES (?, ?, ?, ?, ?, ?, 'activo')");
+            $stmt->execute([$id_usuario, $id_cliente, $id_maquinaria, $fecha_inicio, $fecha_fin, $monto]);
             $id_alquiler = (int)$pdo->lastInsertId();
 
             // Cambiar estado de maquinaria
@@ -158,7 +161,7 @@ switch ($accion) {
         } catch (PDOException $e) {
             $pdo->rollBack();
             http_response_code(500);
-            echo json_encode(['error' => $e->getMessage()]);
+            echo json_encode(['ok' => false, 'error' => 'Error al crear alquiler: ' . $e->getMessage()]);
         }
         break;
 

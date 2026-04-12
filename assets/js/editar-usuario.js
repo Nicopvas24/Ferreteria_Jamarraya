@@ -189,7 +189,6 @@ const UsuarioEditModal = (() => {
     if (form) {
       form.addEventListener('submit', onSubmit);
       initialized = true;
-      console.log('✓ UsuarioEditModal inicializado correctamente');
       return true;
     }
     
