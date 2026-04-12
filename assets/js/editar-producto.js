@@ -130,6 +130,7 @@ const EditarProductoModal = {
   },
 
   limpiarFormulario() {
+    const form = document.getElementById('formEditarProducto');
     if (form) {
       // Resetear todos los inputs
       form.querySelectorAll('input, textarea, select').forEach(el => {
