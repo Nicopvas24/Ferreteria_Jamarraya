@@ -6,6 +6,8 @@
  
 (function () {
  
+  let modalInitialized = false; // Flag para evitar listeners duplicados
+  
   /* ── Rutas según rol ────────────────────────────────────────
      Ajusta si tu estructura de carpetas cambia
   ─────────────────────────────────────────────────────────── */
@@ -217,10 +219,15 @@
     const btn   = document.getElementById('togglePass');
     const input = document.getElementById('lm-pass');
     if (!btn || !input) return;
-    btn.addEventListener('click', () => {
+    
+    // Remover listeners previos para evitar duplicados
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    
+    newBtn.addEventListener('click', () => {
       const visible = input.type === 'text';
       input.type = visible ? 'password' : 'text';
-      btn.setAttribute('aria-label', visible ? 'Mostrar contraseña' : 'Ocultar contraseña');
+      newBtn.setAttribute('aria-label', visible ? 'Mostrar contraseña' : 'Ocultar contraseña');
     });
   }
 
@@ -233,10 +240,15 @@
 
     toggles.forEach(({ btn, input }) => {
       if (!btn || !input) return;
-      btn.addEventListener('click', () => {
+      
+      // Remover listeners previos para evitar duplicados
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+      
+      newBtn.addEventListener('click', () => {
         const visible = input.type === 'text';
         input.type = visible ? 'password' : 'text';
-        btn.setAttribute('aria-label', visible ? 'Mostrar contraseña' : 'Ocultar contraseña');
+        newBtn.setAttribute('aria-label', visible ? 'Mostrar contraseña' : 'Ocultar contraseña');
       });
     });
   }
@@ -357,6 +369,10 @@
  
   /* ── Inicializar listeners del modal ─────────────────────── */
   function initModal() {
+    // Evitar que se agreguen listeners múltiples veces
+    if (modalInitialized) return;
+    modalInitialized = true;
+    
     const overlay = document.getElementById('loginOverlay');
     const modal = document.getElementById('modalLogin');
     
