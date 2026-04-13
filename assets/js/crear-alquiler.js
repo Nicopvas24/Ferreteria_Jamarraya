@@ -12,7 +12,6 @@ const CrearAlquilerModal = {
 
   async abrir() {
     try {
-      console.log('📂 Abriendo modal para crear alquiler');
       this.limpiarFormulario();
       
       // Mostrar modal
@@ -53,7 +52,7 @@ const CrearAlquilerModal = {
         select.appendChild(option);
       });
 
-      console.log(`✅ ${clientes.length} clientes cargados`);
+      // Cargar clientes
     } catch (error) {
       console.error('Error cargando clientes:', error);
       this.mostrarError('Error al cargar clientes');
@@ -68,17 +67,17 @@ const CrearAlquilerModal = {
       const select = document.getElementById('alq_maquinaria');
       select.innerHTML = '<option value="">Seleccionar maquinaria...</option>';
       
+      // Backend ya filtró: WHERE activo = 1 AND estado = 'disponible'
+      // No necesitamos filtrar nuevamente en frontend
       maq.forEach(m => {
-        if (m.estado === 'disponible') {
-          const option = document.createElement('option');
-          option.value = m.id;
-          option.dataset.tarifa = m.tarifa_alquiler;
-          option.textContent = `${m.nombre} - $${parseFloat(m.tarifa_alquiler).toLocaleString('es-CO')} /día`;
-          select.appendChild(option);
-        }
+        const option = document.createElement('option');
+        option.value = m.id;
+        option.dataset.tarifa = m.tarifa_alquiler;
+        option.textContent = `${m.nombre} - $${parseFloat(m.tarifa_alquiler).toLocaleString('es-CO')} /día`;
+        select.appendChild(option);
       });
 
-      console.log(`✅ Maquinaria cargada`);
+      // Máquinas disponibles cargadas
     } catch (error) {
       console.error('Error cargando maquinaria:', error);
       this.mostrarError('Error al cargar maquinaria');
@@ -104,12 +103,23 @@ const CrearAlquilerModal = {
 
       if (dias < 1) {
         this.mostrarError('Fecha fin debe ser mayor que fecha inicio');
+        monto.value = '';
+        document.getElementById('montoAutomatico').style.display = 'none';
         return;
       }
 
-      // Obtener tarifa
+      // Obtener tarifa - IMPORTANTE: usar el mismo nombre que devuelve el backend
       const opt = maquinaria.options[maquinaria.selectedIndex];
       const tarifa = parseFloat(opt.dataset.tarifa || 0);
+
+      // Validar que tarifa sea válida
+      if (isNaN(tarifa) || tarifa <= 0) {
+        console.warn('⚠️ Tarifa inválida:', opt.dataset.tarifa, '- tarifa parseada:', tarifa);
+        this.mostrarError('La maquinaria no tiene tarifa configurada');
+        monto.value = '';
+        document.getElementById('montoAutomatico').style.display = 'none';
+        return;
+      }
 
       this.tariffaCurrent = tarifa;
       const total = dias * tarifa;
@@ -120,10 +130,8 @@ const CrearAlquilerModal = {
       document.getElementById('tarifaDisplay').textContent = '$' + tarifa.toLocaleString('es-CO', { maximumFractionDigits: 2 });
       document.getElementById('totalDisplay').textContent = '$' + total.toLocaleString('es-CO', { maximumFractionDigits: 2 });
 
-      // Establecer monto
+      // Establecer monto - aquí ya sabemos que total es válido
       monto.value = total.toFixed(2);
-
-      console.log(`📊 Cálculo: ${dias} días × $${tarifa} = $${total}`);
     };
 
     // Remover listeners anteriores
@@ -201,13 +209,10 @@ const CrearAlquilerModal = {
         return;
       }
 
-      console.log('💾 Enviando datos del alquiler...');
-
-      const response = await fetch(this.API, {
+      const response = await fetch(this.API + '?accion=registrar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          accion: 'registrar',
           id_cliente: parseInt(idCliente),
           id_maquinaria: parseInt(idMaquinaria),
           fecha_inicio: fechaInicio,

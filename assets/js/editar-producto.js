@@ -13,8 +13,6 @@ const EditarProductoModal = {
 
   async abrirConId(id) {
     try {
-      console.log('📂 Abriendo modal para editar producto:', id);
-      
       // Limpiar cualquier dato anterior PRIMERO
       this.limpiarFormulario();
       
@@ -31,7 +29,6 @@ const EditarProductoModal = {
       }
       
       const producto = await r.json();
-      console.log('✅ Datos del producto recibidos:', producto);
       
       if (!producto || !producto.id) {
         this.mostrarError('Producto no encontrado');
@@ -40,7 +37,6 @@ const EditarProductoModal = {
       
       this.productoActual = producto;
       this.cargarDatosEnFormulario(producto);
-      console.log('✅ Datos cargados en formulario');
       
     } catch (error) {
       console.error('Error abriendo modal:', error);
@@ -55,7 +51,6 @@ const EditarProductoModal = {
   },
 
   cargarDatosEnFormulario(producto) {
-    console.log('🔄 Cargando datos del producto:', producto);
     
     // Verificar que todos los elementos existan
     const elementos = {
@@ -80,8 +75,6 @@ const EditarProductoModal = {
     // Establecer categoría
     if (elementos.categoria) {
       elementos.categoria.value = producto.categoria || '';
-      console.log('📋 Categoría del producto:', producto.categoria);
-      console.log('📋 Categoría en select:', elementos.categoria.value);
     }
     
     if (elementos.precio) elementos.precio.value = producto.precio || '';
@@ -94,7 +87,6 @@ const EditarProductoModal = {
         const rutaImg = `http://localhost/Ferreteria_Jamarraya/assets/img/productos/${producto.img}`;
         elementos.preview.classList.remove('empty');
         elementos.preview.innerHTML = `<img src="${rutaImg}" alt="Producto" />`;
-        console.log('🖼️ Imagen cargada:', rutaImg);
       } else {
         this.limpiarPreview();
       }
@@ -135,12 +127,9 @@ const EditarProductoModal = {
     
     // Configurar listeners del formulario
     this.configurarFormulario();
-    
-    console.log('✅ Todos los datos cargados correctamente');
   },
 
   limpiarFormulario() {
-    console.log('🧹 Limpiando formulario...');
     const form = document.getElementById('formEditarProducto');
     if (form) {
       // Resetear todos los inputs
@@ -381,8 +370,6 @@ const EditarProductoModal = {
     if (!confirmacion) return;
 
     try {
-      console.log(`🔄 ${accion === 'desactivar' ? 'Desactivando' : 'Activando'} producto:`, this.productoActual.id);
-
       const formData = new FormData();
       formData.append('accion', 'cambiar_estado');
       formData.append('id', this.productoActual.id);
@@ -449,7 +436,6 @@ const EditarProductoModal = {
         
         if (!form || !imgInput) {
           if (reintentos < 5) {
-            console.log(`⏳ Esperando elementos del DOM (intento ${reintentos + 1}/5)...`);
             setTimeout(() => intentarConfigurar(reintentos + 1), 100);
           } else {
             console.warn('⚠️ No se encontraron elementos del formulario tras 5 intentos');

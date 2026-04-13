@@ -10,7 +10,6 @@ const CrearMaquinariaModal = {
 
   abrir() {
     try {
-      console.log('📂 Abriendo modal para crear maquinaria');
       this.limpiarFormulario();
       
       // Mostrar modal
@@ -127,6 +126,7 @@ const CrearMaquinariaModal = {
       const nombre = document.getElementById('maq_nombre').value.trim();
       const descripcion = document.getElementById('maq_descripcion').value.trim();
       const tarifa = parseFloat(document.getElementById('maq_tarifa').value);
+      const estado = document.getElementById('maq_estado').value;
 
       // Validaciones
       if (!nombre) {
@@ -137,8 +137,10 @@ const CrearMaquinariaModal = {
         this.mostrarError('La tarifa debe ser mayor a 0');
         return;
       }
-
-      console.log('💾 Enviando datos de maquinaria...');
+      if (!estado) {
+        this.mostrarError('Debe seleccionar un estado');
+        return;
+      }
 
       // Crear FormData para multipart
       const formData = new FormData();
@@ -146,6 +148,7 @@ const CrearMaquinariaModal = {
       formData.append('nombre', nombre);
       formData.append('descripcion', descripcion);
       formData.append('tarifa_alquiler', tarifa);
+      formData.append('estado', estado);
       
       // Si hay imagen seleccionada, agregarla
       if (this.imagenSeleccionada) {

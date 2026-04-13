@@ -126,6 +126,16 @@
         <input type="number" id="maq_edit_tarifa" min="0.01" step="0.01" placeholder="Ej: 50000" required/>
       </div>
 
+      <!-- Estado -->
+      <div class="form-group required">
+        <label for="maq_edit_estado">Estado *</label>
+        <select id="maq_edit_estado" required style="width: 100%; background: var(--dark-3); border: 1px solid var(--border); border-radius: 6px; padding: .7rem; color: var(--text); font-size: .9rem; outline: none; font-family: inherit;">
+          <option value="disponible">Disponible</option>
+          <option value="alquilada">Alquilada</option>
+          <option value="mantenimiento">Mantenimiento</option>
+        </select>
+      </div>
+
       <!-- Danger Zone -->
       <div style="background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.3); border-radius: 6px; padding: 1rem; margin: 1.5rem 0;">
         <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--red); margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem;">

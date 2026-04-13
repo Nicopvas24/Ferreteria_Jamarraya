@@ -233,13 +233,35 @@ async function cargarAlquileres() {
             <td style="font-weight:600">${fmt$(a.monto)}</td>
             <td>${estadoBadge(a.estado)}</td>
             <td>
-              <button class="btn-sm btn-ghost" onclick="alert('Detalle alquiler ${a.id}')">Ver</button>
-              ${a.estado==='activo' ? `<button class="btn-sm btn-orange" style="margin-left:.3rem" onclick="alert('Devolver alquiler ${a.id}')">Devolver</button>` : ''}
+              <button class="btn-sm btn-ghost" onclick="verDetalleAlquiler(${a.id})">Ver</button>
+              ${a.estado==='activo' ? `<button class="btn-sm btn-orange" style="margin-left:.3rem" onclick="abrirModalDevolver(${a.id})">Devolver</button>` : ''}
             </td>
           </tr>`).join('')
       : filaVacia(8, 'Sin alquileres');
   } catch {
     tbody.innerHTML = filaVacia(8, 'Error cargando alquileres');
+  }
+}
+
+/* ══════════════════════════════════════════
+   VER DETALLES DEL ALQUILER
+══════════════════════════════════════════ */
+function verDetalleAlquiler(id) {
+  if (typeof VerAlquilerModal !== 'undefined' && VerAlquilerModal.abrir) {
+    VerAlquilerModal.abrir(id);
+  } else {
+    alert('Modal no disponible');
+  }
+}
+
+/* ══════════════════════════════════════════
+   ABRIR MODAL PARA DEVOLVER
+══════════════════════════════════════════ */
+function abrirModalDevolver(id) {
+  if (typeof DevolverAlquilerModal !== 'undefined' && DevolverAlquilerModal.abrir) {
+    DevolverAlquilerModal.abrir(id);
+  } else {
+    alert('Modal no disponible');
   }
 }
 
@@ -257,7 +279,6 @@ async function cargarInventario() {
   try {
     const r = await fetch(url);
     let prods = await r.json();
-    console.log('📦 Productos recibidos:', prods);  // ← DEBUG
     if (solo) prods = prods.filter(p => p.stock_actual < (p.stock_minimo||0));
 
     tbody.innerHTML = prods.length
@@ -295,16 +316,9 @@ function exportarProductosCSV() {
 }
 
 function editarProducto(id) {
-  console.log('🔧 Editando producto:', id);
-  
-  // Verificar si EditarProductoModal está disponible
   if (typeof window.EditarProductoModal === 'undefined') {
-    console.error('❌ EditarProductoModal aún no está cargado');
-    // Intentar reinicializar  
     if (typeof window.reinicializarEditarProductoModal === 'function') {
-      console.log('↻ Intentando reinicializar EditarProductoModal...');
       window.reinicializarEditarProductoModal();
-      // Esperar un poco antes de intentar abrir
       setTimeout(() => {
         if (window.EditarProductoModal) {
           window.EditarProductoModal.abrirConId(id);
@@ -319,46 +333,34 @@ function editarProducto(id) {
   }
   
   if (window.EditarProductoModal && typeof window.EditarProductoModal.abrirConId === 'function') {
-    console.log('⚙️ Abriendo modal de edición...');
     window.EditarProductoModal.abrirConId(id);
   } else {
-    console.error('❌ EditarProductoModal.abrirConId no es una función');
     alert('Error al cargar la funcionalidad de edición');
   }
 }
 
 function crearAlquiler() {
-  console.log('🆕 Crear nuevo alquiler');
-  
   if (typeof window.CrearAlquilerModal === 'undefined') {
-    console.error('❌ CrearAlquilerModal aún no está cargado');
     alert('Por favor, espera a que se carguen todos los módulos');
     return;
   }
   
   if (window.CrearAlquilerModal && typeof window.CrearAlquilerModal.abrir === 'function') {
-    console.log('📋 Abriendo modal de crear alquiler...');
     window.CrearAlquilerModal.abrir();
   } else {
-    console.error('❌ CrearAlquilerModal.abrir no es una función');
     alert('Error al cargar la funcionalidad de alquiler');
   }
 }
 
 function crearMaquinaria() {
-  console.log('🆕 Crear nueva maquinaria');
-  
   if (typeof window.CrearMaquinariaModal === 'undefined') {
-    console.error('❌ CrearMaquinariaModal aún no está cargado');
     alert('Por favor, espera a que se carguen todos los módulos');
     return;
   }
   
   if (window.CrearMaquinariaModal && typeof window.CrearMaquinariaModal.abrir === 'function') {
-    console.log('⚙️ Abriendo modal de crear maquinaria...');
     window.CrearMaquinariaModal.abrir();
   } else {
-    console.error('❌ CrearMaquinariaModal.abrir no es una función');
     alert('Error al cargar la funcionalidad de maquinaria');
   }
 }
@@ -374,15 +376,15 @@ async function cargarMaquinaria() {
     const maq = await r.json();
     tbody.innerHTML = maq.length
       ? maq.map(m => {
-          const inactiva = m.activo === 0 || m.activo === '0';
-          const estiloFila = inactiva ? 'opacity:0.6;background:rgba(0,0,0,0.1)' : '';
+          const desactivada = !m.activo;  // activo es boolean ahora
+          const estiloFila = desactivada ? 'opacity:0.6;background:rgba(0,0,0,0.1)' : '';
           return `
           <tr style="${estiloFila}">
-            <td style="color:var(--text-muted)">${m.id}${inactiva ? ' ❌' : ''}</td>
+            <td style="color:var(--text-muted)">${m.id}${desactivada ? ' ❌' : ''}</td>
             <td style="font-weight:500">${m.nombre}</td>
             <td style="font-size:.82rem;color:var(--text-muted)">${m.descripcion||'—'}</td>
             <td>${fmt$(m.tarifa_alquiler)}/día</td>
-            <td>${estadoBadge(m.estado)}${inactiva ? '<span style="margin-left:.5rem;background:rgba(248,81,73,.2);color:var(--red);padding:.25rem .5rem;border-radius:3px;font-size:.75rem">Desactivada</span>' : ''}</td>
+            <td>${estadoBadge(m.estado)}${desactivada ? '<span style="margin-left:.5rem;background:rgba(248,81,73,.2);color:var(--red);padding:.25rem .5rem;border-radius:3px;font-size:.75rem">Desactivada</span>' : ''}</td>
             <td>
               <button class="btn-sm btn-ghost" onclick="editarMaquinaria(${m.id})">Editar</button>
             </td>

@@ -195,7 +195,6 @@ const ProductoModal = {
   },
 
   init() {
-    console.log('✓ ProductoModal inicializado');
     this.configurarCargaImagen();
     
     const form = document.getElementById('formCrearProducto');

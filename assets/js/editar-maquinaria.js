@@ -14,8 +14,6 @@ const EditarMaquinariaModal = {
 
   async abrirConId(id) {
     try {
-      console.log('📂 Abriendo modal para editar maquinaria:', id);
-      
       this.limpiarFormulario();
       
       // Mostrar modal vacío mientras se carga
@@ -31,7 +29,6 @@ const EditarMaquinariaModal = {
       }
       
       const maquinaria = await r.json();
-      console.log('✅ Datos de maquinaria recibidos:', maquinaria);
       
       if (!maquinaria || !maquinaria.id) {
         this.mostrarError('Maquinaria no encontrada');
@@ -94,6 +91,7 @@ const EditarMaquinariaModal = {
     document.getElementById('maq_edit_nombre').value = maquinaria.nombre || '';
     document.getElementById('maq_edit_descripcion').value = maquinaria.descripcion || '';
     document.getElementById('maq_edit_tarifa').value = maquinaria.tarifa_alquiler || '';
+    document.getElementById('maq_edit_estado').value = maquinaria.estado || 'disponible';
 
     // Cargar imagen actual
     const preview = document.getElementById('maqEditPreview');
@@ -205,6 +203,7 @@ const EditarMaquinariaModal = {
       const nombre = document.getElementById('maq_edit_nombre').value.trim();
       const descripcion = document.getElementById('maq_edit_descripcion').value.trim();
       const tarifa = parseFloat(document.getElementById('maq_edit_tarifa').value);
+      const estado = document.getElementById('maq_edit_estado').value;
 
       // Validaciones
       if (!id) {
@@ -219,8 +218,10 @@ const EditarMaquinariaModal = {
         this.mostrarError('La tarifa debe ser mayor a 0');
         return;
       }
-
-      console.log('💾 Enviando cambios de maquinaria...');
+      if (!estado) {
+        this.mostrarError('Debe seleccionar un estado válido');
+        return;
+      }
 
       // Crear FormData para multipart
       const formData = new FormData();
@@ -229,6 +230,7 @@ const EditarMaquinariaModal = {
       formData.append('nombre', nombre);
       formData.append('descripcion', descripcion);
       formData.append('tarifa_alquiler', tarifa);
+      formData.append('estado', estado);
       
       // Si hay imagen seleccionada, agregarla
       if (this.imagenSeleccionada) {
@@ -294,8 +296,6 @@ const EditarMaquinariaModal = {
     if (!confirmacion) return;
 
     try {
-      console.log(`🔄 ${accion === 'desactivar' ? 'Desactivando' : 'Activando'} maquinaria:`, this.maquinariaActual.id);
-
       const formData = new FormData();
       formData.append('accion', 'cambiar_estado');
       formData.append('id', this.maquinariaActual.id);

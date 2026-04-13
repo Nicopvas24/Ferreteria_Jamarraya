@@ -393,7 +393,7 @@
             </div>
           </div>
         </div>
-      </div><!-- /sec-reportes -->
+    </div><!-- /sec-reportes -->
 
     </div><!-- /content -->
   </div><!-- /main -->
@@ -401,6 +401,113 @@
 
 <!-- Contenedor para módulos (modales) -->
 <div id="modulosContainer"></div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- MODALES DE ALQUILERES                    -->
+<!-- ════════════════════════════════════════ -->
+
+<!-- Modal: Ver Detalles del Alquiler -->
+<div class="modal-backdrop" id="modalVerAlquilerBackdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Detalles del Alquiler</h3>
+      <button class="modal-close" id="btnCerrarVerAlquiler">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item">
+          <label>ID Alquiler</label>
+          <span id="verAlquilerId" style="font-weight:600"></span>
+        </div>
+        <div class="info-item">
+          <label>Cliente</label>
+          <span id="verAlquilerCliente" style="font-weight:600"></span>
+        </div>
+        <div class="info-item">
+          <label>Identificación</label>
+          <span id="verAlquilerIdentificacion"></span>
+        </div>
+        <div class="info-item">
+          <label>Teléfono</label>
+          <span id="verAlquilerTelefono"></span>
+        </div>
+        <div class="info-item">
+          <label>Email</label>
+          <span id="verAlquilerEmail"></span>
+        </div>
+        <div class="info-item">
+          <label>Maquinaria</label>
+          <span id="verAlquilerMaquinaria" style="font-weight:600"></span>
+        </div>
+        <div class="info-item">
+          <label>Tarifa Diaria</label>
+          <span id="verAlquilerTarifa"></span>
+        </div>
+        <div class="info-item">
+          <label>Fecha Inicio</label>
+          <span id="verAlquilerFechaInicio"></span>
+        </div>
+        <div class="info-item">
+          <label>Fecha Fin</label>
+          <span id="verAlquilerFechaFin"></span>
+        </div>
+        <div class="info-item">
+          <label>Monto Total</label>
+          <span id="verAlquilerMonto" style="font-weight:600; color:var(--orange)"></span>
+        </div>
+        <div class="info-item">
+          <label>Estado</label>
+          <span id="verAlquilerEstado"></span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" id="btnCerrarVerAlquiler2">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Devolver Alquiler -->
+<div class="modal-backdrop" id="modalDevolverAlquilerBackdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Devolver Alquiler</h3>
+      <button class="modal-close" id="btnCerrarDevolverAlquiler">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info">
+        <span class="alert-icon">ℹ️</span>
+        <span>Al devolver este alquiler, la maquinaria volverá a estar disponible.</span>
+      </div>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>ID Alquiler</label>
+          <span id="devolverAlquilerId" style="font-weight:600"></span>
+        </div>
+        <div class="info-item">
+          <label>Cliente</label>
+          <span id="devolverAlquilerCliente" style="font-weight:600"></span>
+        </div>
+        <div class="info-item">
+          <label>Maquinaria</label>
+          <span id="devolverAlquilerMaquinaria" style="font-weight:600"></span>
+        </div>
+        <div class="info-item">
+          <label>Monto Total</label>
+          <span id="devolverAlquilerMonto" style="font-weight:600; color:var(--orange)"></span>
+        </div>
+        <div class="info-item">
+          <label>Estado Actual</label>
+          <span id="devolverAlquilerEstado"></span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" id="btnCerrarDevolverAlquiler2">Cancelar</button>
+      <button class="btn-sm btn-orange" id="btnConfirmarDevolver">Confirmar Devolución</button>
+    </div>
+  </div>
+</div>
 
 <!-- Script principal del dashboard -->
 <script src="../assets/js/dashboard-admin.js"></script>
@@ -468,6 +575,8 @@
       'http://localhost/Ferreteria_Jamarraya/assets/js/ver-cliente.js',
       'http://localhost/Ferreteria_Jamarraya/assets/js/crear-producto.js',
       'http://localhost/Ferreteria_Jamarraya/assets/js/editar-producto.js',
+      'http://localhost/Ferreteria_Jamarraya/assets/js/ver-alquiler.js',
+      'http://localhost/Ferreteria_Jamarraya/assets/js/devolver-alquiler.js',
       'http://localhost/Ferreteria_Jamarraya/assets/js/crear-alquiler.js',
       'http://localhost/Ferreteria_Jamarraya/assets/js/crear-maquinaria.js',
       'http://localhost/Ferreteria_Jamarraya/assets/js/editar-maquinaria.js'
@@ -497,6 +606,8 @@
         ClienteVerModal: typeof window.ClienteVerModal !== 'undefined',
         ProductoModal: typeof window.ProductoModal !== 'undefined',
         EditarProductoModal: typeof window.EditarProductoModal !== 'undefined',
+        VerAlquilerModal: typeof window.VerAlquilerModal !== 'undefined',
+        DevolverAlquilerModal: typeof window.DevolverAlquilerModal !== 'undefined',
         CrearAlquilerModal: typeof window.CrearAlquilerModal !== 'undefined',
         CrearMaquinariaModal: typeof window.CrearMaquinariaModal !== 'undefined',
         EditarMaquinariaModal: typeof window.EditarMaquinariaModal !== 'undefined'
@@ -515,6 +626,8 @@
           window.ClienteVerModal?.init?.();
           window.ProductoModal?.init?.();
           window.EditarProductoModal?.init?.();
+          window.VerAlquilerModal?.init?.();
+          window.DevolverAlquilerModal?.init?.();
           window.CrearAlquilerModal?.init?.();
           window.CrearMaquinariaModal?.init?.();
           window.EditarMaquinariaModal?.init?.();

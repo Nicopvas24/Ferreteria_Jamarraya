@@ -38,7 +38,7 @@ switch ($accion) {
 
         foreach ($maq as &$m) {
             $m['tarifa_alquiler'] = (float)$m['tarifa_alquiler'];
-            $m['activo'] = (int)$m['activo'];
+            $m['activo'] = (bool)$m['activo'];  // Convertir a boolean para clarity
         }
 
         echo json_encode($maq);
@@ -93,11 +93,20 @@ switch ($accion) {
         $nombre         = trim($_POST['nombre']         ?? '');
         $descripcion    = trim($_POST['descripcion']    ?? '');
         $tarifa_alquiler= (float)($_POST['tarifa_alquiler'] ?? 0);
+        $estado         = trim($_POST['estado']         ?? 'disponible');  // Por defecto: disponible
         $img            = null;
 
         if (!$nombre || !$tarifa_alquiler) {
             http_response_code(400);
             echo json_encode(['error' => 'Nombre y tarifa son requeridos']);
+            exit;
+        }
+
+        // Validar estado
+        $estadosValidos = ['disponible', 'alquilada', 'mantenimiento'];
+        if (!in_array($estado, $estadosValidos)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Estado no válido']);
             exit;
         }
 
@@ -164,8 +173,8 @@ switch ($accion) {
         // Insertar en BD
         try {
             $stmt = $pdo->prepare("INSERT INTO maquinaria (nombre, descripcion, estado, tarifa_alquiler, img)
-                                   VALUES (?, ?, 'disponible', ?, ?)");
-            $stmt->execute([$nombre, $descripcion, $tarifa_alquiler, $img]);
+                                   VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$nombre, $descripcion, $estado, $tarifa_alquiler, $img]);
 
             echo json_encode(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
         } catch (PDOException $e) {
@@ -187,10 +196,21 @@ switch ($accion) {
         $nombre = trim($_POST['nombre'] ?? '');
         $descripcion = trim($_POST['descripcion'] ?? '');
         $tarifa_alquiler = (float)($_POST['tarifa_alquiler'] ?? 0);
+        $estado = trim($_POST['estado'] ?? '');
 
         if (!$id) { http_response_code(400); echo json_encode(['error' => 'ID requerido']); exit; }
         if (!$nombre) { http_response_code(400); echo json_encode(['error' => 'Nombre requerido']); exit; }
         if (!$tarifa_alquiler) { http_response_code(400); echo json_encode(['error' => 'Tarifa requerida']); exit; }
+        
+        // Validar estado si fue proporcionado
+        if ($estado) {
+            $estadosValidos = ['disponible', 'alquilada', 'mantenimiento'];
+            if (!in_array($estado, $estadosValidos)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Estado no válido']);
+                exit;
+            }
+        }
 
         try {
             // Obtener datos actuales
@@ -263,10 +283,21 @@ switch ($accion) {
             }
 
             // Actualizar en base de datos
+            $campos = ['nombre=?', 'descripcion=?', 'tarifa_alquiler=?', 'img=?'];
+            $valores = [$nombre, $descripcion, $tarifa_alquiler, $nombreImg];
+            
+            // Si estado fue proporcionado, agregarlo
+            if ($estado) {
+                $campos[] = 'estado=?';
+                $valores[] = $estado;
+            }
+            
+            $valores[] = $id;  // ID va al final para WHERE
+            
             $stmt = $pdo->prepare("UPDATE maquinaria 
-                                   SET nombre=?, descripcion=?, tarifa_alquiler=?, img=?
+                                   SET " . implode(', ', $campos) . "
                                    WHERE id=?");
-            $stmt->execute([$nombre, $descripcion, $tarifa_alquiler, $nombreImg, $id]);
+            $stmt->execute($valores);
 
             echo json_encode(['ok' => true, 'mensaje' => 'Maquinaria actualizada correctamente']);
 
