@@ -257,20 +257,23 @@ async function cargarInventario() {
   try {
     const r = await fetch(url);
     let prods = await r.json();
+    console.log('📦 Productos recibidos:', prods);  // ← DEBUG
     if (solo) prods = prods.filter(p => p.stock_actual < (p.stock_minimo||0));
 
     tbody.innerHTML = prods.length
       ? prods.map(p => {
           const bajo = p.stock_actual < (p.stock_minimo||0);
+          const inactivo = !p.activo || p.activo === 0 || p.activo === '0';  // Soporta boolean false, 0, o '0'
+          const estiloFila = inactivo ? 'opacity:0.6;background:rgba(0,0,0,0.1)' : (bajo ? 'background:rgba(248,81,73,.04)' : '');
           return `
-          <tr ${bajo ? 'style="background:rgba(248,81,73,.04)"' : ''}>
-            <td><code style="font-size:.78rem;color:var(--text-muted)">${p.codigo||'—'}</code></td>
+          <tr style="${estiloFila}">
+            <td><code style="font-size:.78rem;color:var(--text-muted)">${p.codigo||'—'}${inactivo ? ' ❌' : ''}</code></td>
             <td style="font-weight:500">${p.nombre}</td>
             <td style="font-size:.8rem;color:var(--text-muted)">${p.categoria||'—'}</td>
             <td>${fmt$(p.precio)}</td>
             <td style="font-weight:700;color:${bajo?'var(--red)':'var(--green)'}">${p.stock_actual}</td>
             <td style="color:var(--text-muted)">${p.stock_minimo||0}</td>
-            <td>${bajo ? '<span class="badge badge-red">Bajo stock</span>' : '<span class="badge badge-green">OK</span>'}</td>
+            <td>${inactivo ? '<span class="badge" style="background:rgba(248,81,73,.2);color:var(--red)">Desactivado</span>' : (bajo ? '<span class="badge badge-red">Bajo stock</span>' : '<span class="badge badge-green">OK</span>')}</td>
             <td>
               <button class="btn-sm btn-ghost" onclick="editarProducto(${p.id})">Editar</button>
             </td>
@@ -370,17 +373,21 @@ async function cargarMaquinaria() {
     const r = await fetch(API.maquinaria + '?accion=listar');
     const maq = await r.json();
     tbody.innerHTML = maq.length
-      ? maq.map(m => `
-          <tr>
-            <td style="color:var(--text-muted)">${m.id}</td>
+      ? maq.map(m => {
+          const inactiva = m.activo === 0 || m.activo === '0';
+          const estiloFila = inactiva ? 'opacity:0.6;background:rgba(0,0,0,0.1)' : '';
+          return `
+          <tr style="${estiloFila}">
+            <td style="color:var(--text-muted)">${m.id}${inactiva ? ' ❌' : ''}</td>
             <td style="font-weight:500">${m.nombre}</td>
             <td style="font-size:.82rem;color:var(--text-muted)">${m.descripcion||'—'}</td>
             <td>${fmt$(m.tarifa_alquiler)}/día</td>
-            <td>${estadoBadge(m.estado)}</td>
+            <td>${estadoBadge(m.estado)}${inactiva ? '<span style="margin-left:.5rem;background:rgba(248,81,73,.2);color:var(--red);padding:.25rem .5rem;border-radius:3px;font-size:.75rem">Desactivada</span>' : ''}</td>
             <td>
-              <button class="btn-sm btn-ghost" onclick="alert('Editar maquinaria ${m.id}')">Editar</button>
+              <button class="btn-sm btn-ghost" onclick="editarMaquinaria(${m.id})">Editar</button>
             </td>
-          </tr>`).join('')
+          </tr>`;
+        }).join('')
       : filaVacia(6, 'Sin maquinaria registrada');
   } catch {
     tbody.innerHTML = filaVacia(6, 'Error cargando maquinaria');

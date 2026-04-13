@@ -454,6 +454,11 @@
     if (respCrearMaquinaria.ok) document.getElementById('modulosContainer').innerHTML += await respCrearMaquinaria.text();
     else console.warn('No se pudo cargar crear-maquinaria modal');
     
+    // Cargar modal de editar maquinaria
+    const respEditarMaquinaria = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/maquinaria/editar-modal.html');
+    if (respEditarMaquinaria.ok) document.getElementById('modulosContainer').innerHTML += await respEditarMaquinaria.text();
+    else console.warn('No se pudo cargar editar-maquinaria modal');
+    
     // Cargar scripts de módulos DESPUÉS del HTML
     const scripts = [
       'http://localhost/Ferreteria_Jamarraya/assets/js/crear-usuario.js',
@@ -464,7 +469,8 @@
       'http://localhost/Ferreteria_Jamarraya/assets/js/crear-producto.js',
       'http://localhost/Ferreteria_Jamarraya/assets/js/editar-producto.js',
       'http://localhost/Ferreteria_Jamarraya/assets/js/crear-alquiler.js',
-      'http://localhost/Ferreteria_Jamarraya/assets/js/crear-maquinaria.js'
+      'http://localhost/Ferreteria_Jamarraya/assets/js/crear-maquinaria.js',
+      'http://localhost/Ferreteria_Jamarraya/assets/js/editar-maquinaria.js'
     ];
     
     for (const src of scripts) {
@@ -492,7 +498,8 @@
         ProductoModal: typeof window.ProductoModal !== 'undefined',
         EditarProductoModal: typeof window.EditarProductoModal !== 'undefined',
         CrearAlquilerModal: typeof window.CrearAlquilerModal !== 'undefined',
-        CrearMaquinariaModal: typeof window.CrearMaquinariaModal !== 'undefined'
+        CrearMaquinariaModal: typeof window.CrearMaquinariaModal !== 'undefined',
+        EditarMaquinariaModal: typeof window.EditarMaquinariaModal !== 'undefined'
       };
       
       const todosDisponibles = Object.values(modulosDisponibles).every(v => v);
@@ -510,6 +517,7 @@
           window.EditarProductoModal?.init?.();
           window.CrearAlquilerModal?.init?.();
           window.CrearMaquinariaModal?.init?.();
+          window.EditarMaquinariaModal?.init?.();
         } catch (e) {
           console.error('Error inicializando:', e);
         }
@@ -525,6 +533,34 @@
     console.error('Error cargando módulos:', e);
   }
 })();
+
+// Funciones globales para maquinaria
+function crearMaquinaria() {
+  if (window.CrearMaquinariaModal) {
+    window.CrearMaquinariaModal.abrir();
+  } else {
+    alert('Modal no disponible');
+  }
+}
+
+function editarMaquinaria(id) {
+  console.log('🔧 Editando maquinaria:', id);
+  
+  // Verificar si EditarMaquinariaModal está disponible
+  if (typeof window.EditarMaquinariaModal === 'undefined') {
+    console.error('❌ EditarMaquinariaModal aún no está cargado');
+    alert('Por favor, espera a que se carguen todos los módulos');
+    return;
+  }
+  
+  if (window.EditarMaquinariaModal && typeof window.EditarMaquinariaModal.abrirConId === 'function') {
+    console.log('⚙️ Abriendo modal de edición de maquinaria...');
+    window.EditarMaquinariaModal.abrirConId(id);
+  } else {
+    console.error('❌ EditarMaquinariaModal.abrirConId no es una función');
+    alert('Error al cargar la funcionalidad de edición');
+  }
+}
 </script>
 
 </body>

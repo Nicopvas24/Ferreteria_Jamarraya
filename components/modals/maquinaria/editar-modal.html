@@ -1,0 +1,151 @@
+<!-- ══════════════════════════════════════════
+     MODAL EDITAR MAQUINARIA
+     Modular - Requiere: editar-maquinaria.js
+══════════════════════════════════════════ -->
+<style>
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 1000;
+    display: none; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal-content {
+    background: var(--dark-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 2rem;
+    max-width: 600px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,.5);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .modal-header h2 { font-size: 1.3rem; font-weight: 700; margin: 0; }
+  .modal-close {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 1.5rem; cursor: pointer; padding: 0;
+  }
+  .form-group {
+    display: flex; flex-direction: column; gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .form-group label {
+    font-size: .85rem; font-weight: 600; color: var(--text-muted);
+  }
+  .form-group.required label::after {
+    content: ' *'; color: var(--red);
+  }
+  .form-group input,
+  .form-group textarea {
+    width: 100%; background: var(--dark-3); border: 1px solid var(--border);
+    border-radius: 6px; padding: .7rem; color: var(--text); font-size: .9rem;
+    outline: none; font-family: inherit;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus {
+    border-color: var(--orange);
+  }
+  .form-group textarea {
+    resize: vertical; min-height: 80px;
+  }
+  .form-image-section {
+    margin-bottom: 1.5rem;
+  }
+  .image-preview {
+    width: 100%; height: 180px; background: var(--dark-3);
+    border: 2px dashed var(--border); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s;
+    margin-bottom: 0.75rem; overflow: hidden;
+  }
+  .image-preview:hover { border-color: var(--orange); }
+  .image-preview.empty {
+    color: var(--text-muted); font-size: .9rem;
+  }
+  .image-preview img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .image-input {
+    display: none;
+  }
+  .form-error {
+    display: none; background: rgba(248,81,73,.15); color: var(--red);
+    padding: .75rem; border-radius: 6px; font-size: .85rem;
+    border: 1px solid rgba(248,81,73,.3);
+  }
+  .form-success {
+    display: none; background: rgba(76,175,80,.15); color: var(--green);
+    padding: .75rem; border-radius: 6px; font-size: .85rem;
+    border: 1px solid rgba(76,175,80,.3);
+  }
+  .form-info {
+    background: rgba(33,150,243,.1); color: var(--blue);
+    padding: .75rem; border-radius: 6px; font-size: .85rem;
+    border: 1px solid rgba(33,150,243,.3); margin-bottom: 1rem;
+  }
+  .form-actions {
+    display: flex; gap: .75rem; margin-top: 1.5rem;
+  }
+  .form-actions button { flex: 1; }
+</style>
+
+<div id="modalEditarMaquinaria" class="modal-backdrop">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Editar Maquinaria</h2>
+      <button type="button" class="modal-close" onclick="EditarMaquinariaModal.cerrar()">✕</button>
+    </div>
+    
+    <form id="formEditarMaquinaria" class="form">
+      
+      <input type="hidden" id="maq_edit_id" />
+      <div id="maquinariaInfo" class="form-info"></div>
+
+      <!-- Imagen -->
+      <div class="form-image-section">
+        <label style="font-size: .85rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Imagen</label>
+        <div class="image-preview empty" id="maqEditPreview">
+          <span>📸 Click para cambiar imagen</span>
+        </div>
+        <input type="file" id="maqEditImgInput" class="image-input" accept="image/*"/>
+      </div>
+
+      <!-- Nombre -->
+      <div class="form-group required">
+        <label for="maq_edit_nombre">Nombre *</label>
+        <input type="text" id="maq_edit_nombre" placeholder="Ej: Taladro Industrial" required/>
+      </div>
+
+      <!-- Descripción -->
+      <div class="form-group">
+        <label for="maq_edit_descripcion">Descripción</label>
+        <textarea id="maq_edit_descripcion" placeholder="Detalles técnicos, marca, capacidad, etc."></textarea>
+      </div>
+
+      <!-- Tarifa de Alquiler -->
+      <div class="form-group required">
+        <label for="maq_edit_tarifa">Tarifa Diaria de Alquiler ($) *</label>
+        <input type="number" id="maq_edit_tarifa" min="0.01" step="0.01" placeholder="Ej: 50000" required/>
+      </div>
+
+      <!-- Danger Zone -->
+      <div style="background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.3); border-radius: 6px; padding: 1rem; margin: 1.5rem 0;">
+        <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--red); margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem;">
+          ⚠️ Zona de Riesgo
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0 0 0.75rem 0;" id="maquinariaEstadoAviso">
+          Desactivar esta maquinaria la ocultará de los listados y no podrá ser alquilada.
+        </p>
+        <button type="button" id="btnToggleMaq" class="btn-sm" style="background: var(--red); color: white; width: 100%; display: none;" onclick="EditarMaquinariaModal.toggleEstado()">
+          🗑️ Desactivar Maquinaria
+        </button>
+      </div>
+
+      <div id="maquinariaEditError" class="form-error"></div>
+      <div id="maquinariaEditSuccess" class="form-success"></div>
+      
+      <div class="form-actions">
+        <button type="submit" class="btn-sm btn-orange">Guardar Cambios</button>
+        <button type="button" class="btn-sm btn-ghost" onclick="EditarMaquinariaModal.cerrar()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>

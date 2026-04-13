@@ -113,6 +113,29 @@ const EditarProductoModal = {
       elementos.info.style.display = 'block';
     }
     
+    // Configurar botón toggle según estado activo
+    const btnToggle = document.getElementById('btnToggleProd');
+    const avisoDiv = document.getElementById('productoEstadoAviso');
+    if (btnToggle && avisoDiv) {
+      const activo = producto.activo === 1 || producto.activo === true;
+      if (activo) {
+        btnToggle.innerHTML = '🗑️ Desactivar Producto';
+        avisoDiv.textContent = 'Desactivar este producto lo ocultará de los catálogos.';
+        btnToggle.style.background = 'var(--red)';
+      } else {
+        btnToggle.innerHTML = '✅ Activar Producto';
+        avisoDiv.textContent = 'Activar este producto lo mostrará nuevamente en los catálogos.';
+        btnToggle.style.background = 'var(--green)';
+      }
+      btnToggle.style.display = 'block';
+    }
+    
+    // Configurar carga de imagen DESPUÉS de cargar los datos
+    this.configurarCargaImagen();
+    
+    // Configurar listeners del formulario
+    this.configurarFormulario();
+    
     console.log('✅ Todos los datos cargados correctamente');
   },
 
@@ -184,43 +207,39 @@ const EditarProductoModal = {
       return;
     }
 
-    // Crear handlers si no existen
-    if (!this.handleChangeImage) {
-      this.handleChangeImage = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (file.size > 5 * 1024 * 1024) {
-          this.mostrarError('La imagen no debe exceder 5MB');
-          input.value = '';
-          return;
-        }
-
-        if (!file.type.startsWith('image/')) {
-          this.mostrarError('El archivo debe ser una imagen');
-          input.value = '';
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          preview.classList.remove('empty');
-          preview.innerHTML = `<img src="${event.target.result}" alt="Preview">`;
-          document.getElementById('productoError').style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-      };
-    }
-
-    if (!this.handleClickPreview) {
-      this.handleClickPreview = () => {
-        input.click();
-      };
-    }
-
-    // Remover listeners anteriores para evitar duplicados
+    // Remover listeners anteriores
     input.removeEventListener('change', this.handleChangeImage);
     preview.removeEventListener('click', this.handleClickPreview);
+
+    // Siempre regenerar handlers (no solo la primera vez)
+    this.handleChangeImage = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 5 * 1024 * 1024) {
+        this.mostrarError('La imagen no debe exceder 5MB');
+        input.value = '';
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        this.mostrarError('El archivo debe ser una imagen');
+        input.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        preview.classList.remove('empty');
+        preview.innerHTML = `<img src="${event.target.result}" alt="Preview">`;
+        document.getElementById('productoError').style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    };
+
+    this.handleClickPreview = () => {
+      input.click();
+    };
 
     // Agregar nuevos listeners
     input.addEventListener('change', this.handleChangeImage);
@@ -344,6 +363,60 @@ const EditarProductoModal = {
       successDiv.style.display = 'block';
     }
     document.getElementById('productoError').style.display = 'none';
+  },
+
+  async toggleEstado() {
+    if (!this.productoActual || !this.productoActual.id) {
+      this.mostrarError('ID de producto no válido');
+      return;
+    }
+
+    const actualmente_activo = this.productoActual.activo === 1 || this.productoActual.activo === true;
+    const accion = actualmente_activo ? 'desactivar' : 'activar';
+    const mensajeConfirm = actualmente_activo
+      ? `¿Desactivar "${this.productoActual.nombre}"?\n\nNo aparecerá en catálogos.`
+      : `¿Activar "${this.productoActual.nombre}"?\n\nAparecerá nuevamente en catálogos.`;
+
+    const confirmacion = confirm(mensajeConfirm);
+    if (!confirmacion) return;
+
+    try {
+      console.log(`🔄 ${accion === 'desactivar' ? 'Desactivando' : 'Activando'} producto:`, this.productoActual.id);
+
+      const formData = new FormData();
+      formData.append('accion', 'cambiar_estado');
+      formData.append('id', this.productoActual.id);
+      formData.append('activo', actualmente_activo ? 0 : 1);
+
+      const response = await fetch(this.API, {
+        method: 'POST',
+        body: formData
+      });
+
+      const resultado = await response.json();
+
+      if (!resultado.ok) {
+        throw new Error(resultado.error || `Error al ${accion} producto`);
+      }
+
+      const mensajeExito = actualmente_activo
+        ? 'Producto desactivado correctamente'
+        : 'Producto activado correctamente';
+      
+      this.mostrarExito(mensajeExito);
+
+      setTimeout(() => {
+        this.cerrar();
+        // Recargar lista de inventario
+        if (window.cargarInventario) {
+          cargarInventario();
+        }
+      }, 1500);
+
+    } catch (error) {
+      console.error(`Error ${accion} producto:`, error);
+      this.mostrarError(error.message || `Error al ${accion} producto`);
+    }
   },
 
   formatearFecha(fechaStr) {

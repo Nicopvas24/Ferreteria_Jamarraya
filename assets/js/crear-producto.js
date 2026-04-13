@@ -5,10 +5,14 @@
 
 const ProductoModal = {
   API: 'http://localhost/Ferreteria_Jamarraya/backend/api/productos.php',
+  imagenSeleccionada: null,
+  inicializado: false,
+  handleFormSubmit: null,
 
   abrir() {
     document.getElementById('modalCrearProducto').classList.add('active');
     this.limpiarFormulario();
+    this.configurarCargaImagen();
   },
 
   cerrar() {
@@ -29,6 +33,7 @@ const ProductoModal = {
     
     document.getElementById('productoError').style.display = 'none';
     
+    this.imagenSeleccionada = null;
     const preview = document.getElementById('prodPreview');
     if (preview) {
       preview.classList.add('empty');
@@ -45,7 +50,10 @@ const ProductoModal = {
       return;
     }
 
-    input.addEventListener('change', (e) => {
+    input.removeEventListener('change', this.handleChangeImage);
+    preview.removeEventListener('click', this.handleClickPreview);
+
+    this.handleChangeImage = (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
@@ -61,6 +69,7 @@ const ProductoModal = {
         return;
       }
 
+      this.imagenSeleccionada = file;
       const reader = new FileReader();
       reader.onload = (event) => {
         preview.classList.remove('empty');
@@ -68,11 +77,14 @@ const ProductoModal = {
         document.getElementById('productoError').style.display = 'none';
       };
       reader.readAsDataURL(file);
-    });
+    };
 
-    preview.addEventListener('click', () => {
+    this.handleClickPreview = () => {
       input.click();
-    });
+    };
+
+    input.addEventListener('change', this.handleChangeImage);
+    preview.addEventListener('click', this.handleClickPreview);
   },
 
   mostrarError(mensaje) {
@@ -160,6 +172,7 @@ const ProductoModal = {
 
       if (!r.ok || !data.ok) {
         const msg = data.error || data.mensaje || 'Error desconocido';
+        console.error('❌ Error al crear producto:', msg);
         this.mostrarError(msg);
         return;
       }
@@ -183,12 +196,31 @@ const ProductoModal = {
 
   init() {
     console.log('✓ ProductoModal inicializado');
-    
     this.configurarCargaImagen();
     
     const form = document.getElementById('formCrearProducto');
-    if (!form) return;
+    if (!form) {
+      console.warn('⚠️ Formulario no encontrado');
+      return;
+    }
 
-    form.addEventListener('submit', (e) => this.enviar(e));
+    if (this.handleFormSubmit) {
+      form.removeEventListener('submit', this.handleFormSubmit);
+    }
+
+    this.handleFormSubmit = (e) => this.enviar(e);
+    form.addEventListener('submit', this.handleFormSubmit);
   }
 };
+
+// Hacer disponible globalmente
+window.ProductoModal = ProductoModal;
+
+// Inicializar si el DOM está listo
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    ProductoModal.init();
+  });
+} else {
+  ProductoModal.init();
+}
