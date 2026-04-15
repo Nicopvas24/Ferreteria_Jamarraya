@@ -83,8 +83,8 @@ const EditarProductoModal = {
 
     // Cargar imagen actual
     if (elementos.preview) {
-      if (producto.img && producto.img !== 'nombreimagen.png') {
-        const rutaImg = `http://localhost/Ferreteria_Jamarraya/assets/img/productos/${producto.img}`;
+      if (producto.img && producto.img !== 'nombreimagen.webp') {
+        const rutaImg = `./assets/img/productos/${producto.img}`;
         elementos.preview.classList.remove('empty');
         elementos.preview.innerHTML = `<img src="${rutaImg}" alt="Producto" />`;
       } else {

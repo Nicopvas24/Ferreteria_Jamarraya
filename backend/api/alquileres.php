@@ -24,11 +24,12 @@ switch ($accion) {
             // Traer equipos ACTIVOS Y DISPONIBLES para alquilar
             // activo = 1 → máquina no fue dada de baja del sistema
             // estado = 'disponible' → máquina está disponible para alquilar
+            // Usar LOWER() para evitar problemas de mayúsculas/minúsculas
             $stmt = $pdo->query("
                 SELECT id, nombre, descripcion, estado,
                        tarifa_alquiler, img
                 FROM maquinaria
-                WHERE activo = 1 AND estado = 'disponible'
+                WHERE activo = 1 AND LOWER(estado) = 'disponible'
                 ORDER BY nombre ASC
             ");
 
@@ -38,6 +39,7 @@ switch ($accion) {
                 $e['id']              = (int)$e['id'];
                 $e['tarifa_alquiler'] = (float)$e['tarifa_alquiler'];
                 $e['img']             = $e['img'] ?? 'default.png';
+                $e['estado']          = strtolower($e['estado']); // Normalizar a minúsculas
             }
 
             echo json_encode($equipos);

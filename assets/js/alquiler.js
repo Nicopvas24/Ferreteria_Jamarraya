@@ -49,11 +49,9 @@ const pagesEl       = $('#alq-pages');
 let state = {
   equipos: [],
   filtrados: [],
-  categoriaActiva: 'todos',
   tarifaMax: 500000,
-  duracionActiva: 'daily',
   soloDisponible: true,
-  badge: null,
+  busqueda: '',
   orderBy: 'default',
   viewMode: 'grid',
   currentPage: 1,
@@ -91,17 +89,24 @@ function badgeHTML(badge, agotado) {
 function aplicarFiltros() {
   let lista = [...state.equipos];
 
-  if (state.categoriaActiva !== 'todos')
-    lista = lista.filter(e => e.categoria === state.categoriaActiva);
+  // Filtrar por búsqueda
+  if (state.busqueda.trim()) {
+    const term = state.busqueda.toLowerCase();
+    lista = lista.filter(e => 
+      e.nombre.toLowerCase().includes(term) || 
+      e.descripcion.toLowerCase().includes(term) ||
+      e.marca.toLowerCase().includes(term)
+    );
+  }
 
+  // Filtrar por tarifa
   lista = lista.filter(e => e.tarifa_diaria <= state.tarifaMax);
 
+  // Filtrar por disponibilidad
   if (state.soloDisponible)
     lista = lista.filter(e => e.disponible && e.stock > 0);
 
-  if (state.badge)
-    lista = lista.filter(e => e.badge === state.badge);
-
+  // Ordenar
   if (state.orderBy === 'price-asc')  lista.sort((a,b) => a.tarifa_diaria - b.tarifa_diaria);
   if (state.orderBy === 'price-desc') lista.sort((a,b) => b.tarifa_diaria - a.tarifa_diaria);
   if (state.orderBy === 'name-asc')   lista.sort((a,b) => a.nombre.localeCompare(b.nombre));
@@ -397,13 +402,10 @@ cartCta.addEventListener('click', () => {
 /* ══════════════════════════════════════════
    FILTROS – EVENTOS
 ══════════════════════════════════════════ */
-$$('.alq-cat-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    $$('.alq-cat-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    state.categoriaActiva = btn.dataset.cat;
-    aplicarFiltros();
-  });
+const searchInput = $('#alq-search');
+searchInput?.addEventListener('input', () => {
+  state.busqueda = searchInput.value;
+  aplicarFiltros();
 });
 
 priceRange?.addEventListener('input', () => {
@@ -422,38 +424,15 @@ sortSel?.addEventListener('change', () => {
   aplicarFiltros();
 });
 
-$$('.alq-duration-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    $$('.alq-duration-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    state.duracionActiva = btn.dataset.duration;
-  });
-});
-
-$$('.alq-badge-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const same = btn.classList.contains('active');
-    $$('.alq-badge-btn').forEach(b => b.classList.remove('active'));
-    state.badge = same ? null : btn.dataset.badge;
-    if (!same) btn.classList.add('active');
-    aplicarFiltros();
-  });
-});
-
 clearBtn?.addEventListener('click', () => {
-  state.categoriaActiva = 'todos';
   state.tarifaMax       = 500000;
   state.soloDisponible  = true;
-  state.badge           = null;
+  state.busqueda        = '';
   state.orderBy         = 'default';
   if (priceRange)   { priceRange.value = 500000; priceVal.textContent = fmt(500000); }
   if (inStockCheck)   inStockCheck.checked = true;
+  if (searchInput)    searchInput.value = '';
   if (sortSel)        sortSel.value = 'default';
-  $$('.alq-cat-btn').forEach(b => b.classList.remove('active'));
-  $$('.alq-cat-btn[data-cat="todos"]')[0]?.classList.add('active');
-  $$('.alq-duration-btn').forEach(b => b.classList.remove('active'));
-  $$('.alq-duration-btn[data-duration="daily"]')[0]?.classList.add('active');
-  $$('.alq-badge-btn').forEach(b => b.classList.remove('active'));
   aplicarFiltros();
 });
 

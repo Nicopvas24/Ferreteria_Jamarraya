@@ -154,7 +154,7 @@ function cardHTML(p) {
           src="../assets/img/productos/${p.imagen}"
           alt="${p.nombre}"
           class="pp-card-img"
-          onerror="this.src='../assets/img/productos/nombreimagen.png'"
+          onerror="this.src='../assets/img/productos/nombreimagen.webp'"
         />
         ${p.envioGratis ? '<span class="pp-shipping-tag">Envío gratis</span>' : ''}
       </div>
@@ -217,7 +217,7 @@ function abrirModal(id) {
   state.modalCantidad = 1;
 
   $('#pp-modal-img').src     = `../assets/img/productos/${p.imagen}`;
-  $('#pp-modal-img').onerror = () => { $('#pp-modal-img').src = '../assets/img/productos/nombreimagen.png'; };
+  $('#pp-modal-img').onerror = () => { $('#pp-modal-img').src = '../assets/img/productos/nombreimagen.webp'; };
   $('#pp-modal-cat').textContent   = p.categoria.replace(/-/g,' ');
   $('#pp-modal-name').textContent  = p.nombre;
   $('#pp-modal-brand').textContent = p.marca;
@@ -306,7 +306,7 @@ function renderCarrito() {
         src="../assets/img/productos/${item.imagen}"
         alt="${item.nombre}"
         class="pp-cart-item-img"
-        onerror="this.src='../assets/img/productos/nombreimagen.png'"
+        onerror="this.src='../assets/img/productos/nombreimagen.webp'"
       />
       <div class="pp-cart-item-info">
         <p class="pp-cart-item-name">${item.nombre}</p>
@@ -486,7 +486,7 @@ async function cargarProductos() {
       precio:      p.precio,
       precioAntes: p.precio_antes  ?? null,
       descripcion: p.descripcion   ?? '',
-      imagen:      p.img           ?? 'nombreimagen.png',
+      imagen:      p.img           ?? 'nombreimagen.webp',
       stock:       p.stock_actual,
       badge:       p.badge         ?? '',
       envioGratis: p.envio_gratis == 1

@@ -136,6 +136,27 @@
   margin-bottom: 12px;
 }
 
+/* Search Input */
+#alq-page .alq-search-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: #fff;
+  font-family: 'Barlow', sans-serif;
+  font-size: .92rem;
+  transition: border-color .2s, background .2s;
+}
+#alq-page .alq-search-input:focus {
+  outline: none;
+  background: rgba(255,255,255,0.08);
+  border-color: #FF6B00;
+}
+#alq-page .alq-search-input::placeholder {
+  color: rgba(255,255,255,0.3);
+}
+
 /* Categorías */
 #alq-page .alq-cat-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
 #alq-page .alq-cat-btn {

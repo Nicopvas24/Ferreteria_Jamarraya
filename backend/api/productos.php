@@ -100,7 +100,7 @@ function guardarImagen($archivo) {
 }
 
 function borrarImagenAntigua($nombreImg) {
-    if (!$nombreImg || $nombreImg === 'nombreimagen.png') return;
+    if (!$nombreImg || $nombreImg === 'nombreimagen.webp') return;
     
     $ruta = __DIR__ . '/../../assets/img/productos/' . $nombreImg;
     if (file_exists($ruta)) {
@@ -232,7 +232,7 @@ switch ($accion) {
             }
 
             // Procesar imagen - SOLO si se proporciona
-            $nombreImg = 'nombreimagen.png'; // Valor por defecto
+            $nombreImg = 'nombreimagen.webp'; // Valor por defecto
             
             if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] !== UPLOAD_ERR_NO_FILE) {
                 try {

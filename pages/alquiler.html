@@ -33,19 +33,10 @@
           <button class="alq-clear-filters" id="alq-clear">Limpiar</button>
         </div>
 
-        <!-- Tipo de Equipo -->
+        <!-- Barra de búsqueda -->
         <div class="alq-filter-group">
-          <p class="alq-filter-label">Tipo de equipo</p>
-          <ul class="alq-cat-list" id="alq-cat-list">
-            <li><button class="alq-cat-btn active" data-cat="todos">Todos</button></li>
-            <li><button class="alq-cat-btn" data-cat="herramientas_electricas">Herramientas Eléctricas</button></li>
-            <li><button class="alq-cat-btn" data-cat="maquinaria_pesada">Maquinaria Pesada</button></li>
-            <li><button class="alq-cat-btn" data-cat="andamios">Andamios</button></li>
-            <li><button class="alq-cat-btn" data-cat="herramientas_manuales">Herramientas Manuales</button></li>
-            <li><button class="alq-cat-btn" data-cat="plomeria">Plomería</button></li>
-            <li><button class="alq-cat-btn" data-cat="electricidad">Electricidad</button></li>
-            <li><button class="alq-cat-btn" data-cat="acceso_de_altura">Acceso en Altura</button></li>
-          </ul>
+          <p class="alq-filter-label">Buscar equipo</p>
+          <input type="text" id="alq-search" placeholder="ej: Taladro, Motosierra..." class="alq-search-input" />
         </div>
 
         <!-- Tarifa Diaria -->
@@ -63,8 +54,6 @@
           <p class="alq-filter-label">Duración del alquiler</p>
           <div class="alq-duration-filters">
             <button class="alq-duration-btn active" data-duration="daily">Por día</button>
-            <button class="alq-duration-btn" data-duration="weekly">Por semana</button>
-            <button class="alq-duration-btn" data-duration="monthly">Por mes</button>
           </div>
         </div>
 
@@ -76,16 +65,6 @@
             <span class="alq-checkmark"></span>
             Disponible hoy
           </label>
-        </div>
-
-        <!-- Badges -->
-        <div class="alq-filter-group">
-          <p class="alq-filter-label">Etiqueta</p>
-          <div class="alq-badge-filters">
-            <button class="alq-badge-btn" data-badge="nuevo">Nuevo</button>
-            <button class="alq-badge-btn" data-badge="promocion">Promoción</button>
-            <button class="alq-badge-btn" data-badge="destacado">Destacado</button>
-          </div>
         </div>
       </aside>
 
