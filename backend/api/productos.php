@@ -533,7 +533,58 @@ switch ($accion) {
             echo json_encode(['error' => 'Error en BD: ' . $e->getMessage()]);
         }
         break;
+    // ==============================================================
+    // DESCONTAR DEL INVENTARIO (Compra)
+    // ==============================================================
+    case 'descontar':
+        header('Content-Type: application/json');
+        try {
+            $data = json_decode(file_get_contents('php://input'), true);
+            $items = $data['items'] ?? [];
 
+            if (empty($items)) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'No hay items para descontar']);
+                exit;
+            }
+
+            // Iniciar transacción
+            $pdo->beginTransaction();
+
+            foreach ($items as $item) {
+                $id = (int)($item['id'] ?? 0);
+                $qty = (int)($item['qty'] ?? 0);
+
+                if (!$id || $qty <= 0) continue;
+
+                // Verificar stock disponible
+                $stmt = $pdo->prepare("SELECT stock_actual FROM productos WHERE id = ?");
+                $stmt->execute([$id]);
+                $prod = $stmt->fetch();
+
+                if (!$prod) continue;
+
+                $nuevoStock = $prod['stock_actual'] - $qty;
+                if ($nuevoStock < 0) $nuevoStock = 0; // No permitir negativos
+
+                // Actualizar stock
+                $stmt = $pdo->prepare("UPDATE productos SET stock_actual = ? WHERE id = ?");
+                $stmt->execute([$nuevoStock, $id]);
+            }
+
+            // Confirmar transacción
+            $pdo->commit();
+
+            echo json_encode(['ok' => true, 'mensaje' => 'Inventario actualizado correctamente']);
+
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al actualizar inventario: ' . $e->getMessage()]);
+        }
+        break;
     default:
         header('Content-Type: application/json');
         http_response_code(400);

@@ -9,12 +9,6 @@ require_once __DIR__ . '/../conexion.php';
 
 session_start();
 
-if (!isset($_SESSION['id_usuario'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'No autorizado']);
-    exit;
-}
-
 $pdo    = conectar();
 
 // Extraer acción y datos desde GET, POST o JSON body

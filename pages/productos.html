@@ -178,10 +178,123 @@
           <span>Total estimado</span>
           <strong id="pp-cart-total">$0</strong>
         </div>
-        <button class="pp-cart-cta" id="pp-cart-cta">Solicitar cotización</button>
+        <div class="pp-cart-buttons">
+          <button class="pp-cart-cta pp-cart-buy" id="pp-cart-cta">🛒 Comprar ahora</button>
+          <button class="pp-cart-cta pp-cart-quote" id="pp-cart-quote">💬 Solicitar cotización</button>
+        </div>
       </div>
     </div>
     <div class="pp-cart-overlay" id="pp-cart-overlay"></div>
+
+    <!-- ── MODAL DE COMPRA ── -->
+    <div class="pp-checkout-modal" id="pp-checkout-modal" aria-hidden="true">
+      <div class="pp-checkout-container">
+        <button class="pp-checkout-close" id="pp-checkout-close">✕</button>
+        
+        <div class="pp-checkout-header">
+          <h2>Finalizar Compra</h2>
+          <p>Completa tu información para proceder con el pedido</p>
+        </div>
+
+        <form class="pp-checkout-form" id="pp-checkout-form">
+          
+          <!-- ── DATOS PERSONALES ── -->
+          <div class="pp-checkout-section">
+            <h3 class="pp-section-title">📋 Datos Personales</h3>
+            <div class="pp-form-grid">
+              <div class="pp-form-group">
+                <label for="co-nombre">Nombre completo *</label>
+                <input type="text" id="co-nombre" name="nombre" placeholder="Tu nombre" required />
+              </div>
+              <div class="pp-form-group">
+                <label for="co-email">Correo electrónico *</label>
+                <input type="email" id="co-email" name="email" placeholder="correo@ejemplo.com" required />
+              </div>
+              <div class="pp-form-group">
+                <label for="co-telefono">Teléfono *</label>
+                <input type="tel" id="co-telefono" name="telefono" placeholder="+57 300 000 0000" required />
+              </div>
+              <div class="pp-form-group">
+                <label for="co-identificacion">Identificación *</label>
+                <input type="text" id="co-identificacion" name="identificacion" placeholder="CC / NIT" required />
+              </div>
+            </div>
+          </div>
+
+          <!-- ── TIPO DE ENTREGA ── -->
+          <div class="pp-checkout-section">
+            <h3 class="pp-section-title">🚚 Tipo de Entrega</h3>
+            <div class="pp-delivery-options">
+              <label class="pp-delivery-option">
+                <input type="radio" name="delivery" value="tienda" checked />
+                <div class="pp-delivery-box">
+                  <strong>📍 Recoger en tienda</strong>
+                  <p>Calle 10-19, Apia, Risaralda</p>
+                </div>
+              </label>
+              <label class="pp-delivery-option">
+                <input type="radio" name="delivery" value="domicilio" />
+                <div class="pp-delivery-box">
+                  <strong>🏠 Envío a domicilio</strong>
+                  <p>Entrega en tu dirección</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- ── DIRECCIÓN (condicional) ── -->
+          <div class="pp-checkout-section" id="pp-direccion-section" style="display:none;">
+            <h3 class="pp-section-title">📮 Dirección de Entrega</h3>
+            <div class="pp-form-grid">
+              <div class="pp-form-group pp-full">
+                <label for="co-direccion">Dirección completa *</label>
+                <input type="text" id="co-direccion" name="direccion" placeholder="Calle, número, apartamento..." />
+              </div>
+              <div class="pp-form-group">
+                <label for="co-ciudad">Ciudad *</label>
+                <input type="text" id="co-ciudad" name="ciudad" placeholder="Ciudad" />
+              </div>
+              <div class="pp-form-group">
+                <label for="co-departamento">Departamento *</label>
+                <input type="text" id="co-departamento" name="departamento" placeholder="Departamento" />
+              </div>
+              <div class="pp-form-group">
+                <label for="co-codigo">Código postal *</label>
+                <input type="text" id="co-codigo" name="codigo" placeholder="Código postal" />
+              </div>
+            </div>
+          </div>
+
+          <!-- ── NOTAS ── -->
+          <div class="pp-checkout-section">
+            <h3 class="pp-section-title">📝 Notas adicionales</h3>
+            <div class="pp-form-group pp-full">
+              <label for="co-notas">Mensaje (opcional)</label>
+              <textarea id="co-notas" name="notas" placeholder="Déjanos un mensaje..." rows="3"></textarea>
+            </div>
+          </div>
+
+          <!-- ── RESUMEN ── -->
+          <div class="pp-checkout-section pp-checkout-summary">
+            <h3 class="pp-section-title">💰 Resumen del Pedido</h3>
+            <div class="pp-summary-items" id="pp-summary-items"></div>
+            <div class="pp-summary-total">
+              <strong>Total a pagar</strong>
+              <strong id="pp-checkout-total">$0</strong>
+            </div>
+          </div>
+
+          <!-- ── BOTÓN PAGAR ── -->
+          <button type="submit" class="pp-checkout-submit">
+            <span class="pp-submit-text">Confirmar Compra</span>
+            <span class="pp-submit-spinner" hidden></span>
+          </button>
+          
+          <p class="pp-checkout-notice">✓ Tu compra será procesada de forma segura</p>
+        </form>
+      </div>
+    </div>
+    <div class="pp-checkout-overlay" id="pp-checkout-overlay"></div>
 
   </div><!-- /#prod-page -->
 

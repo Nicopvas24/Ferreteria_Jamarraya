@@ -32,9 +32,19 @@ const cartCount     = $('#pp-cart-count');
 const cartPanel     = $('#pp-cart-panel');
 const cartOverlay   = $('#pp-cart-overlay');
 const cartClose     = $('#pp-cart-close');
-const cartBuy       = $('#pp-cart-buy');
+const cartCta       = $('#pp-cart-cta');
+const cartQuote     = $('#pp-cart-quote');
 const cartItems     = $('#pp-cart-items');
 const cartTotal     = $('#pp-cart-total');
+// Modal de compra
+const checkoutModal = $('#pp-checkout-modal');
+const checkoutForm  = $('#pp-checkout-form');
+const checkoutClose = $('#pp-checkout-close');
+const checkoutOverlay = $('#pp-checkout-overlay');
+const deliveryRadios = document.querySelectorAll('input[name="delivery"]');
+const direccionSection = $('#pp-direccion-section');
+const summaryItems = $('#pp-summary-items');
+const checkoutTotal = $('#pp-checkout-total');
 // Paginación
 const prevBtn       = $('#pp-prev');
 const nextBtn       = $('#pp-next');
@@ -357,29 +367,221 @@ cartClose.addEventListener('click', cerrarCarrito);
 cartOverlay.addEventListener('click', cerrarCarrito);
 
 /* ══════════════════════════════════════════
-   COTIZACIÓN
+   MODAL CHECKOUT
 ══════════════════════════════════════════ */
-$('#pp-cart-cta').addEventListener('click', () => {
+function validarSesion() {
+  const usuario = sessionStorage.getItem('jm_nombre');
+  if (!usuario) {
+    alert('⚠️ Debes iniciar sesión o crear cuenta para realizar una compra. Por favor, inicia sesión en el navbar.');
+    return false;
+  }
+  return true;
+}
+
+function abrirCheckout() {
+  if (!validarSesion()) return;
+  if (state.carrito.length === 0) return;
+  
+  // Actualizar resumen
+  const total = state.carrito.reduce((s,x) => s + x.precio * x.qty, 0);
+  checkoutTotal.textContent = fmt(total);
+  
+  summaryItems.innerHTML = state.carrito.map(item => `
+    <div class="pp-summary-item">
+      <span>${item.nombre} <strong>x${item.qty}</strong></span>
+      <strong>${fmt(item.precio * item.qty)}</strong>
+    </div>
+  `).join('');
+  
+  // Abrir modal
+  checkoutModal.classList.add('open');
+  checkoutOverlay.classList.add('open');
+  checkoutModal.setAttribute('aria-hidden', 'false');
+  cerrarCarrito();
+}
+
+function cerrarCheckout() {
+  checkoutModal.classList.remove('open');
+  checkoutOverlay.classList.remove('open');
+  checkoutModal.setAttribute('aria-hidden', 'true');
+}
+
+function procesarCompra(e) {
+  e.preventDefault();
+  const submitBtn = checkoutForm.querySelector('button[type="submit"]');
+  const submitText = submitBtn.querySelector('.pp-submit-text');
+  const submitSpinner = submitBtn.querySelector('.pp-submit-spinner');
+  
+  // Obtener datos del formulario
+  const formData = new FormData(checkoutForm);
+  const datos = {
+    nombre: formData.get('nombre'),
+    email: formData.get('email'),
+    telefono: formData.get('telefono'),
+    identificacion: formData.get('identificacion'),
+    delivery: formData.get('delivery'),
+    direccion: formData.get('delivery') === 'domicilio' ? formData.get('direccion') : 'Recolección en tienda',
+    ciudad: formData.get('ciudad'),
+    departamento: formData.get('departamento'),
+    codigo: formData.get('codigo'),
+    notas: formData.get('notas'),
+    carrito: state.carrito,
+    total: state.carrito.reduce((s,x) => s + x.precio * x.qty, 0)
+  };
+  
+  // Simular envío
+  submitBtn.disabled = true;
+  submitText.style.display = 'none';
+  submitSpinner.hidden = false;
+  
+  // Registrar venta en la BD
+  registrarVenta(datos, () => {
+    cerrarCheckout();
+    submitBtn.disabled = false;
+    submitText.style.display = '';
+    submitSpinner.hidden = true;
+    checkoutForm.reset();
+    state.carrito = [];
+    renderCarrito();
+    mostrarMensajeExito();
+  });
+}
+
+function registrarVenta(datos, callback) {
+  // Primero registrar el cliente si no existe
+  fetch('../backend/api/clientes.php?accion=registrar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      nombre: datos.nombre,
+      identificacion: datos.identificacion,
+      telefono: datos.telefono,
+      email: datos.email,
+      direccion: datos.direccion
+    })
+  })
+  .then(r => r.json())
+  .then(clienteData => {
+    const idCliente = clienteData.id || clienteData.id_cliente || 0;
+    
+    if (!idCliente) {
+      throw new Error('No se pudo crear/obtener cliente: ' + JSON.stringify(clienteData));
+    }
+    
+    // Transformar carrito a estructura esperada por backend
+    const items = datos.carrito.map(item => ({
+      id_producto: item.id,
+      cantidad: item.qty,
+      precio_unitario: item.precio
+    }));
+    
+    // Registrar venta (el backend descontará stock automáticamente)
+    return fetch('../backend/api/ventas.php?accion=registrar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_cliente: idCliente,
+        items: items,
+        total: datos.total,
+        notas: datos.notas,
+        delivery: datos.delivery
+      })
+    });
+  })
+  .then(r => r.json())
+  .then(ventaData => {
+    if (ventaData.ok || ventaData.id_venta) {
+      console.log('✓ Venta registrada:', ventaData);
+      alert(`✓ ¡Compra exitosa! Comprobante: ${ventaData.comprobante}`);
+    } else {
+      console.error('Error en venta:', ventaData);
+      alert('❌ Error: ' + (ventaData.mensaje || ventaData.error || 'Desconocido'));
+    }
+    setTimeout(callback, 1500);
+  })
+  .catch(err => {
+    console.error('Error registrando venta:', err);
+    alert('❌ Error al procesar la compra: ' + err.message);
+    setTimeout(callback, 500);
+  });
+}
+
+function procesarInventario(carrito) {
+  // NOTA: El descontar ya se hace automáticamente en ventas.php cuando se registra la venta
+  // Esta función se mantiene por compatibilidad pero no hace nada
+  console.log('✓ Inventario ya procesado durante registro de venta');
+}
+
+function mostrarMensajeExito() {
+  const msg = document.createElement('div');
+  msg.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1a1a1a;
+    border: 2px solid #FF6B00;
+    border-radius: 12px;
+    padding: 32px;
+    text-align: center;
+    z-index: 3000;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(255,107,0,0.3);
+  `;
+  msg.innerHTML = `
+    <div style="font-size: 2.4rem; margin-bottom: 16px;">✓</div>
+    <h3 style="font-size: 1.3rem; font-weight: 700; margin: 0 0 8px; color: #FF6B00;">¡Compra exitosa!</h3>
+    <p style="color: rgba(255,255,255,0.6); margin: 0 0 24px;">Tu pedido ha sido confirmado.</p>
+    <button onclick="this.parentElement.remove()" style="background: #FF6B00; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-weight: 700;">Cerrar</button>
+  `;
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 4000);
+}
+
+checkoutClose?.addEventListener('click', cerrarCheckout);
+checkoutOverlay?.addEventListener('click', cerrarCheckout);
+checkoutForm?.addEventListener('submit', procesarCompra);
+
+// Toggle dirección
+function toggleDireccionSection() {
+  const mostrar = document.querySelector('input[name="delivery"]:checked').value === 'domicilio';
+  direccionSection.style.display = mostrar ? 'block' : 'none';
+  // Actualizar required en campos de dirección
+  const camposDireccion = document.querySelectorAll('#co-direccion, #co-ciudad, #co-departamento, #co-codigo');
+  camposDireccion.forEach(input => {
+    input.required = mostrar;
+    if (!mostrar) input.value = ''; // Limpiar si se regresa a tienda
+  });
+}
+
+deliveryRadios.forEach(radio => {
+  radio.addEventListener('change', toggleDireccionSection);
+});
+
+// Inicializar estado al cargar
+toggleDireccionSection();
+
+// Botón comprar
+cartCta?.addEventListener('click', abrirCheckout);
+
+// Botón cotización (WhatsApp)
+cartQuote?.addEventListener('click', () => {
   if (state.carrito.length === 0) return;
   const lineas = state.carrito
     .map(x => `• ${x.nombre} x${x.qty} = ${fmt(x.precio * x.qty)}`)
-    .join('\n');
+    .join('%0A');
   const total = state.carrito.reduce((s,x) => s + x.precio * x.qty, 0);
   const msg = encodeURIComponent(
-    `Hola, quiero cotizar estos productos:\n\n${lineas}\n\nTotal estimado: ${fmt(total)}`
+    `Hola, quiero cotizar estos productos:%0A%0A${lineas}%0A%0ATotal estimado: ${fmt(total)}`
   );
-  window.open(`https://wa.me/573000000000?text=${msg}`, '_blank');
+  window.open(`https://wa.me/573017213193?text=${msg}`, '_blank');
 });
 
 /* ══════════════════════════════════════════
-   COMPRAR
-   [ CONECTAR PAGO ] — cambia la URL cuando
-   tengas lista la página de pago
+   COTIZACIÓN
 ══════════════════════════════════════════ */
-cartBuy?.addEventListener('click', () => {
-  if (state.carrito.length === 0) return;
-  window.location.href = '../pages/pago.html';
-});
+// Comentado: función antigua de cotización por WhatsApp
+// $('#pp-cart-cta').addEventListener('click', () => { ... });
 
 /* ══════════════════════════════════════════
    FILTROS – EVENTOS

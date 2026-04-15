@@ -9,12 +9,6 @@ require_once __DIR__ . '/../conexion.php';
 
 session_start();
 
-if (!isset($_SESSION['id_usuario'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'No autorizado']);
-    exit;
-}
-
 $pdo    = conectar();
 $accion = $_GET['accion'] ?? $_POST['accion'] ?? 'listar';
 
@@ -116,10 +110,11 @@ switch ($accion) {
             // Comprobante único
             $comprobante = 'VTA-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -5));
 
-            // Insertar cabecera
+            // Insertar cabecera (sin id_usuario si no hay sesión)
+            $id_usuario = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : null;
             $stmt = $pdo->prepare("INSERT INTO ventas (comprobante, fecha, id_cliente, id_usuario, total)
                                    VALUES (?, NOW(), ?, ?, ?)");
-            $stmt->execute([$comprobante, $id_cliente, $_SESSION['id_usuario'], $total]);
+            $stmt->execute([$comprobante, $id_cliente, $id_usuario, $total]);
             $id_venta = (int)$pdo->lastInsertId();
 
             // Insertar detalle y descontar stock
