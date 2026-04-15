@@ -572,7 +572,7 @@ cartQuote?.addEventListener('click', () => {
     .join('%0A');
   const total = state.carrito.reduce((s,x) => s + x.precio * x.qty, 0);
   const msg = encodeURIComponent(
-    `Hola, quiero cotizar estos productos:%0A%0A${lineas}%0A%0ATotal estimado: ${fmt(total)}`
+    `Hola, quiero cotizar estos productos:${lineas}Total estimado: ${fmt(total)}`
   );
   window.open(`https://wa.me/573017213193?text=${msg}`, '_blank');
 });
