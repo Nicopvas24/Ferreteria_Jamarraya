@@ -148,7 +148,7 @@
         <div class="panel">
           <div class="panel__head">
             <span class="panel__title">Gestión de Ventas</span>
-            <button class="btn-sm btn-orange" onclick="alert('Módulo: Nueva venta')">+ Nueva venta</button>
+            <button class="btn-sm btn-orange" onclick="crearVentaDesdeModal()">+ Nueva venta</button>
           </div>
           <div class="panel__body">
             <div class="filter-bar" style="margin-bottom:1rem">
@@ -556,6 +556,11 @@
     if (respCrearAlquiler.ok) document.getElementById('modulosContainer').innerHTML += await respCrearAlquiler.text();
     else console.warn('No se pudo cargar crear-alquiler modal');
     
+    // Cargar modal de crear venta
+    const respCrearVenta = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/venta/crear-modal.html');
+    if (respCrearVenta.ok) document.getElementById('modulosContainer').innerHTML += await respCrearVenta.text();
+    else console.warn('No se pudo cargar crear-venta modal');
+    
     // Cargar modal de crear maquinaria
     const respCrearMaquinaria = await fetch('http://localhost/Ferreteria_Jamarraya/components/modals/maquinaria/crear-modal.html');
     if (respCrearMaquinaria.ok) document.getElementById('modulosContainer').innerHTML += await respCrearMaquinaria.text();
@@ -579,7 +584,8 @@
       'http://localhost/Ferreteria_Jamarraya/assets/js/devolver-alquiler.js',
       'http://localhost/Ferreteria_Jamarraya/assets/js/crear-alquiler.js',
       'http://localhost/Ferreteria_Jamarraya/assets/js/crear-maquinaria.js',
-      'http://localhost/Ferreteria_Jamarraya/assets/js/editar-maquinaria.js'
+      'http://localhost/Ferreteria_Jamarraya/assets/js/editar-maquinaria.js',
+      'http://localhost/Ferreteria_Jamarraya/assets/js/crear-venta.js'
     ];
     
     for (const src of scripts) {
@@ -610,6 +616,7 @@
         DevolverAlquilerModal: typeof window.DevolverAlquilerModal !== 'undefined',
         CrearAlquilerModal: typeof window.CrearAlquilerModal !== 'undefined',
         CrearMaquinariaModal: typeof window.CrearMaquinariaModal !== 'undefined',
+        CrearVentaModal: typeof window.CrearVentaModal !== 'undefined',
         EditarMaquinariaModal: typeof window.EditarMaquinariaModal !== 'undefined'
       };
       
@@ -630,6 +637,7 @@
           window.DevolverAlquilerModal?.init?.();
           window.CrearAlquilerModal?.init?.();
           window.CrearMaquinariaModal?.init?.();
+          window.CrearVentaModal?.init?.();
           window.EditarMaquinariaModal?.init?.();
         } catch (e) {
           console.error('Error inicializando:', e);
@@ -673,6 +681,23 @@ function editarMaquinaria(id) {
     console.error('❌ EditarMaquinariaModal.abrirConId no es una función');
     alert('Error al cargar la funcionalidad de edición');
   }
+}
+
+// Función para crear venta desde el dashboard
+function crearVentaDesdeModal() {
+  if (window.CrearVentaModal) {
+    window.CrearVentaModal.abrir();
+  } else {
+    console.error('❌ CrearVentaModal no disponible');
+    alert('Por favor, espera a que se carguen todos los módulos');
+  }
+}
+
+// Función para ver detalle de venta
+function verDetalleVenta(id) {
+  // Implementar modal detalle de venta similar a alquiler
+  console.log('📋 Ver detalle venta:', id);
+  alert('Funcionalidad de detalle de venta en desarrollo');
 }
 </script>
 

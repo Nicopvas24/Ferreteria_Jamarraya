@@ -1,0 +1,248 @@
+/* ============================================================
+   ventas.css
+   Estilos para la página de gestión de ventas
+============================================================ */
+
+#ventas-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--dark-1) 0%, var(--dark-2) 100%);
+  padding: 2rem 0;
+}
+
+.ventas-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* ══════════════════════════════════════════
+   Header
+══════════════════════════════════════════ */
+
+.ventas-hero {
+  margin-bottom: 2rem;
+  padding: 2rem;
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.ventas-hero h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.ventas-hero p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* ══════════════════════════════════════════
+   Toolbar
+══════════════════════════════════════════ */
+
+.ventas-toolbar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.ventas-toolbar-section {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.ventas-toolbar-section.filters {
+  flex: 1;
+  min-width: 300px;
+}
+
+.filtro-grupo {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.filtro-grupo label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.filtro-grupo input {
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.filtro-grupo input:focus {
+  border-color: var(--orange);
+  outline: none;
+}
+
+.ventas-toolbar button {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.ventas-toolbar .btn-orange {
+  background: var(--orange);
+  color: var(--dark-1);
+}
+
+.ventas-toolbar .btn-orange:hover {
+  background: #ff9f00;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+.ventas-toolbar .btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.ventas-toolbar .btn-ghost:hover {
+  background: rgba(255, 152, 0, 0.1);
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+/* ══════════════════════════════════════════
+   Tabla de ventas
+══════════════════════════════════════════ */
+
+.ventas-content {
+  background: var(--dark-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+#tablasVentas {
+  width: 100%;
+}
+
+#tablasVentas table {
+  font-size: 0.9rem;
+}
+
+#tablasVentas th {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+#tablasVentas td {
+  vertical-align: middle;
+  color: var(--text);
+}
+
+#tablasVentas tbody tr:hover {
+  background: rgba(255, 152, 0, 0.05);
+}
+
+#tablasVentas .btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+#tablasVentas .btn-sm.btn-orange {
+  background: var(--orange);
+  color: var(--dark-1);
+}
+
+#tablasVentas .btn-sm.btn-orange:hover {
+  background: #ff9f00;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+}
+
+/* ══════════════════════════════════════════
+   Responsive
+══════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .ventas-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ventas-toolbar-section {
+    width: 100%;
+  }
+
+  .ventas-toolbar-section.filters {
+    flex-direction: column;
+    min-width: auto;
+  }
+
+  .filtro-grupo {
+    width: 100%;
+  }
+
+  .ventas-hero {
+    padding: 1.5rem;
+  }
+
+  .ventas-hero h1 {
+    font-size: 1.5rem;
+  }
+
+  .ventas-content {
+    padding: 1rem;
+  }
+
+  #tablasVentas table {
+    font-size: 0.8rem;
+  }
+
+  #tablasVentas th,
+  #tablasVentas td {
+    padding: 0.5rem !important;
+  }
+}
+
+/* ══════════════════════════════════════════
+   Animaciones
+══════════════════════════════════════════ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ventas-content {
+  animation: fadeIn 0.3s ease-out;
+}

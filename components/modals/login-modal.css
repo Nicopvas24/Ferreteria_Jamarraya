@@ -108,6 +108,17 @@
 }
 .lm-toggle-pass:hover { color: var(--orange, #F97316); }
 
+/* ── Botón ¿Olvidaste tu contraseña? ── */
+.lm-forgot-pass {
+  background: none; border: none;
+  color: rgba(249,115,22,.8); font-size: .8rem;
+  cursor: pointer; padding: 0.2rem 0;
+  transition: color .2s;
+  text-align: right;
+  margin-top: -0.2rem;
+}
+.lm-forgot-pass:hover { color: var(--orange, #F97316); text-decoration: underline; }
+
 /* ── Error ── */
 .lm-error {
   background: rgba(230, 57, 70, .15);

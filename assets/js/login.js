@@ -445,6 +445,17 @@
           abrirModal();
         }, 150);
       });
+
+    // ── Botón ¿Olvidaste tu contraseña? ──
+    document.getElementById('loginForgotPass')
+      ?.addEventListener('click', e => {
+        e.preventDefault();
+        cerrarModal();
+        // Pequeño delay y luego abrir modal de recuperación
+        setTimeout(() => {
+          RecuperarContrasena.abrir();
+        }, 150);
+      });
  
     initTogglePass();
     initTogglePassRegistro();
@@ -457,22 +468,33 @@
     if (!nombre) return;
  
     // Esperar a que el navbar esté en el DOM
+    let intentos = 0;
     const esperar = setInterval(() => {
+      intentos++;
       const headerNoAuth = document.getElementById('headerNoAuth');
       const headerClienteAuth = document.getElementById('headerClienteAuth');
       const greetingUsuario = document.getElementById('greetingUsuario');
       const btnLogout = document.getElementById('btnLogout');
       
+      // Si no encuentra después de 50 intentos (4 segundos), detener
+      if (intentos > 50) {
+        clearInterval(esperar);
+        return;
+      }
+      
       if (!headerNoAuth || !headerClienteAuth) return;
       clearInterval(esperar);
  
-      // Mostrar vista autenticada
-      headerNoAuth.style.display = 'none';
-      headerClienteAuth.style.display = 'flex';
-      greetingUsuario.textContent = `¡Hola ${nombre}!`;
+      // Mostrar vista autenticada solo si es cliente
+      if (rol === 'cliente') {
+        headerNoAuth.style.display = 'none';
+        headerClienteAuth.style.display = 'flex';
+        greetingUsuario.textContent = `¡Hola ${nombre}!`;
+      }
       
-      // Configurar botón logout
-      if (btnLogout) {
+      // Configurar botón logout una sola vez
+      if (btnLogout && !btnLogout.dataset.logoutConfigured) {
+        btnLogout.dataset.logoutConfigured = 'true';
         btnLogout.addEventListener('click', (e) => {
           e.preventDefault();
           fetch(API_LOGIN + '?accion=logout')
@@ -488,33 +510,100 @@
  
   /* ── Punto de entrada ────────────────────────────────────── */
   function init() {
+    // ── Verificar si es admin/empleado logueado ──────────────
+    const rol = sessionStorage.getItem('jm_rol');
+    
+    // 🔒 Si es admin o empleado, NO inyectar modales. Redirigir al dashboard
+    // PERO: solo redirigir si NO está ya en el dashboard
+    if (rol === 'admin' || rol === 'empleado') {
+      const paginaActual = window.location.pathname.toLowerCase();
+      const dashboardAdmin = '/dashboard-admin.html';
+      const dashboardEmpleado = '/dashboard-empleado.html';
+      
+      // Si es admin pero NO está en dashboard-admin, redirigir
+      if (rol === 'admin' && !paginaActual.includes(dashboardAdmin)) {
+        console.log('🔒 Admin detectado fuera del dashboard. Redirigiendo a dashboard-admin.html');
+        window.location.href = './dashboard-admin.html';
+        return;
+      }
+      
+      // Si es empleado pero NO está en dashboard-empleado, redirigir
+      if (rol === 'empleado' && !paginaActual.includes(dashboardEmpleado)) {
+        console.log('🔒 Empleado detectado fuera del dashboard. Redirigiendo a dashboard-empleado.html');
+        window.location.href = './dashboard-empleado.html';
+        return;
+      }
+      
+      // Si ya está en su dashboard, no hacer nada
+      console.log('✅ Ya está en su dashboard, continuando normalmente');
+      return;
+    }
+    
     inyectarCSS();
+
+    // ── Inicializar módulo de recuperación de contraseña ──────
+    // Esperar a que RecuperarContrasena esté disponible (se carga antes en include.js)
+    if (window.RecuperarContrasena && window.RecuperarContrasena.init) {
+      RecuperarContrasena.init().catch(err => {
+        console.warn('Error al cargar módulo de recuperación:', err);
+      });
+    } else {
+      console.warn('⚠️ RecuperarContrasena no está disponible aún');
+    }
  
     // Conectar botón "Iniciar Sesión" del navbar
     // El navbar se carga dinámicamente, hay que esperar
+    let eventoAlClick = false;
+    let intentosNavbar = 0;
     const esperar = setInterval(() => {
+      intentosNavbar++;
       const btnLogin = document.getElementById('btnLogin');
       const btnRegister = document.getElementById('btnRegister');
+      
+      // Si no encuentra después de 50 intentos (4 segundos), detener
+      if (intentosNavbar > 50) {
+        clearInterval(esperar);
+        console.warn('⚠️ Navbar no cargó a tiempo');
+        return;
+      }
+      
       if (!btnLogin) return;
       clearInterval(esperar);
  
-      btnLogin.addEventListener('click', e => {
-        e.preventDefault();
-        inyectarModal().then(() => {
-          initModal();
-          abrirModal();
-        });
-      });
-
-      // Conectar botón registrarse
-      if (btnRegister) {
-        btnRegister.addEventListener('click', e => {
+      // Conectar eventos solo si NO se han conectado ya
+      if (!eventoAlClick) {
+        eventoAlClick = true;
+        console.log('✅ Conectando event listeners a botones de login');
+        
+        // Clonar para remover event listeners previos
+        const newBtnLogin = btnLogin.cloneNode(true);
+        btnLogin.parentNode.replaceChild(newBtnLogin, btnLogin);
+        
+        newBtnLogin.addEventListener('click', e => {
           e.preventDefault();
+          e.stopPropagation();
+          console.log('Abriendo modal de login');
           inyectarModal().then(() => {
             initModal();
-            abrirModalRegistro();
+            abrirModal();
           });
         });
+
+        // Conectar botón registrarse
+        if (btnRegister) {
+          const newBtnRegister = btnRegister.cloneNode(true);
+          btnRegister.parentNode.replaceChild(newBtnRegister, btnRegister);
+          
+          newBtnRegister.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Abriendo modal de registro');
+            inyectarModal().then(() => {
+              initModal();
+              abrirModalRegistro();
+            });
+          });
+        }
       }
     }, 80);
  

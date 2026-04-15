@@ -614,6 +614,12 @@ window.onClienteActualizado = (data) => {
   alert('✓ Cliente actualizado correctamente');
 };
 
+// Cuando se crea una venta, recargar tabla
+window.onVentaCreada = (data) => {
+  cargarVentas();
+  alert('✓ Venta registrada exitosamente');
+};
+
 /* ══════════════════════════════════════════
    INIT
 ══════════════════════════════════════════ */

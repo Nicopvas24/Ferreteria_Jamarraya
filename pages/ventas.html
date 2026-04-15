@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de Ventas – Ferretería Jamarraya</title>
+  <link rel="stylesheet" href="../assets/css/estilos.css" />
+  <link rel="stylesheet" href="../assets/css/ventas.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <div id="ventas-page">
+    <div class="ventas-container">
+
+      <!-- ── HERO ── -->
+      <div class="ventas-hero">
+        <h1>💰 Gestión de Ventas</h1>
+        <p>Administra y visualiza todas las ventas realizadas</p>
+      </div>
+
+      <!-- ── TOOLBAR ── -->
+      <div class="ventas-toolbar">
+        <!-- Filtros -->
+        <div class="ventas-toolbar-section filters">
+          <div class="filtro-grupo">
+            <div style="flex: 1;">
+              <label>Desde</label>
+              <input type="date" id="filtroDesde" />
+            </div>
+            <div style="flex: 1;">
+              <label>Hasta</label>
+              <input type="date" id="filtroHasta" />
+            </div>
+            <button id="btnFiltrar" class="btn-orange">Filtrar</button>
+            <button id="btnLimpiar" class="btn-ghost">Limpiar</button>
+          </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="ventas-toolbar-section">
+          <button id="btnCrearVenta" class="btn-orange">
+            ➕ Nueva Venta
+          </button>
+        </div>
+      </div>
+
+      <!-- ── CONTENIDO ── -->
+      <div class="ventas-content">
+        <div id="tablasVentas">
+          <!-- Se llena dinámicamente con JS -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── MODAL CREAR VENTA ── -->
+  <div id="modalVentaContainer"></div>
+
+  <!-- Scripts -->
+  <script src="../components/layout/navbar.html" nonce=""></script>
+  <script src="../assets/js/main.js"></script>
+  <script src="../assets/js/include.js"></script>
+  
+  <!-- Modal crear venta -->
+  <script>
+    // Cargar modal hacer venta
+    fetch('../components/modals/venta/crear-modal.html')
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById('modalVentaContainer').innerHTML = html;
+        // Cargar script del modal después de insertar el HTML
+        const script = document.createElement('script');
+        script.src = '../assets/js/crear-venta.js';
+        document.body.appendChild(script);
+      })
+      .catch(e => console.error('Error cargando modal:', e));
+  </script>
+
+  <!-- Script de gestión de ventas -->
+  <script src="../assets/js/ventas.js"></script>
+
+</body>
+</html>

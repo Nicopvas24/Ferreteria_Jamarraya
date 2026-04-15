@@ -50,7 +50,12 @@ if (document.getElementById('footer')) {
   cargar("footer", "../components/layout/footer.html", "../assets/css/footer.css");
 }
 
-// Cargar módulo de login
+// Cargar módulo de recuperación de contraseña PRIMERO
+const recuperarScript = document.createElement('script');
+recuperarScript.src = '../assets/js/recuperar-contrasena.js';
+document.body.appendChild(recuperarScript);
+
+// Cargar módulo de login DESPUÉS (depende de RecuperarContrasena)
 const loginScript = document.createElement('script');
 loginScript.src = '../assets/js/login.js';
 document.body.appendChild(loginScript);

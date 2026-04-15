@@ -1,0 +1,190 @@
+<!-- ============================================================
+     components/modals/recuperar-contrasena-modal.html
+     Modal para recuperación de contraseña bifurcado por tipo de usuario
+     ============================================================ -->
+
+<div class="rcp-overlay" id="recuperarOverlay" role="dialog" aria-modal="true" aria-label="Recuperar Contraseña" hidden>
+
+  <div class="rcp-card">
+
+    <!-- Botón cerrar -->
+    <button class="rcp-close" id="rcpClose" aria-label="Cerrar">&times;</button>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- PASO 1: Solicitud inicial (identificar tipo de usuario)        -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="rcp-step" id="rcpStep1">
+      <div class="rcp-header">
+        <span class="rcp-icon">🔑</span>
+        <h2 class="rcp-title">Recuperar Contraseña</h2>
+      </div>
+
+      <form class="rcp-form" id="rcpFormStep1" novalidate>
+        <p class="rcp-subtitle">Ingresa tu correo electrónico para recuperar tu contraseña</p>
+
+        <div class="rcp-field">
+          <label for="rcp-email">Correo electrónico</label>
+          <input type="email" id="rcp-email" name="email" placeholder="correo@ejemplo.com" required />
+        </div>
+
+        <p class="rcp-error" id="rcpError1" hidden></p>
+
+        <button type="submit" class="rcp-btn" id="rcpBtnStep1">
+          <span class="rcp-btn-text">Continuar</span>
+          <span class="rcp-spinner" hidden></span>
+        </button>
+
+        <p class="rcp-footer-link">
+          <a href="#" class="rcp-link" id="rcpBackToLogin">Volver al login</a>
+        </p>
+      </form>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- PASO 2A: CLIENTES - Verificar código enviado por correo       -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="rcp-step" id="rcpStep2Cliente" hidden>
+      <div class="rcp-header">
+        <span class="rcp-icon">📧</span>
+        <h2 class="rcp-title">Código de Verificación</h2>
+        <p class="rcp-email-display">Enviado a: <strong id="rcpEmailDisplay"></strong></p>
+      </div>
+
+      <form class="rcp-form" id="rcpFormStep2Cliente" novalidate>
+        <p class="rcp-subtitle">Ingresa el código de 6 dígitos que recibiste por correo</p>
+
+        <div class="rcp-field">
+          <label for="rcp-codigo">Código de Verificación</label>
+          <input type="text" id="rcp-codigo" name="codigo" placeholder="000000" maxlength="6" pattern="[0-9]{6}" required />
+          <small>Se completará automáticamente</small>
+        </div>
+
+        <p class="rcp-error" id="rcpError2Cliente" hidden></p>
+
+        <button type="submit" class="rcp-btn" id="rcpBtnStep2Cliente">
+          <span class="rcp-btn-text">Verificar</span>
+          <span class="rcp-spinner" hidden></span>
+        </button>
+
+        <p class="rcp-footer-link">
+          <a href="#" class="rcp-link" id="rcpBackStep2Cliente">Intentar con otro correo</a>
+        </p>
+      </form>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- PASO 2B: EMPLEADO/ADMIN - Verificación de 2 Factores Robusta   -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="rcp-step" id="rcpStep2Admin" hidden>
+      <div class="rcp-header">
+        <span class="rcp-icon">🔐</span>
+        <h2 class="rcp-title">Verificación de Seguridad (2FA)</h2>
+        <p class="rcp-subtitle-small">Se requieren dos factores de verificación</p>
+      </div>
+
+      <form class="rcp-form" id="rcpFormStep2Admin" novalidate>
+        
+        <div class="rcp-field">
+          <label for="rcp-pregunta-display" class="rcp-label-pregunta">Factor 1: Pregunta de Seguridad Corporativa</label>
+          <p id="rcp-pregunta-display" class="rcp-pregunta-text">Pregunta cargando...</p>
+        </div>
+
+        <div class="rcp-field">
+          <label for="rcp-respuesta">Tu Respuesta</label>
+          <input type="text" id="rcp-respuesta" name="respuesta" placeholder="Ingresa tu respuesta" required />
+          <small>Se auto-completará</small>
+        </div>
+
+        <div class="rcp-divider"></div>
+
+        <div class="rcp-field">
+          <label for="rcp-token-corporativo">Factor 2: Token Corporativo</label>
+          <p class="rcp-token-info">Se envió a tu correo corporativo</p>
+          <input type="text" id="rcp-token-corporativo" name="token" placeholder="Código de 8 caracteres" maxlength="8" required />
+          <small>Se auto-completará</small>
+        </div>
+
+        <p class="rcp-error" id="rcpError2Admin" hidden></p>
+
+        <button type="submit" class="rcp-btn" id="rcpBtnStep2Admin">
+          <span class="rcp-btn-text">Verificar Ambos Factores</span>
+          <span class="rcp-spinner" hidden></span>
+        </button>
+
+        <p class="rcp-footer-link">
+          <a href="#" class="rcp-link" id="rcpBackStep2Admin">Intentar con otro correo</a>
+        </p>
+      </form>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- PASO 3: Establecer nueva contraseña (ambos tipos)              -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="rcp-step" id="rcpStep3" hidden>
+      <div class="rcp-header">
+        <span class="rcp-icon">✨</span>
+        <h2 class="rcp-title">Nueva Contraseña</h2>
+      </div>
+
+      <form class="rcp-form" id="rcpFormStep3" novalidate>
+        <p class="rcp-subtitle">Establece una contraseña segura</p>
+
+        <div class="rcp-field">
+          <label for="rcp-nueva-pass">Nueva Contraseña</label>
+          <div class="rcp-pass-wrap">
+            <input type="password" id="rcp-nueva-pass" name="nueva_contrasena" placeholder="••••••••" required />
+            <button type="button" class="rcp-toggle-icon" id="rcpTogglePass1" aria-label="Mostrar contraseña">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <div class="rcp-requisitos" id="rcpRequisitos"></div>
+        </div>
+
+        <div class="rcp-field">
+          <label for="rcp-confirmar-pass">Confirmar Contraseña</label>
+          <div class="rcp-pass-wrap">
+            <input type="password" id="rcp-confirmar-pass" name="confirmar_contrasena" placeholder="••••••••" required />
+            <button type="button" class="rcp-toggle-icon" id="rcpTogglePass2" aria-label="Mostrar contraseña">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <p class="rcp-error" id="rcpError3" hidden></p>
+
+        <button type="submit" class="rcp-btn" id="rcpBtnStep3">
+          <span class="rcp-btn-text">Cambiar Contraseña</span>
+          <span class="rcp-spinner" hidden></span>
+        </button>
+
+        <p class="rcp-footer-link">
+          <a href="#" class="rcp-link" id="rcpCancelStep3">Cancelar</a>
+        </p>
+      </form>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- PASO 4: Éxito                                                   -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="rcp-step" id="rcpStep4" hidden>
+      <div class="rcp-header rcp-success">
+        <span class="rcp-icon">✅</span>
+        <h2 class="rcp-title">¡Éxito!</h2>
+      </div>
+
+      <div class="rcp-success-content">
+        <p class="rcp-success-message">Tu contraseña ha sido cambiada correctamente.</p>
+        <p>Ahora puedes iniciar sesión con tu nueva contraseña.</p>
+
+        <button type="button" class="rcp-btn" id="rcpBtnVolver">
+          Volver al login
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

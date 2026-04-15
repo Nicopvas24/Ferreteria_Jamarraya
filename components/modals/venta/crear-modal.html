@@ -1,0 +1,224 @@
+<!-- ══════════════════════════════════════════
+     MODAL CREAR VENTA
+     Modular - Requiere: crear-venta.js
+══════════════════════════════════════════ -->
+<style>
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 1000;
+    display: none; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal-content {
+    background: var(--dark-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 2rem;
+    max-width: 800px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,.5);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .modal-header h2 { font-size: 1.3rem; font-weight: 700; margin: 0; }
+  .modal-close {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 1.5rem; cursor: pointer; padding: 0;
+  }
+  .form-group {
+    display: flex; flex-direction: column; gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .form-group label {
+    font-size: .85rem; font-weight: 600; color: var(--text-muted);
+  }
+  .form-group.required label::after {
+    content: ' *'; color: var(--red);
+  }
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    width: 100%; background: var(--dark-3); border: 1px solid var(--border);
+    border-radius: 6px; padding: .7rem; color: var(--text); font-size: .9rem;
+    outline: none; font-family: inherit;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus { border-color: var(--orange); }
+  .form-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+  }
+  .form-error {
+    display: none; background: rgba(248,81,73,.15); color: var(--red);
+    padding: .75rem; border-radius: 6px; font-size: .85rem;
+    border: 1px solid rgba(248,81,73,.3); margin-bottom: 1rem;
+  }
+  .form-success {
+    display: none; background: rgba(76,175,80,.15); color: var(--green);
+    padding: .75rem; border-radius: 6px; font-size: .85rem;
+    border: 1px solid rgba(76,175,80,.3); margin-bottom: 1rem;
+  }
+  .form-actions {
+    display: flex; gap: .75rem; margin-top: 1.5rem;
+  }
+  .form-actions button { flex: 1; }
+
+  /* Producto con búsqueda */
+  .producto-search-container {
+    position: relative; margin-bottom: 1.5rem;
+  }
+  .producto-search-input {
+    width: 100%; background: var(--dark-3); border: 1px solid var(--border);
+    border-radius: 6px; padding: .7rem; color: var(--text); font-size: .9rem;
+    outline: none;
+  }
+  .producto-search-input:focus { border-color: var(--orange); }
+  .producto-search-results {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+    background: var(--dark-3); border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto;
+    display: none;
+  }
+  .producto-search-results.active { display: block; }
+  .producto-item {
+    padding: .75rem; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background 0.2s;
+  }
+  .producto-item:hover { background: var(--dark-2); }
+  .producto-item-nombre {
+    font-size: .9rem; font-weight: 600; color: var(--text);
+  }
+  .producto-item-info {
+    font-size: .75rem; color: var(--text-muted); margin-top: .25rem;
+  }
+
+  /* Carrito de productos */
+  .carrito-container {
+    background: rgba(0,0,0,.2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;
+  }
+  .carrito-header {
+    font-size: .9rem; font-weight: 700; color: var(--text-muted);
+    margin-bottom: 1rem; text-transform: uppercase;
+  }
+  .carrito-vacio {
+    text-align: center; color: var(--text-muted); font-size: .85rem;
+    padding: 1rem;
+  }
+  .carrito-item {
+    display: grid; grid-template-columns: 1fr 4fr 2fr 2fr;
+    gap: 1rem; align-items: center; padding: .75rem 0;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+    font-size: .85rem;
+  }
+  .carrito-item:last-child { border-bottom: none; }
+  .carrito-item-code {
+    color: var(--text-muted);
+  }
+  .carrito-item-nombre {
+    color: var(--text);
+  }
+  .carrito-item-qty {
+    display: flex; gap: .25rem; align-items: center;
+  }
+  .qty-btn {
+    background: var(--border); border: none; border-radius: 3px;
+    color: var(--text); cursor: pointer; width: 24px; height: 24px;
+    font-size: .7rem; padding: 0; display: flex; align-items: center; justify-content: center;
+  }
+  .qty-btn:hover { background: var(--orange); }
+  .qty-input { width: 40px; background: var(--dark-3); border: 1px solid var(--border);
+    border-radius: 3px; color: var(--text); font-size: .85rem; padding: .25rem;
+    text-align: center;
+  }
+  .carrito-item-price {
+    text-align: right; color: var(--green); font-weight: 600;
+  }
+  .carrito-item-remove {
+    width: 24px; height: 24px; background: var(--red); border: none;
+    border-radius: 3px; color: var(--dark-2); cursor: pointer; font-size: .7rem;
+  }
+
+  /* Totales */
+  .totales-container {
+    background: rgba(76,175,80,.1); border: 1px solid rgba(76,175,80,.3);
+    border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;
+  }
+  .total-row {
+    display: flex; justify-content: space-between; margin-bottom: .5rem;
+    font-size: .9rem;
+  }
+  .total-row.total-final {
+    font-size: 1.1rem; font-weight: 700; color: var(--orange);
+    border-top: 1px solid rgba(76,175,80,.3); padding-top: .5rem;
+    margin-top: .5rem;
+  }
+  .total-row.total-final span:last-child {
+    color: var(--green);
+  }
+</style>
+
+<div id="modalCrearVenta" class="modal-backdrop">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>📋 Nueva Venta</h2>
+      <button type="button" class="modal-close" onclick="CrearVentaModal.cerrar()">✕</button>
+    </div>
+    
+    <div id="ventaError" class="form-error"></div>
+    <div id="ventaSuccess" class="form-success"></div>
+
+    <form id="formCrearVenta" class="form">
+      
+      <!-- Cliente -->
+      <div class="form-group required">
+        <label for="vta_cliente">Cliente *</label>
+        <select id="vta_cliente" required>
+          <option value="">Seleccionar cliente...</option>
+        </select>
+      </div>
+
+      <!-- Búsqueda y agregación de productos -->
+      <div class="form-group required">
+        <label>Agregar Productos *</label>
+        <div class="producto-search-container">
+          <input 
+            type="text" 
+            id="vta_producto_search" 
+            class="producto-search-input"
+            placeholder="Buscar por código o nombre..."
+            autocomplete="off"
+          />
+          <div id="vta_producto_results" class="producto-search-results"></div>
+        </div>
+      </div>
+
+      <!-- Carrito de productos -->
+      <div class="carrito-container">
+        <div class="carrito-header">Productos agregados</div>
+        <div id="vta_carrito" class="carrito-vacio">
+          No hay productos agregados. Busca y agrega productos.
+        </div>
+      </div>
+
+      <!-- Totales -->
+      <div class="totales-container">
+        <div class="total-row">
+          <span>Subtotal:</span>
+          <span id="vta_subtotal">$0</span>
+        </div>
+        <div class="total-row">
+          <span>Impuestos (0%):</span>
+          <span id="vta_impuestos">$0</span>
+        </div>
+        <div class="total-row total-final">
+          <span>Total:</span>
+          <span id="vta_total">$0</span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-sm btn-orange">Crear Venta</button>
+        <button type="button" class="btn-sm btn-ghost" onclick="CrearVentaModal.cerrar()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
