@@ -59,7 +59,7 @@ const CrearVentaModal = {
       clientes.forEach(c => {
         const option = document.createElement('option');
         option.value = c.id;
-        option.textContent = `${c.nombre} (${c.identificacion})`;
+        option.textContent = `${c.nombre} (c.c: ${c.identificacion})`;
         select.appendChild(option);
       });
 
@@ -76,6 +76,13 @@ const CrearVentaModal = {
       
       // Filtrar solo productos con stock disponible
       this.productos = prods.filter(p => p.stock_actual > 0);
+      
+      console.log('📦 Productos cargados:', this.productos.slice(0, 3).map(p => ({
+        id: p.id,
+        codigo: p.codigo,
+        nombre: p.nombre,
+        stock: p.stock_actual
+      })));
 
     } catch (error) {
       console.error('Error cargando productos:', error);
@@ -156,6 +163,13 @@ const CrearVentaModal = {
       return;
     }
 
+    console.log('🔍 Producto que se intenta agregar:', {
+      id: producto.id,
+      codigo: producto.codigo,
+      nombre: producto.nombre,
+      stock: producto.stock_actual
+    });
+
     // Verificar si ya está en el carrito
     const existente = this.carrito.find(p => p.id_producto === producto.id);
     
@@ -169,14 +183,17 @@ const CrearVentaModal = {
       existente.subtotal = existente.cantidad * existente.precio_unitario;
     } else {
       // Agregar nuevo producto
-      this.carrito.push({
-        id_producto: producto.id,
+      const nuevoItem = {
+        id_producto: parseInt(producto.id),
         nombre: producto.nombre,
         codigo: producto.codigo,
         cantidad: 1,
         precio_unitario: parseFloat(producto.precio),
         stock_disponible: parseInt(producto.stock_actual)
-      });
+      };
+      
+      console.log('➕ Agregando al carrito:', nuevoItem);
+      this.carrito.push(nuevoItem);
     }
 
     // Actualizar visualización
@@ -197,20 +214,20 @@ const CrearVentaModal = {
     }
 
     let html = '';
-    this.carrito.forEach((item, idx) => {
+    this.carrito.forEach((item) => {
       const subtotal = item.cantidad * item.precio_unitario;
       html += `
         <div class="carrito-item">
-          <div class="carrito-item-code">${item.codigo}</div>
-          <div class="carrito-item-nombre">${item.nombre}</div>
+          <div class="carrito-item-code"><strong>Código:</strong> ${item.codigo}</div>
+          <div class="carrito-item-nombre">${item.nombre}<br/><small style="color: var(--text-muted);">Stock disponible: ${item.stock_disponible}</small></div>
           <div class="carrito-item-qty">
-            <button type="button" class="qty-btn" onclick="CrearVentaModal.decrementarCantidad(${idx})">−</button>
+            <button type="button" class="qty-btn" onclick="CrearVentaModal.decrementarCantidad(${item.id_producto})">−</button>
             <input type="number" class="qty-input" value="${item.cantidad}" 
-                   onchange="CrearVentaModal.cambiarCantidad(${idx}, this.value)"/>
-            <button type="button" class="qty-btn" onclick="CrearVentaModal.incrementarCantidad(${idx})">+</button>
+                   onchange="CrearVentaModal.cambiarCantidad(${item.id_producto}, this.value)"/>
+            <button type="button" class="qty-btn" onclick="CrearVentaModal.incrementarCantidad(${item.id_producto})">+</button>
           </div>
           <div class="carrito-item-price">$${subtotal.toLocaleString('es-CO', {maximumFractionDigits: 2})}</div>
-          <button type="button" class="carrito-item-remove" onclick="CrearVentaModal.removerProducto(${idx})">✕</button>
+          <button type="button" class="carrito-item-remove" onclick="CrearVentaModal.removerProducto(${item.id_producto})">✕</button>
         </div>
       `;
     });
@@ -219,8 +236,10 @@ const CrearVentaModal = {
     this.actualizarTotales();
   },
 
-  incrementarCantidad(idx) {
-    const item = this.carrito[idx];
+  incrementarCantidad(idProducto) {
+    const item = this.carrito.find(p => p.id_producto === idProducto);
+    if (!item) return;
+    
     if (item.cantidad < item.stock_disponible) {
       item.cantidad += 1;
       this.actualizarCarrito();
@@ -229,20 +248,23 @@ const CrearVentaModal = {
     }
   },
 
-  decrementarCantidad(idx) {
-    const item = this.carrito[idx];
+  decrementarCantidad(idProducto) {
+    const item = this.carrito.find(p => p.id_producto === idProducto);
+    if (!item) return;
+    
     if (item.cantidad > 1) {
       item.cantidad -= 1;
       this.actualizarCarrito();
     }
   },
 
-  cambiarCantidad(idx, nuevaCantidad) {
+  cambiarCantidad(idProducto, nuevaCantidad) {
     const cant = parseInt(nuevaCantidad) || 0;
-    const item = this.carrito[idx];
+    const item = this.carrito.find(p => p.id_producto === idProducto);
+    if (!item) return;
 
     if (cant < 1) {
-      this.removerProducto(idx);
+      this.removerProducto(idProducto);
       return;
     }
 
@@ -256,9 +278,21 @@ const CrearVentaModal = {
     this.actualizarCarrito();
   },
 
-  removerProducto(idx) {
-    this.carrito.splice(idx, 1);
+  removerProducto(idProducto) {
+    this.carrito = this.carrito.filter(p => p.id_producto !== idProducto);
     this.actualizarCarrito();
+  },
+
+  // Obtener stock actual de todos los productos antes de crear venta
+  async obtenerStockActual() {
+    try {
+      const response = await fetch(this.apiProductos + '?accion=listar');
+      const productos = await response.json();
+      return productos;
+    } catch (error) {
+      console.error('Error obteniendo stock:', error);
+      throw new Error('Error al refrescar el stock: ' + error.message);
+    }
   },
 
   // ══════════════════════════════════════════════════════════════
@@ -270,7 +304,7 @@ const CrearVentaModal = {
       sum + (item.cantidad * item.precio_unitario), 0
     );
     
-    const impuestos = 0; // Por ahora sin impuestos
+    const impuestos = subtotal * 0.19; // IVA del 19%
     const total = subtotal + impuestos;
 
     document.getElementById('vta_subtotal').textContent = 
@@ -345,12 +379,50 @@ const CrearVentaModal = {
         return;
       }
 
-      // Preparar items para el API
+      // Validar que todos los productos tengan datos correctos
+      const productosInvalidos = this.carrito.filter(item => 
+        !item.id_producto || item.cantidad < 1 || item.precio_unitario < 0
+      );
+
+      if (productosInvalidos.length > 0) {
+        this.mostrarError('Hay productos con datos inválidos en el carrito');
+        console.error('Productos inválidos:', productosInvalidos);
+        return;
+      }
+
+      // Preparar items para el API - NO modificar el carrito
       const items = this.carrito.map(item => ({
-        id_producto: item.id_producto,
-        cantidad: item.cantidad,
-        precio_unitario: item.precio_unitario
+        id_producto: parseInt(item.id_producto),
+        cantidad: parseInt(item.cantidad),
+        precio_unitario: parseFloat(item.precio_unitario)
       }));
+
+      // REFRESCAR STOCK DEL CARRITO JUSTO ANTES DE ENVIAR
+      console.log('🔄 Refrescando stock de productos antes de crear venta...');
+      const productosActualizados = await this.obtenerStockActual();
+      
+      // Validar que los productos tengan stock suficiente
+      for (const item of this.carrito) {
+        const prodActualizado = productosActualizados.find(p => parseInt(p.id) === parseInt(item.id_producto));
+        
+        if (!prodActualizado) {
+          this.mostrarError(`Producto "${item.nombre}" ha sido eliminado`);
+          return;
+        }
+        
+        const stockReal = parseInt(prodActualizado.stock_actual);
+        const cantidadSolicitada = parseInt(item.cantidad);
+        
+        if (stockReal < cantidadSolicitada) {
+          this.mostrarError(`❌ Stock insuficiente para "${item.nombre}"\nDisponible: ${stockReal}, Solicitado: ${cantidadSolicitada}`);
+          return;
+        }
+      }
+
+      console.log('✅ Stock validado correctamente');
+      console.log('📦 CARRITO COMPLETO:', JSON.stringify(this.carrito, null, 2));
+      console.log('📦 ITEMS A ENVIAR:', JSON.stringify(items, null, 2));
+      console.log('📦 Enviando venta:', { id_cliente: idCliente, items: items });
 
       const response = await fetch(this.API + '?accion=registrar', {
         method: 'POST',

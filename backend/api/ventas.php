@@ -100,6 +100,30 @@ switch ($accion) {
         }
 
         try {
+            // PRIMERO: Validar stocks ANTES de crear la venta
+            $stmtCheckStock = $pdo->prepare("SELECT id, nombre, stock_actual FROM productos WHERE id = ?");
+            
+            foreach ($items as $item) {
+                $idP = (int)$item['id_producto'];
+                $qty = (int)$item['cantidad'];
+                
+                $stmtCheckStock->execute([$idP]);
+                $prod = $stmtCheckStock->fetch();
+                
+                if (!$prod) {
+                    http_response_code(400);
+                    echo json_encode(['ok' => false, 'mensaje' => "Producto ID $idP no encontrado"]);
+                    exit;
+                }
+                
+                if ((int)$prod['stock_actual'] < $qty) {
+                    http_response_code(400);
+                    echo json_encode(['ok' => false, 'mensaje' => "Stock insuficiente para '{$prod['nombre']}'. Disponible: {$prod['stock_actual']}, Solicitado: $qty"]);
+                    exit;
+                }
+            }
+
+            // SEGUNDA FASE: Crear la venta con transacción y locks
             $pdo->beginTransaction();
 
             $total = 0;
@@ -110,33 +134,42 @@ switch ($accion) {
             // Comprobante único
             $comprobante = 'VTA-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -5));
 
-            // Insertar cabecera (sin id_usuario si no hay sesión)
+            // Insertar cabecera
             $id_usuario = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : null;
             $stmt = $pdo->prepare("INSERT INTO ventas (comprobante, fecha, id_cliente, id_usuario, total)
                                    VALUES (?, NOW(), ?, ?, ?)");
             $stmt->execute([$comprobante, $id_cliente, $id_usuario, $total]);
             $id_venta = (int)$pdo->lastInsertId();
 
-            // Insertar detalle y descontar stock
+            // Procesar cada item CON LOCKS
             $stmtDet  = $pdo->prepare("INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario)
                                        VALUES (?, ?, ?, ?)");
-            $stmtStock = $pdo->prepare("UPDATE productos
-                                        SET stock_actual = stock_actual - ?
-                                        WHERE id = ? AND stock_actual >= ?");
+            $stmtLock = $pdo->prepare("SELECT stock_actual FROM productos WHERE id = ? FOR UPDATE");
+            $stmtUpd  = $pdo->prepare("UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ?");
 
             foreach ($items as $item) {
                 $idP = (int)$item['id_producto'];
                 $qty = (int)$item['cantidad'];
                 $pu  = (float)$item['precio_unitario'];
 
-                $stmtDet->execute([$id_venta, $idP, $qty, $pu]);
+                // LOCK la fila
+                $stmtLock->execute([$idP]);
+                $lockResult = $stmtLock->fetch();
+                $stockLocked = (int)$lockResult['stock_actual'];
+                
+                error_log("VENTA: ID=$idP, Stock LOCKED=$stockLocked, Solicitado=$qty");
 
-                $affected = $stmtStock->execute([$qty, $idP, $qty]);
-                if ($stmtStock->rowCount() === 0) {
+                // RE-validar con fila lockeada
+                if ($stockLocked < $qty) {
                     $pdo->rollBack();
-                    echo json_encode(['ok' => false, 'mensaje' => "Stock insuficiente para producto ID $idP"]);
+                    http_response_code(400);
+                    echo json_encode(['ok' => false, 'mensaje' => "Stock insuficiente (otra compra intervino). Intenta de nuevo."]);
                     exit;
                 }
+
+                // Insertar detalle y actualizar stock
+                $stmtDet->execute([$id_venta, $idP, $qty, $pu]);
+                $stmtUpd->execute([$qty, $idP]);
             }
 
             $pdo->commit();

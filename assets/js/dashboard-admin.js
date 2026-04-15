@@ -199,12 +199,189 @@ async function cargarVentas() {
             <td style="font-size:.82rem">${v.num_productos||'—'} item(s)</td>
             <td style="font-weight:600">${fmt$(v.total)}</td>
             <td>
-              <button class="btn-sm btn-ghost" onclick="alert('Ver detalle venta ${v.id}')">Ver</button>
+              <button class="btn-sm btn-ghost" onclick="verDetalleVenta(${v.id})">Ver</button>
             </td>
           </tr>`).join('')
       : filaVacia(6, 'No hay ventas en el período seleccionado');
   } catch {
     tbody.innerHTML = filaVacia(6, 'Error cargando ventas');
+  }
+}
+
+// Ver detalle de venta
+function verDetalleVenta(idVenta) {
+  console.log('🔍 Ver detalle venta: ' + idVenta);
+  
+  (async () => {
+    try {
+      console.log('📡 Cargando desde URL:', API.ventas + '?accion=detalle&id=' + idVenta);
+      const r = await fetch(API.ventas + '?accion=detalle&id=' + idVenta);
+      const venta = await r.json();
+      
+      console.log('📦 Venta recibida:', venta);
+
+      if (venta.error) {
+        alert('Error: ' + venta.error);
+        return;
+      }
+
+      mostrarModalDetalleVenta(venta);
+    } catch (error) {
+      console.error('❌ Error:', error);
+      alert('Error al cargar detalle: ' + error.message);
+    }
+  })();
+}
+
+// Mostrar modal con detalle de venta
+function mostrarModalDetalleVenta(venta) {
+  try {
+    console.log('✅ Iniciando modal...');
+    
+    // Calcular subtotal e IVA
+    let subtotal = 0;
+    if (venta.items && Array.isArray(venta.items)) {
+      subtotal = venta.items.reduce((sum, item) => sum + (item.cantidad * item.precio_unitario), 0);
+    }
+    const iva = subtotal * 0.19;
+
+    // Construir filas de items
+    let itemsHTML = '';
+    if (venta.items && Array.isArray(venta.items)) {
+      itemsHTML = venta.items.map(item => {
+        const subtotalItem = item.cantidad * item.precio_unitario;
+        return `
+          <tr>
+            <td>${item.codigo}</td>
+            <td>${item.nombre}</td>
+            <td style="text-align: center;">${item.cantidad}</td>
+            <td style="text-align: right;">$${parseFloat(item.precio_unitario).toLocaleString('es-CO')}</td>
+            <td style="text-align: right; color: #4caf50;">$${subtotalItem.toLocaleString('es-CO')}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Crear overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'ventaModalOverlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+    `;
+
+    // Crear contenedor del modal
+    const container = document.createElement('div');
+    container.style.cssText = `
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 20px;
+      max-width: 700px;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 50px rgba(0,0,0,0.9);
+      color: #fff;
+    `;
+
+    container.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0; font-size: 1.3em;">📋 Detalle de Venta</h2>
+        <button onclick="document.getElementById('ventaModalOverlay').remove()" style="
+          background: none;
+          border: none;
+          color: #999;
+          font-size: 1.5em;
+          cursor: pointer;
+          padding: 0;
+        ">✕</button>
+      </div>
+
+      <div style="background: rgba(0,0,0,0.3); border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px;">
+          <div>
+            <span style="color: #999; font-size: 0.85em;">Comprobante:</span>
+            <div style="font-weight: bold; color: #ff9800;">${venta.comprobante}</div>
+          </div>
+          <div>
+            <span style="color: #999; font-size: 0.85em;">Fecha:</span>
+            <div style="font-weight: bold;">${new Date(venta.fecha).toLocaleString('es-CO')}</div>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div>
+            <span style="color: #999; font-size: 0.85em;">Cliente:</span>
+            <div style="font-weight: bold;">${venta.cliente || 'N/A'}</div>
+          </div>
+          <div>
+            <span style="color: #999; font-size: 0.85em;">Registrado por:</span>
+            <div style="font-weight: bold;">${venta.registrado_por || '—'}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <h3 style="margin: 0 0 10px 0; font-size: 0.95em; text-transform: uppercase; color: #999;">Productos</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+          <thead>
+            <tr style="background: rgba(0,0,0,0.5); border-bottom: 2px solid #333;">
+              <th style="padding: 10px; text-align: left;">Código</th>
+              <th style="padding: 10px; text-align: left;">Nombre</th>
+              <th style="padding: 10px; text-align: center;">Cant.</th>
+              <th style="padding: 10px; text-align: right;">P.U.</th>
+              <th style="padding: 10px; text-align: right;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHTML}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3); border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9em;">
+          <span>Subtotal:</span>
+          <span>$${subtotal.toLocaleString('es-CO', {maximumFractionDigits: 2})}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9em;">
+          <span>IVA (19%):</span>
+          <span>$${iva.toLocaleString('es-CO', {maximumFractionDigits: 2})}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 1.1em; font-weight: bold; padding-top: 8px; border-top: 1px solid rgba(76,175,80,0.3);">
+          <span>Total:</span>
+          <span style="color: #4caf50;">$${parseFloat(venta.total).toLocaleString('es-CO', {maximumFractionDigits: 2})}</span>
+        </div>
+      </div>
+
+      <button onclick="document.getElementById('ventaModalOverlay').remove()" style="
+        width: 100%;
+        background: #333;
+        border: none;
+        border-radius: 6px;
+        padding: 10px;
+        color: #fff;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 0.95em;
+      ">Cerrar</button>
+    `;
+
+    overlay.appendChild(container);
+    document.body.appendChild(overlay);
+    
+    console.log('✅ Modal mostrado exitosamente');
+  } catch (error) {
+    console.error('❌ Error en mostrarModalDetalleVenta:', error);
   }
 }
 

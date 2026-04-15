@@ -1,0 +1,71 @@
+<!-- Modal: Ver Venta -->
+<div class="modal-backdrop" id="modalVerVentaBackdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Detalles de la Venta</h3>
+      <button class="modal-close" id="btnCerrarVerVenta">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item">
+          <label>ID Venta</label>
+          <span id="verVentaId" style="font-weight:600"></span>
+        </div>
+        <div class="info-item">
+          <label>Comprobante</label>
+          <span id="verVentaComprobante" style="font-weight:600; color:var(--orange)"></span>
+        </div>
+        <div class="info-item">
+          <label>Fecha</label>
+          <span id="verVentaFecha"></span>
+        </div>
+        <div class="info-item">
+          <label>Cliente</label>
+          <span id="verVentaCliente" style="font-weight:600"></span>
+        </div>
+        <div class="info-item">
+          <label>Registrado por</label>
+          <span id="verVentaUsuario"></span>
+        </div>
+      </div>
+
+      <hr style="margin: 1rem 0; opacity: 0.3;">
+
+      <h4 style="margin: 1rem 0 0.5rem 0; font-size: 0.95rem; text-transform: uppercase; opacity: 0.7;">Productos</h4>
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; font-size: 0.85rem;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border);">
+              <th style="text-align: left; padding: 0.5rem;">Código</th>
+              <th style="text-align: left; padding: 0.5rem;">Nombre</th>
+              <th style="text-align: center; padding: 0.5rem;">Cant.</th>
+              <th style="text-align: right; padding: 0.5rem;">P.U.</th>
+              <th style="text-align: right; padding: 0.5rem;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody id="verVentaItems">
+            <!-- Se llenan dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+
+      <hr style="margin: 1rem 0; opacity: 0.3;">
+
+      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+        <span>Subtotal:</span>
+        <span id="verVentaSubtotal" style="font-weight: 600;"></span>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+        <span>IVA (19%):</span>
+        <span id="verVentaIva" style="font-weight: 600;"></span>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 1rem; font-weight: 700; padding-top: 0.5rem; border-top: 1px solid var(--border);">
+        <span>Total:</span>
+        <span id="verVentaTotal" style="color: var(--green);"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" id="btnCerrarVerVenta2">Cerrar</button>
+    </div>
+  </div>
+</div>
