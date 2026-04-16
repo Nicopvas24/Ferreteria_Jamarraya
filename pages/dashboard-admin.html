@@ -6,6 +6,9 @@
   <title>Panel Administrador — Ferretería Jamarraya</title>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="../assets/css/dashboard-admin.css"/>
+  <!-- PDF Export Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -364,22 +367,31 @@
                 </select>
               </div>
               <button class="btn-sm btn-orange" onclick="generarReporteVentas()">Generar</button>
+              <div style="display:flex;gap:.5rem">
+                <button class="btn-sm btn-ghost" onclick="exportarReporteVentas('csv')" style="flex:1">📄 CSV</button>
+                <button class="btn-sm btn-ghost" onclick="exportarReporteVentas('pdf')" style="flex:1">📕 PDF</button>
+              </div>
               <div id="rpVentasResult" class="empty" style="padding:1rem 0">
                 <span>📊</span>Selecciona período
               </div>
             </div>
           </div>
+
           <div class="panel">
             <div class="panel__head"><span class="panel__title">📦 Reporte Inventario</span></div>
             <div class="panel__body" style="display:flex;flex-direction:column;gap:.75rem">
               <p style="font-size:.85rem;color:var(--text-muted)">Listado completo con stock actual y valor del inventario.</p>
               <button class="btn-sm btn-orange" onclick="generarReporteInventario()">Generar</button>
-              <button class="btn-sm btn-ghost" onclick="alert('Exportar a CSV')">⬇ CSV</button>
+              <div style="display:flex;gap:.5rem">
+                <button class="btn-sm btn-ghost" onclick="exportarReporteInventario('csv')" style="flex:1">📄 CSV</button>
+                <button class="btn-sm btn-ghost" onclick="exportarReporteInventario('pdf')" style="flex:1">📕 PDF</button>
+              </div>
               <div id="rpInvResult" class="empty" style="padding:1rem 0">
                 <span>📦</span>Presiona Generar
               </div>
             </div>
           </div>
+
           <div class="panel">
             <div class="panel__head"><span class="panel__title">💰 Balance General</span></div>
             <div class="panel__body" style="display:flex;flex-direction:column;gap:.75rem">
@@ -387,8 +399,66 @@
                 <input type="month" id="rpBalanceMes"/>
               </div>
               <button class="btn-sm btn-orange" onclick="generarBalance()">Generar</button>
+              <div style="display:flex;gap:.5rem">
+                <button class="btn-sm btn-ghost" onclick="exportarBalance('csv')" style="flex:1">📄 CSV</button>
+                <button class="btn-sm btn-ghost" onclick="exportarBalance('pdf')" style="flex:1">📕 PDF</button>
+              </div>
               <div id="rpBalanceResult" class="empty" style="padding:1rem 0">
                 <span>💰</span>Selecciona mes
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="three-col" style="margin-top:1.5rem">
+          <div class="panel">
+            <div class="panel__head"><span class="panel__title">🏗️ Reporte Alquileres</span></div>
+            <div class="panel__body" style="display:flex;flex-direction:column;gap:.75rem">
+              <div class="filter-bar" style="flex-direction:column;align-items:stretch;gap:.5rem">
+                <div style="display:flex;gap:.5rem">
+                  <input type="date" id="rpAlqDesde" style="flex:1"/>
+                  <input type="date" id="rpAlqHasta" style="flex:1"/>
+                </div>
+              </div>
+              <button class="btn-sm btn-orange" onclick="generarReporteAlquileres()">Generar</button>
+              <div style="display:flex;gap:.5rem">
+                <button class="btn-sm btn-ghost" onclick="exportarReporteAlquileres('csv')" style="flex:1">📄 CSV</button>
+                <button class="btn-sm btn-ghost" onclick="exportarReporteAlquileres('pdf')" style="flex:1">📕 PDF</button>
+              </div>
+              <div id="rpAlqResult" class="empty" style="padding:1rem 0">
+                <span>📊</span>Selecciona período
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel__head"><span class="panel__title">⚠️ Productos Bajo Stock</span></div>
+            <div class="panel__body" style="display:flex;flex-direction:column;gap:.75rem">
+              <p style="font-size:.85rem;color:var(--text-muted)">Productos por debajo del stock mínimo.</p>
+              <button class="btn-sm btn-orange" onclick="generarReporteBajoStock()">Generar</button>
+              <div style="display:flex;gap:.5rem">
+                <button class="btn-sm btn-ghost" onclick="exportarReporteBajoStock('csv')" style="flex:1">📄 CSV</button>
+                <button class="btn-sm btn-ghost" onclick="exportarReporteBajoStock('pdf')" style="flex:1">📕 PDF</button>
+              </div>
+              <div id="rpBajoStockResult" class="empty" style="padding:1rem 0">
+                <span>⚠️</span>Presiona Generar
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel__head"><span class="panel__title">📋 Top Productos</span></div>
+            <div class="panel__body" style="display:flex;flex-direction:column;gap:.75rem">
+              <div class="filter-bar" style="flex-direction:column;align-items:stretch">
+                <select id="rpTopPeriodo">
+                  <option value="semana">Esta semana</option>
+                  <option value="mes" selected>Este mes</option>
+                  <option value="trimestre">Este trimestre</option>
+                </select>
+              </div>
+              <button class="btn-sm btn-orange" onclick="generarTopProductos()">Generar</button>
+              <div id="rpTopResult" class="empty" style="padding:1rem 0">
+                <span>📊</span>Selecciona período
               </div>
             </div>
           </div>

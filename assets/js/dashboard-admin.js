@@ -664,7 +664,21 @@ async function generarReporteVentas() {
           <span style="color:var(--text-muted)">Top producto</span>
           <strong>${d.top_producto ?? '—'}</strong>
         </div>
+        ${d.top_productos && d.top_productos.length > 0 ? `
+          <details style="margin-top:.5rem">
+            <summary style="cursor:pointer;color:var(--orange)">👀 Ver detalle (${d.top_productos.length})</summary>
+            <div style="margin-top:.5rem;font-size:.8rem">
+              ${d.top_productos.slice(0, 5).map((p, i) => `
+                <div style="display:flex;justify-content:space-between;padding:.3rem;border-bottom:1px solid var(--border)">
+                  <span>${i+1}. ${p.nombre}</span>
+                  <span>${p.unidades_vendidas} un.</span>
+                </div>
+              `).join('')}
+            </div>
+          </details>
+        ` : ''}
       </div>`;
+    window.rpVentasData = d;
   } catch {
     el.innerHTML = '<div class="empty"><span>❌</span>Error generando reporte</div>';
   }
@@ -687,10 +701,15 @@ async function generarReporteInventario() {
           <strong style="color:var(--blue)">${d.valor_total ? fmt$(d.valor_total) : '—'}</strong>
         </div>
         <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">Bajo stock</span>
+          <span style="color:var(--text-muted)">⚠️ Bajo stock</span>
           <strong style="color:var(--red)">${d.bajo_stock ?? '—'}</strong>
         </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">❌ Sin stock</span>
+          <strong style="color:var(--red)">${d.sin_stock ?? '—'}</strong>
+        </div>
       </div>`;
+    window.rpInvData = d;
   } catch {
     el.innerHTML = '<div class="empty"><span>❌</span>Error generando reporte</div>';
   }
@@ -725,9 +744,482 @@ async function generarBalance() {
           <strong style="color:${d.variacion>=0?'var(--green)':'var(--red)'}">${d.variacion>=0?'+':''}${d.variacion}%</strong>
         </div>` : ''}
       </div>`;
+    window.rpBalanceData = d;
   } catch {
     el.innerHTML = '<div class="empty"><span>❌</span>Error generando balance</div>';
   }
+}
+
+async function generarReporteAlquileres() {
+  const desde = document.getElementById('rpAlqDesde').value || new Date(Date.now() - 30*24*3600*1000).toISOString().split('T')[0];
+  const hasta = document.getElementById('rpAlqHasta').value || new Date().toISOString().split('T')[0];
+  const el = document.getElementById('rpAlqResult');
+  
+  document.getElementById('rpAlqDesde').value = desde;
+  document.getElementById('rpAlqHasta').value = hasta;
+  
+  el.innerHTML = '<div class="empty"><span>⏳</span>Generando…</div>';
+  try {
+    const r = await fetch(API.reportes + `?tipo=alquileres&desde=${desde}&hasta=${hasta}`);
+    const d = await r.json();
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:.6rem;font-size:.875rem">
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">Total alquileres</span>
+          <strong>${d.total ?? '—'}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--green)">Activos</span>
+          <strong style="color:var(--green)">${d.activos ?? '—'}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">Finalizados</span>
+          <strong>${d.finalizados ?? '—'}</strong>
+        </div>
+        <hr style="border-color:var(--border)"/>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">Ingresos totales</span>
+          <strong style="color:var(--orange)">${d.ingresos_total ? fmt$(d.ingresos_total) : '—'}</strong>
+        </div>
+      </div>`;
+    window.rpAlqData = d;
+  } catch {
+    el.innerHTML = '<div class="empty"><span>❌</span>Error generando reporte</div>';
+  }
+}
+
+async function generarReporteBajoStock() {
+  const el = document.getElementById('rpBajoStockResult');
+  el.innerHTML = '<div class="empty"><span>⏳</span>Generando…</div>';
+  try {
+    const r = await fetch(API.reportes + '?tipo=inventario');
+    const d = await r.json();
+    
+    if (!d.productos_bajo_stock || d.productos_bajo_stock.length === 0) {
+      el.innerHTML = '<div class="empty"><span>✓</span>¡Sin problemas de stock!</div>';
+      return;
+    }
+
+    const tabla = `
+      <table style="width:100%;font-size:.8rem;border-collapse:collapse">
+        <thead>
+          <tr style="background:rgba(0,0,0,.2);border-bottom:2px solid var(--border)">
+            <th style="text-align:left;padding:.5rem">Código</th>
+            <th style="text-align:left;padding:.5rem">Producto</th>
+            <th style="text-align:center;padding:.5rem">Stock</th>
+            <th style="text-align:center;padding:.5rem">Mín.</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${d.productos_bajo_stock.slice(0, 10).map(p => `
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:.5rem">${p.codigo}</td>
+              <td style="padding:.5rem">${p.nombre}</td>
+              <td style="text-align:center;color:var(--red);font-weight:600">${p.stock_actual}</td>
+              <td style="text-align:center">${p.stock_minimo}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+    el.innerHTML = tabla;
+    window.rpBajoStockData = d;
+  } catch {
+    el.innerHTML = '<div class="empty"><span>❌</span>Error generando reporte</div>';
+  }
+}
+
+async function generarTopProductos() {
+  const periodo = document.getElementById('rpTopPeriodo').value;
+  const el = document.getElementById('rpTopResult');
+  el.innerHTML = '<div class="empty"><span>⏳</span>Generando…</div>';
+  try {
+    const r = await fetch(API.reportes + `?tipo=ventas&periodo=${periodo}`);
+    const d = await r.json();
+    
+    if (!d.top_productos || d.top_productos.length === 0) {
+      el.innerHTML = '<div class="empty"><span>—</span>Sin ventas</div>';
+      return;
+    }
+
+    const tabla = `
+      <table style="width:100%;font-size:.8rem;border-collapse:collapse">
+        <thead>
+          <tr style="background:rgba(0,0,0,.2);border-bottom:2px solid var(--border)">
+            <th style="text-align:left;padding:.5rem">Ranking</th>
+            <th style="text-align:left;padding:.5rem">Producto</th>
+            <th style="text-align:center;padding:.5rem">Unidades</th>
+            <th style="text-align:right;padding:.5rem">Ingresos</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${d.top_productos.slice(0, 10).map((p, i) => `
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:.5rem;font-weight:600;color:var(--orange)">#${i+1}</td>
+              <td style="padding:.5rem">${p.nombre}</td>
+              <td style="text-align:center;padding:.5rem">${p.unidades_vendidas}</td>
+              <td style="text-align:right;padding:.5rem;color:var(--green);font-weight:600">${fmt$(p.ingreso_total)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+    el.innerHTML = tabla;
+    window.rpTopData = d;
+  } catch {
+    el.innerHTML = '<div class="empty"><span>❌</span>Error generando reporte</div>';
+  }
+}
+
+// EXPORTACIÓN A CSV/PDF
+function exportarReporteVentas(formato = 'csv') {
+  if (!window.rpVentasData) { alert('Genera el reporte primero'); return; }
+  const d = window.rpVentasData;
+  
+  if (formato === 'pdf') {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      doc.setFontSize(16);
+      doc.text('REPORTE DE VENTAS', 20, 20);
+      
+      doc.setFontSize(10);
+      doc.text(`Período: ${d.desde} al ${d.hasta}`, 20, 30);
+      
+      doc.setFontSize(12);
+      doc.text('RESUMEN', 20, 45);
+      
+      doc.setFontSize(10);
+      doc.text(`Total de ventas: ${d.total_ventas}`, 20, 55);
+      doc.text(`Ingresos: $${d.ingresos?.toLocaleString('es-CO')}`, 20, 62);
+      
+      if (d.top_productos && d.top_productos.length > 0) {
+        doc.setFontSize(12);
+        doc.text('TOP 10 PRODUCTOS', 20, 75);
+        
+        const tableData = d.top_productos.slice(0, 10).map((p, i) => [
+          i + 1,
+          p.nombre,
+          p.unidades_vendidas,
+          `$${p.ingreso_total?.toLocaleString('es-CO')}`
+        ]);
+        
+        if (typeof doc.autoTable === 'function') {
+          doc.autoTable({
+            head: [['#', 'Producto', 'Unidades', 'Ingreso']],
+            body: tableData,
+            startY: 80,
+            margin: 20,
+            theme: 'grid',
+            styles: { font: 'helvetica', fontSize: 9 }
+          });
+        } else {
+          // Fallback: tabla manual si autoTable no está disponible
+          let y = 80;
+          doc.setFontSize(8);
+          doc.text('#', 20, y);
+          doc.text('Producto', 30, y);
+          doc.text('Unidades', 120, y);
+          doc.text('Ingreso', 160, y);
+          y += 5;
+          tableData.forEach(row => {
+            doc.text(String(row[0]), 20, y);
+            doc.text(row[1].substring(0, 40), 30, y);
+            doc.text(String(row[2]), 120, y);
+            doc.text(row[3], 160, y);
+            y += 5;
+          });
+        }
+      }
+      
+      doc.save(`Reporte-Ventas-${d.desde}.pdf`);
+      console.log('✓ PDF descargado');
+    } catch (e) {
+      console.error('Error al generar PDF:', e);
+      alert('Error al generar PDF. Intenta con CSV');
+    }
+  } else {
+    const csv = [
+      ['REPORTE DE VENTAS', d.desde, 'al', d.hasta],
+      [],
+      ['Métrica', 'Valor'],
+      ['Total ventas', d.total_ventas],
+      ['Ingresos', d.ingresos],
+      [],
+      ['TOP PRODUCTOS'],
+      ['Posición', 'Producto', 'Unidades', 'Ingreso']
+    ];
+    d.top_productos?.forEach((p, i) => csv.push([i+1, p.nombre, p.unidades_vendidas, p.ingreso_total]));
+    descargarCSV(csv, `Reporte-Ventas-${d.desde}.csv`);
+  }
+}
+
+function exportarReporteInventario(formato = 'csv') {
+  if (!window.rpInvData) { alert('Genera el reporte primero'); return; }
+  const d = window.rpInvData;
+  
+  if (formato === 'pdf') {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      doc.setFontSize(16);
+      doc.text('REPORTE DE INVENTARIO', 20, 20);
+      
+      doc.setFontSize(10);
+      doc.text(`Generado: ${new Date().toLocaleDateString('es-CO')}`, 20, 30);
+      
+      doc.setFontSize(12);
+      doc.text('RESUMEN', 20, 45);
+      
+      doc.setFontSize(10);
+      doc.text(`Total productos: ${d.total_productos}`, 20, 55);
+      doc.text(`Valor total: $${d.valor_total?.toLocaleString('es-CO')}`, 20, 62);
+      doc.text(`Bajo stock: ${d.bajo_stock}`, 20, 69);
+      doc.text(`Sin stock: ${d.sin_stock}`, 20, 76);
+      
+      if (d.productos_bajo_stock && d.productos_bajo_stock.length > 0) {
+        doc.setFontSize(12);
+        doc.text('PRODUCTOS CON BAJO STOCK', 20, 90);
+        
+        const tableData = d.productos_bajo_stock.slice(0, 15).map(p => [
+          p.codigo,
+          p.nombre,
+          p.stock_actual,
+          p.stock_minimo,
+          `$${p.valor_stock?.toLocaleString('es-CO')}`
+        ]);
+        
+        if (typeof doc.autoTable === 'function') {
+          doc.autoTable({
+            head: [['Código', 'Producto', 'Stock', 'Mín.', 'Valor']],
+            body: tableData,
+            startY: 95,
+            margin: 20,
+            theme: 'grid',
+            styles: { font: 'helvetica', fontSize: 8 }
+          });
+        } else {
+          let y = 95;
+          doc.setFontSize(7);
+          doc.text('Código', 20, y);
+          doc.text('Producto', 35, y);
+          doc.text('Stock', 100, y);
+          doc.text('Mín.', 125, y);
+          doc.text('Valor', 145, y);
+          y += 4;
+          tableData.forEach(row => {
+            doc.text(row[0], 20, y);
+            doc.text(row[1].substring(0, 30), 35, y);
+            doc.text(String(row[2]), 100, y);
+            doc.text(String(row[3]), 125, y);
+            doc.text(row[4], 145, y);
+            y += 4;
+          });
+        }
+      }
+      
+      doc.save(`Reporte-Inventario-${new Date().toISOString().split('T')[0]}.pdf`);
+      console.log('✓ PDF descargado');
+    } catch (e) {
+      console.error('Error al generar PDF:', e);
+      alert('Error al generar PDF. Intenta con CSV');
+    }
+  } else {
+    const csv = [
+      ['REPORTE DE INVENTARIO', new Date().toLocaleDateString()],
+      [],
+      ['Métrica', 'Valor'],
+      ['Total productos', d.total_productos],
+      ['Valor total', d.valor_total],
+      ['Bajo stock', d.bajo_stock],
+      ['Sin stock', d.sin_stock],
+      [],
+      ['PRODUCTOS CON BAJO STOCK'],
+      ['Código', 'Producto', 'Stock', 'Mínimo', 'Valor']
+    ];
+    d.productos_bajo_stock?.forEach(p => csv.push([p.codigo, p.nombre, p.stock_actual, p.stock_minimo, p.valor_stock]));
+    descargarCSV(csv, `Reporte-Inventario-${new Date().toISOString().split('T')[0]}.csv`);
+  }
+}
+
+function exportarBalance(formato = 'csv') {
+  if (!window.rpBalanceData) { alert('Genera el reporte primero'); return; }
+  const d = window.rpBalanceData;
+  
+  if (formato === 'pdf') {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      doc.setFontSize(16);
+      doc.text('BALANCE GENERAL', 20, 20);
+      
+      doc.setFontSize(10);
+      doc.text(`Período: ${d.mes}`, 20, 30);
+      
+      doc.setFontSize(12);
+      doc.text('INGRESOS', 20, 45);
+      
+      doc.setFontSize(10);
+      doc.text(`Ventas: $${d.ventas?.toLocaleString('es-CO')}`, 20, 55);
+      doc.text(`Alquileres: $${d.alquileres?.toLocaleString('es-CO')}`, 20, 62);
+      
+      doc.setFontSize(14);
+      doc.setTextColor(76, 175, 80);
+      doc.text(`TOTAL: $${d.total?.toLocaleString('es-CO')}`, 20, 75);
+      doc.setTextColor(0, 0, 0);
+      
+      if (d.variacion !== undefined) {
+        doc.setFontSize(10);
+        const color = d.variacion >= 0 ? [76, 175, 80] : [244, 67, 54];
+        doc.setTextColor(...color);
+        doc.text(`Variación vs mes anterior: ${d.variacion >= 0 ? '+' : ''}${d.variacion}%`, 20, 85);
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      doc.save(`Balance-${d.mes}.pdf`);
+      console.log('✓ PDF descargado');
+    } catch (e) {
+      console.error('Error al generar PDF:', e);
+      alert('Error al generar PDF. Intenta con CSV');
+    }
+  } else {
+    const csv = [
+      ['BALANCE GENERAL', d.mes],
+      [],
+      ['Concepto', 'Monto'],
+      ['Ventas', d.ventas],
+      ['Alquileres', d.alquileres],
+      ['TOTAL', d.total],
+      [],
+      d.variacion !== undefined ? ['Variación vs mes anterior', d.variacion + '%'] : []
+    ];
+    descargarCSV(csv, `Balance-${d.mes}.csv`);
+  }
+}
+
+function exportarReporteAlquileres(formato = 'csv') {
+  if (!window.rpAlqData) { alert('Genera el reporte primero'); return; }
+  const d = window.rpAlqData;
+  
+  if (formato === 'pdf') {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      doc.setFontSize(16);
+      doc.text('REPORTE DE ALQUILERES', 20, 20);
+      
+      doc.setFontSize(10);
+      doc.text(`Período: ${d.desde} al ${d.hasta}`, 20, 30);
+      
+      doc.setFontSize(12);
+      doc.text('RESUMEN', 20, 45);
+      
+      doc.setFontSize(10);
+      doc.text(`Total alquileres: ${d.total}`, 20, 55);
+      doc.text(`Activos: ${d.activos}`, 20, 62);
+      doc.text(`Finalizados: ${d.finalizados}`, 20, 69);
+      doc.text(`Ingresos totales: $${d.ingresos_total?.toLocaleString('es-CO')}`, 20, 76);
+      
+      doc.save(`Reporte-Alquileres-${d.desde}.pdf`);
+      console.log('✓ PDF descargado');
+    } catch (e) {
+      console.error('Error al generar PDF:', e);
+      alert('Error al generar PDF. Intenta con CSV');
+    }
+  } else {
+    const csv = [
+      ['REPORTE DE ALQUILERES', d.desde, 'al', d.hasta],
+      [],
+      ['Métrica', 'Valor'],
+      ['Total alquileres', d.total],
+      ['Activos', d.activos],
+      ['Finalizados', d.finalizados],
+      ['Ingresos totales', d.ingresos_total]
+    ];
+    descargarCSV(csv, `Reporte-Alquileres-${d.desde}.csv`);
+  }
+}
+
+function exportarReporteBajoStock(formato = 'csv') {
+  if (!window.rpBajoStockData) { alert('Genera el reporte primero'); return; }
+  const d = window.rpBajoStockData;
+  
+  if (formato === 'pdf') {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      doc.setFontSize(16);
+      doc.text('PRODUCTOS CON BAJO STOCK', 20, 20);
+      
+      doc.setFontSize(10);
+      doc.text(`Generado: ${new Date().toLocaleDateString('es-CO')}`, 20, 30);
+      
+      if (d.productos_bajo_stock && d.productos_bajo_stock.length > 0) {
+        const tableData = d.productos_bajo_stock.slice(0, 20).map(p => [
+          p.codigo,
+          p.nombre,
+          p.stock_actual,
+          p.stock_minimo,
+          `$${p.valor_stock?.toLocaleString('es-CO')}`
+        ]);
+        
+        if (typeof doc.autoTable === 'function') {
+          doc.autoTable({
+            head: [['Código', 'Producto', 'Stock', 'Mín.', 'Valor']],
+            body: tableData,
+            startY: 40,
+            margin: 20,
+            theme: 'grid',
+            styles: { font: 'helvetica', fontSize: 8 }
+          });
+        } else {
+          let y = 40;
+          doc.setFontSize(7);
+          doc.text('Código', 20, y);
+          doc.text('Producto', 35, y);
+          doc.text('Stock', 100, y);
+          doc.text('Mín.', 125, y);
+          doc.text('Valor', 145, y);
+          y += 4;
+          tableData.forEach(row => {
+            doc.text(row[0], 20, y);
+            doc.text(row[1].substring(0, 30), 35, y);
+            doc.text(String(row[2]), 100, y);
+            doc.text(String(row[3]), 125, y);
+            doc.text(row[4], 145, y);
+            y += 4;
+          });
+        }
+      }
+      
+      doc.save(`Reporte-BajoStock-${new Date().toISOString().split('T')[0]}.pdf`);
+      console.log('✓ PDF descargado');
+    } catch (e) {
+      console.error('Error al generar PDF:', e);
+      alert('Error al generar PDF. Intenta con CSV');
+    }
+  } else {
+    const csv = [
+      ['REPORTE DE PRODUCTOS CON BAJO STOCK', new Date().toLocaleDateString()],
+      [],
+      ['Código', 'Producto', 'Categoría', 'Stock Actual', 'Stock Mínimo', 'Valor']
+    ];
+    d.productos_bajo_stock?.forEach(p => csv.push([p.codigo, p.nombre, p.categoria, p.stock_actual, p.stock_minimo, p.valor_stock]));
+    descargarCSV(csv, `Reporte-BajoStock-${new Date().toISOString().split('T')[0]}.csv`);
+  }
+}
+
+function descargarCSV(datos, nombreArchivo) {
+  const csv = datos.map(fila => fila.map(celda => `"${celda}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = nombreArchivo;
+  link.click();
+  console.log('✓ Exportado:', nombreArchivo);
 }
 
 /* ══════════════════════════════════════════
