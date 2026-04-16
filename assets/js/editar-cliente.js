@@ -61,10 +61,16 @@ const ClienteEditModal = (() => {
     
     if (!modal) return;
 
+    // Limpiar errores
+    const errorDiv = document.getElementById('editarClienteError');
+    if (errorDiv) errorDiv.style.display = 'none';
+
     // Fetch datos del cliente
     fetch(`${API}?accion=detalle&id=${clienteId}`)
       .then(r => r.json())
       .then(cliente => {
+        console.log('📋 Datos del cliente cargados:', cliente);
+        
         // Llenar formulario
         document.getElementById('edt_cli_nombre').value = cliente.nombre || '';
         document.getElementById('edt_cli_identificacion').value = cliente.identificacion || '';
@@ -72,15 +78,14 @@ const ClienteEditModal = (() => {
         document.getElementById('edt_cli_telefono').value = cliente.telefono || '';
         document.getElementById('edt_cli_direccion').value = cliente.direccion || '';
 
-        // Limpiar errores
-        clearForm();
-
         // Mostrar modal
         modal.classList.add('active');
         document.getElementById('edt_cli_nombre').focus();
+        
+        console.log('✅ Formulario cargado con datos del cliente');
       })
       .catch(err => {
-        console.error('Error fetching cliente:', err);
+        console.error('❌ Error fetching cliente:', err);
         showError('Error cargando datos del cliente');
       });
   };

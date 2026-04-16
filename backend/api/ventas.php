@@ -142,10 +142,10 @@ switch ($accion) {
             $id_venta = (int)$pdo->lastInsertId();
 
             // Procesar cada item CON LOCKS
+            // NOTA: El trigger trg_descontar_stock automáticamente resta el stock cuando se inserta en detalle_venta
             $stmtDet  = $pdo->prepare("INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario)
                                        VALUES (?, ?, ?, ?)");
             $stmtLock = $pdo->prepare("SELECT stock_actual FROM productos WHERE id = ? FOR UPDATE");
-            $stmtUpd  = $pdo->prepare("UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ?");
 
             foreach ($items as $item) {
                 $idP = (int)$item['id_producto'];
@@ -167,9 +167,8 @@ switch ($accion) {
                     exit;
                 }
 
-                // Insertar detalle y actualizar stock
+                // Insertar detalle (el trigger automáticamente restará el stock)
                 $stmtDet->execute([$id_venta, $idP, $qty, $pu]);
-                $stmtUpd->execute([$qty, $idP]);
             }
 
             $pdo->commit();
