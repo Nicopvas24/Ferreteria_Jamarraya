@@ -131,4 +131,38 @@ document.addEventListener('DOMContentLoaded', () => {
     obs.observe(el, { attributes: true, attributeFilter: ['class'] });
   });
 
+  // ── Parallax effect mejorado para hero ─────────
+  const heroBg = document.querySelector('.hero__bg');
+  const heroContent = document.querySelector('.hero__content');
+  const hero = document.querySelector('.hero');
+  
+  if (heroBg && hero) {
+    let ticking = false;
+    
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollY = window.scrollY;
+          const heroBottom = hero.offsetTop + hero.offsetHeight;
+          
+          // Solo aplicar parallax mientras el hero es visible
+          if (scrollY < heroBottom) {
+            // Parallax para el background (se mueve a 40% de la velocidad del scroll)
+            const bgOffset = scrollY * 0.4;
+            heroBg.style.transform = `translateY(${bgOffset}px)`;
+            
+            // Parallax suave para el contenido (se mueve a 20% de la velocidad del scroll)
+            if (heroContent) {
+              const contentOffset = scrollY * 0.15;
+              heroContent.style.transform = `translateY(${contentOffset}px)`;
+              heroContent.style.opacity = Math.max(0.5, 1 - scrollY / (hero.offsetHeight * 1.5));
+            }
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
+  }
+
 });
