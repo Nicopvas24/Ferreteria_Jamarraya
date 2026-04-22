@@ -135,7 +135,7 @@ switch ($accion) {
                                    VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([$nombre, $identificacion, $telefono, $email, $direccion]);
 
-            echo json_encode(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
+            echo json_encode(['ok' => true, 'id_cliente' => (int)$pdo->lastInsertId(), 'id' => (int)$pdo->lastInsertId()]);
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['error' => 'Error en base de datos: ' . $e->getMessage()]);

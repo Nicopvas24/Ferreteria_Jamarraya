@@ -59,7 +59,7 @@ const CrearVentaModal = {
       clientes.forEach(c => {
         const option = document.createElement('option');
         option.value = c.id;
-        option.textContent = `${c.nombre} (c.c: ${c.identificacion})`;
+        option.textContent = `${c.nombre} (C.C/NIT: ${c.identificacion})`;
         select.appendChild(option);
       });
 
@@ -347,6 +347,18 @@ const CrearVentaModal = {
       successDiv.innerHTML = '';
       successDiv.style.display = 'none';
     }
+
+    // Limpiar y ocultar formulario de nuevo cliente
+    const formNuevoClienteContainer = document.getElementById('formNuevoClienteContainer');
+    if (formNuevoClienteContainer) {
+      formNuevoClienteContainer.style.display = 'none';
+      document.getElementById('nc_nombre').value = '';
+      document.getElementById('nc_identificacion').value = '';
+      document.getElementById('nc_telefono').value = '';
+      document.getElementById('nc_email').value = '';
+      document.getElementById('nc_direccion').value = '';
+      document.getElementById('nuevoClienteError').style.display = 'none';
+    }
   },
 
   configurarFormulario() {
@@ -467,6 +479,88 @@ const CrearVentaModal = {
     if (successDiv) {
       successDiv.textContent = mensaje;
       successDiv.style.display = 'block';
+    }
+  },
+
+  // ══════════════════════════════════════════════════════════════
+  // CREAR NUEVO CLIENTE
+  // ══════════════════════════════════════════════════════════════
+
+  toggleFormNuevoCliente() {
+    const container = document.getElementById('formNuevoClienteContainer');
+    if (container) {
+      container.style.display = container.style.display === 'none' ? 'block' : 'none';
+      // Limpiar el formulario cuando se abre
+      if (container.style.display === 'block') {
+        document.getElementById('nc_nombre').value = '';
+        document.getElementById('nc_identificacion').value = '';
+        document.getElementById('nc_telefono').value = '';
+        document.getElementById('nc_email').value = '';
+        document.getElementById('nc_direccion').value = '';
+        document.getElementById('nuevoClienteError').style.display = 'none';
+      }
+    }
+  },
+
+  async crearNuevoCliente() {
+    const nombre = document.getElementById('nc_nombre').value.trim();
+    const identificacion = document.getElementById('nc_identificacion').value.trim();
+    const telefono = document.getElementById('nc_telefono').value.trim();
+    const email = document.getElementById('nc_email').value.trim();
+    const direccion = document.getElementById('nc_direccion').value.trim();
+    
+    const errorDiv = document.getElementById('nuevoClienteError');
+    
+    // Validar campos requeridos
+    if (!nombre || !identificacion) {
+      errorDiv.textContent = '⚠️ Nombre e identificación son requeridos';
+      errorDiv.style.display = 'block';
+      return;
+    }
+
+    try {
+      errorDiv.style.display = 'none';
+      
+      const response = await fetch(this.apiClientes, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accion: 'registrar',
+          nombre,
+          identificacion,
+          telefono: telefono || null,
+          email: email || null,
+          direccion: direccion || null
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok || !data.ok) {
+        errorDiv.textContent = '❌ Error: ' + (data.mensaje || data.error || 'No se pudo crear el cliente');
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      // Cliente creado exitosamente
+      console.log('✅ Cliente creado:', data.id_cliente);
+      
+      // Recargar lista de clientes
+      await this.cargarClientes();
+      
+      // Auto-seleccionar el cliente creado
+      document.getElementById('vta_cliente').value = data.id_cliente;
+      
+      // Cerrar formulario
+      this.toggleFormNuevoCliente();
+      
+      // Mostrar mensaje de éxito
+      this.mostrarExito('✓ Cliente registrado exitosamente');
+      
+    } catch (error) {
+      console.error('Error creando cliente:', error);
+      errorDiv.textContent = '❌ Error: ' + error.message;
+      errorDiv.style.display = 'block';
     }
   },
 

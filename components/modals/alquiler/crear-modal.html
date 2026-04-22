@@ -88,15 +88,59 @@
       <div class="form-row">
         <div class="form-group required">
           <label for="alq_cliente">Cliente *</label>
-          <select id="alq_cliente" required>
-            <option value="">Seleccionar cliente...</option>
-          </select>
+          <div style="display:flex;gap:.5rem;align-items:flex-start">
+            <select id="alq_cliente" required style="flex:1">
+              <option value="">Seleccionar cliente...</option>
+            </select>
+            <button type="button" class="btn-sm btn-blue" onclick="CrearAlquilerModal.toggleFormNuevoCliente()" style="margin-top:0;white-space:nowrap">
+              + Nuevo
+            </button>
+          </div>
         </div>
         <div class="form-group required">
           <label for="alq_maquinaria">Maquinaria *</label>
           <select id="alq_maquinaria" required>
             <option value="">Seleccionar maquinaria...</option>
           </select>
+        </div>
+      </div>
+
+      <!-- Formulario para crear nuevo cliente (oculto) -->
+      <div id="formNuevoClienteAlqContainer" style="display:none;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px;padding:1rem;margin-bottom:1rem">
+        <h4 style="margin:0 0 1rem 0;font-size:.95rem;color:var(--text)">Registrar Nuevo Cliente</h4>
+        
+        <div id="nuevoClienteAlqError" style="display:none;background:rgba(248,81,73,.15);color:var(--red);padding:.75rem;border-radius:6px;font-size:.85rem;border:1px solid rgba(248,81,73,.3);margin-bottom:1rem"></div>
+        
+        <div class="form-row">
+          <div class="form-group required">
+            <label for="nca_nombre">Nombre Completo *</label>
+            <input type="text" id="nca_nombre" placeholder="Nombre del cliente" />
+          </div>
+          <div class="form-group required">
+            <label for="nca_identificacion">Cédula/NIT *</label>
+            <input type="text" id="nca_identificacion" placeholder="Identificación" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nca_telefono">Teléfono</label>
+            <input type="tel" id="nca_telefono" placeholder="Teléfono" />
+          </div>
+          <div class="form-group">
+            <label for="nca_email">Email</label>
+            <input type="email" id="nca_email" placeholder="Email" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="nca_direccion">Dirección</label>
+          <input type="text" id="nca_direccion" placeholder="Dirección" />
+        </div>
+
+        <div style="display:flex;gap:.75rem">
+          <button type="button" class="btn-sm btn-green" onclick="CrearAlquilerModal.crearNuevoCliente()">Guardar Cliente</button>
+          <button type="button" class="btn-sm btn-ghost" onclick="CrearAlquilerModal.toggleFormNuevoCliente()">Cancelar</button>
         </div>
       </div>
 

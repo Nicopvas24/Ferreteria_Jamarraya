@@ -646,107 +646,133 @@ async function cargarUsuarios() {
 async function generarReporteVentas() {
   const periodo = document.getElementById('rpVentasPeriodo').value;
   const el = document.getElementById('rpVentasResult');
-  el.innerHTML = '<div class="empty"><span>⏳</span>Generando…</div>';
+  el.innerHTML = '<div class="empty">Generando…</div>';
   try {
     const r = await fetch(API.reportes + `?tipo=ventas&periodo=${periodo}`);
     const d = await r.json();
     el.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:.6rem;font-size:.875rem">
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">Total ventas</span>
-          <strong>${d.total_ventas ?? '—'}</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">Ingresos</span>
-          <strong style="color:var(--green)">${d.ingresos ? fmt$(d.ingresos) : '—'}</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">Top producto</span>
-          <strong>${d.top_producto ?? '—'}</strong>
-        </div>
+      <div style="font-size:.875rem;display:flex;flex-direction:column;gap:1rem">
+        <table style="width:100%;border-collapse:collapse;background:#f8f9fa;border:1px solid var(--border)">
+          <tr style="border-bottom:2px solid var(--border)">
+            <td style="padding:.75rem 1rem;color:var(--text-muted);font-weight:600;width:50%">Concepto</td>
+            <td style="padding:.75rem 1rem;color:var(--text-muted);font-weight:600;text-align:right">Valor</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:.75rem 1rem;color:#333">Total de ventas</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:600;color:#333">${d.total_ventas ?? '0'}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:.75rem 1rem;color:#333">Ingresos totales</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:600;color:var(--green)">${d.ingresos ? fmt$(d.ingresos) : '$0'}</td>
+          </tr>
+          <tr>
+            <td style="padding:.75rem 1rem;color:#333">Producto con más ventas</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:600;color:#333">${d.top_producto ?? 'N/A'}</td>
+          </tr>
+        </table>
         ${d.top_productos && d.top_productos.length > 0 ? `
-          <details style="margin-top:.5rem">
-            <summary style="cursor:pointer;color:var(--orange)">👀 Ver detalle (${d.top_productos.length})</summary>
-            <div style="margin-top:.5rem;font-size:.8rem">
+          <div style="margin-top:.5rem">
+            <h4 style="margin:0 0 .75rem 0;font-size:.9rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Detalle de productos (${d.top_productos.length})</h4>
+            <table style="width:100%;border-collapse:collapse;font-size:.8rem;background:#f8f9fa;border:1px solid var(--border)">
+              <tr style="background:var(--orange);color:white;border:none">
+                <td style="padding:.5rem .75rem;font-weight:600">#</td>
+                <td style="padding:.5rem .75rem;font-weight:600">Producto</td>
+                <td style="padding:.5rem .75rem;font-weight:600;text-align:right">Unidades</td>
+                <td style="padding:.5rem .75rem;font-weight:600;text-align:right">Ingreso</td>
+              </tr>
               ${d.top_productos.slice(0, 5).map((p, i) => `
-                <div style="display:flex;justify-content:space-between;padding:.3rem;border-bottom:1px solid var(--border)">
-                  <span>${i+1}. ${p.nombre}</span>
-                  <span>${p.unidades_vendidas} un.</span>
-                </div>
+                <tr style="border-bottom:1px solid var(--border)">
+                  <td style="padding:.5rem .75rem;color:#333">${i+1}</td>
+                  <td style="padding:.5rem .75rem;color:#333">${p.nombre}</td>
+                  <td style="padding:.5rem .75rem;text-align:right;color:#333">${p.unidades_vendidas}</td>
+                  <td style="padding:.5rem .75rem;text-align:right;font-weight:600;color:#333">${fmt$(p.ingreso_total)}</td>
+                </tr>
               `).join('')}
-            </div>
-          </details>
+            </table>
+          </div>
         ` : ''}
       </div>`;
     window.rpVentasData = d;
   } catch {
-    el.innerHTML = '<div class="empty"><span>❌</span>Error generando reporte</div>';
+    el.innerHTML = '<div class="empty">Error generando reporte</div>';
   }
 }
 
 async function generarReporteInventario() {
   const el = document.getElementById('rpInvResult');
-  el.innerHTML = '<div class="empty"><span>⏳</span>Generando…</div>';
+  el.innerHTML = '<div class="empty">Generando…</div>';
   try {
     const r = await fetch(API.reportes + '?tipo=inventario');
     const d = await r.json();
     el.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:.6rem;font-size:.875rem">
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">Total productos</span>
-          <strong>${d.total_productos ?? '—'}</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">Valor total</span>
-          <strong style="color:var(--blue)">${d.valor_total ? fmt$(d.valor_total) : '—'}</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">⚠️ Bajo stock</span>
-          <strong style="color:var(--red)">${d.bajo_stock ?? '—'}</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">❌ Sin stock</span>
-          <strong style="color:var(--red)">${d.sin_stock ?? '—'}</strong>
-        </div>
+      <div style="font-size:.875rem;display:flex;flex-direction:column;gap:1rem">
+        <table style="width:100%;border-collapse:collapse;background:#f8f9fa;border:1px solid var(--border)">
+          <tr style="border-bottom:2px solid var(--border)">
+            <td style="padding:.75rem 1rem;color:var(--text-muted);font-weight:600;width:50%">Métrica</td>
+            <td style="padding:.75rem 1rem;color:var(--text-muted);font-weight:600;text-align:right">Valor</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:.75rem 1rem;color:#333">Total de productos</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:600;color:#333">${d.total_productos ?? '0'}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:.75rem 1rem;color:#333">Valor total del inventario</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:600;color:var(--blue)">${d.valor_total ? fmt$(d.valor_total) : '$0'}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:.75rem 1rem;color:#333">Productos con bajo stock</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:600;color:var(--orange)">${d.bajo_stock ?? '0'}</td>
+          </tr>
+          <tr>
+            <td style="padding:.75rem 1rem;color:#333">Productos sin stock</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:600;color:var(--red)">${d.sin_stock ?? '0'}</td>
+          </tr>
+        </table>
       </div>`;
     window.rpInvData = d;
   } catch {
-    el.innerHTML = '<div class="empty"><span>❌</span>Error generando reporte</div>';
+    el.innerHTML = '<div class="empty">Error generando reporte</div>';
   }
 }
 
 async function generarBalance() {
   const mes = document.getElementById('rpBalanceMes').value;
   const el  = document.getElementById('rpBalanceResult');
-  if (!mes) { el.innerHTML = '<div class="empty"><span>⚠️</span>Selecciona un mes</div>'; return; }
-  el.innerHTML = '<div class="empty"><span>⏳</span>Generando…</div>';
+  if (!mes) { el.innerHTML = '<div class="empty">Selecciona un mes</div>'; return; }
+  el.innerHTML = '<div class="empty">Generando…</div>';
   try {
     const r = await fetch(API.reportes + `?tipo=balance&mes=${mes}`);
     const d = await r.json();
     el.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:.6rem;font-size:.875rem">
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">Ventas</span>
-          <strong>${d.ventas ? fmt$(d.ventas) : '—'}</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">Alquileres</span>
-          <strong>${d.alquileres ? fmt$(d.alquileres) : '—'}</strong>
-        </div>
-        <hr style="border-color:var(--border)"/>
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">Total</span>
-          <strong style="color:var(--green);font-size:1.1rem">${d.total ? fmt$(d.total) : '—'}</strong>
-        </div>
-        ${d.variacion !== undefined ? `
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">vs mes anterior</span>
-          <strong style="color:${d.variacion>=0?'var(--green)':'var(--red)'}">${d.variacion>=0?'+':''}${d.variacion}%</strong>
-        </div>` : ''}
+      <div style="font-size:.875rem;display:flex;flex-direction:column;gap:1rem">
+        <table style="width:100%;border-collapse:collapse;background:#f8f9fa;border:1px solid var(--border)">
+          <tr style="border-bottom:2px solid var(--border)">
+            <td style="padding:.75rem 1rem;color:var(--text-muted);font-weight:600;width:50%">Concepto</td>
+            <td style="padding:.75rem 1rem;color:var(--text-muted);font-weight:600;text-align:right">Monto</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:.75rem 1rem;color:#333">Ingresos por ventas</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:600;color:#333">${d.ventas ? fmt$(d.ventas) : '$0'}</td>
+          </tr>
+          <tr style="border-bottom:2px solid var(--border)">
+            <td style="padding:.75rem 1rem;color:#333">Ingresos por alquileres</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:600;color:#333">${d.alquileres ? fmt$(d.alquileres) : '$0'}</td>
+          </tr>
+          <tr style="background:var(--green);color:white">
+            <td style="padding:.75rem 1rem;font-weight:700">Total</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:700;font-size:1.1rem">${d.total ? fmt$(d.total) : '$0'}</td>
+          </tr>
+          ${d.variacion !== undefined ? `
+          <tr>
+            <td style="padding:.75rem 1rem;color:var(--text-muted)">Variación vs mes anterior</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:600;color:${d.variacion>=0?'var(--green)':'var(--red)'}">${d.variacion>=0?'+':''}${d.variacion}%</td>
+          </tr>
+          ` : ''}
+        </table>
       </div>`;
     window.rpBalanceData = d;
   } catch {
-    el.innerHTML = '<div class="empty"><span>❌</span>Error generando balance</div>';
+    el.innerHTML = '<div class="empty">Error generando balance</div>';
   }
 }
 
@@ -758,65 +784,103 @@ async function generarReporteAlquileres() {
   document.getElementById('rpAlqDesde').value = desde;
   document.getElementById('rpAlqHasta').value = hasta;
   
-  el.innerHTML = '<div class="empty"><span>⏳</span>Generando…</div>';
+  el.innerHTML = '<div class="empty">Generando…</div>';
   try {
     const r = await fetch(API.reportes + `?tipo=alquileres&desde=${desde}&hasta=${hasta}`);
     const d = await r.json();
-    el.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:.6rem;font-size:.875rem">
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">Total alquileres</span>
-          <strong>${d.total ?? '—'}</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--green)">Activos</span>
-          <strong style="color:var(--green)">${d.activos ?? '—'}</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">Finalizados</span>
-          <strong>${d.finalizados ?? '—'}</strong>
-        </div>
-        <hr style="border-color:var(--border)"/>
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--text-muted)">Ingresos totales</span>
-          <strong style="color:var(--orange)">${d.ingresos_total ? fmt$(d.ingresos_total) : '—'}</strong>
-        </div>
-      </div>`;
+    
+    let html = `
+      <div style="font-size:.875rem;display:flex;flex-direction:column;gap:1rem">
+        <table style="width:100%;border-collapse:collapse;background:#f8f9fa;border:1px solid var(--border)">
+          <tr style="border-bottom:2px solid var(--border)">
+            <td style="padding:.75rem 1rem;color:var(--text-muted);font-weight:600;width:50%">Concepto</td>
+            <td style="padding:.75rem 1rem;color:var(--text-muted);font-weight:600;text-align:right">Valor</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:.75rem 1rem;color:#333">Total de alquileres</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:600;color:#333">${d.total ?? '0'}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:.75rem 1rem;color:#333">Activos</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:600;color:var(--green)">${d.activos ?? '0'}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:.75rem 1rem;color:#333">Finalizados</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:600;color:#333">${d.finalizados ?? '0'}</td>
+          </tr>
+          <tr style="background:var(--orange);color:white">
+            <td style="padding:.75rem 1rem;font-weight:700">Ingresos totales</td>
+            <td style="padding:.75rem 1rem;text-align:right;font-weight:700;font-size:1.05rem">${d.ingresos_total ? fmt$(d.ingresos_total) : '$0'}</td>
+          </tr>
+        </table>`;
+    
+    // Mostrar alquileres activos si existen
+    if (d.alquileres_activos && d.alquileres_activos.length > 0) {
+      html += `
+        <div style="margin-top:1rem">
+          <h4 style="margin:0 0 .75rem 0;font-size:.9rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Información del Alquiler Activo (${d.alquileres_activos.length})</h4>
+          <table style="width:100%;border-collapse:collapse;font-size:.8rem;background:#f8f9fa;border:1px solid var(--border)">
+            <tr style="background:var(--orange);color:white;border:none">
+              <td style="padding:.5rem .75rem;font-weight:600">Máquina</td>
+              <td style="padding:.5rem .75rem;font-weight:600">Cliente</td>
+              <td style="padding:.5rem .75rem;font-weight:600">Teléfono</td>
+              <td style="padding:.5rem .75rem;font-weight:600;text-align:center">Período</td>
+              <td style="padding:.5rem .75rem;font-weight:600;text-align:center">Días</td>
+              <td style="padding:.5rem .75rem;font-weight:600;text-align:right">Monto</td>
+            </tr>
+            ${d.alquileres_activos.slice(0, 5).map(a => {
+              const colorDias = a.dias_restantes <= 7 ? 'color:var(--red)' : 'color:var(--green)';
+              return `
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:.5rem .75rem;color:#333"><strong>${a.maquinaria_nombre}</strong></td>
+              <td style="padding:.5rem .75rem;color:#333">${a.cliente_nombre}</td>
+              <td style="padding:.5rem .75rem;color:#333">${a.cliente_telefono || '—'}</td>
+              <td style="padding:.5rem .75rem;text-align:center;font-size:.75rem;color:#333">${a.fecha_inicio} a ${a.fecha_fin}</td>
+              <td style="padding:.5rem .75rem;text-align:center;font-weight:600;${colorDias}">${a.dias_restantes}</td>
+              <td style="padding:.5rem .75rem;text-align:right;font-weight:600;color:#333">${fmt$(a.monto)}</td>
+            </tr>`;
+            }).join('')}
+          </table>
+        </div>`;
+    }
+    
+    html += `</div>`;
+    el.innerHTML = html;
     window.rpAlqData = d;
   } catch {
-    el.innerHTML = '<div class="empty"><span>❌</span>Error generando reporte</div>';
+    el.innerHTML = '<div class="empty">Error generando reporte</div>';
   }
 }
 
 async function generarReporteBajoStock() {
   const el = document.getElementById('rpBajoStockResult');
-  el.innerHTML = '<div class="empty"><span>⏳</span>Generando…</div>';
+  el.innerHTML = '<div class="empty">Generando…</div>';
   try {
     const r = await fetch(API.reportes + '?tipo=inventario');
     const d = await r.json();
     
     if (!d.productos_bajo_stock || d.productos_bajo_stock.length === 0) {
-      el.innerHTML = '<div class="empty"><span>✓</span>¡Sin problemas de stock!</div>';
+      el.innerHTML = '<div class="empty">Sin problemas de stock</div>';
       return;
     }
 
     const tabla = `
-      <table style="width:100%;font-size:.8rem;border-collapse:collapse">
+      <table style="width:100%;font-size:.8rem;border-collapse:collapse;background:#f8f9fa;border:1px solid var(--border)">
         <thead>
-          <tr style="background:rgba(0,0,0,.2);border-bottom:2px solid var(--border)">
-            <th style="text-align:left;padding:.5rem">Código</th>
-            <th style="text-align:left;padding:.5rem">Producto</th>
-            <th style="text-align:center;padding:.5rem">Stock</th>
-            <th style="text-align:center;padding:.5rem">Mín.</th>
+          <tr style="background:var(--red);color:white;border:none">
+            <th style="text-align:left;padding:.5rem;font-weight:600">Código</th>
+            <th style="text-align:left;padding:.5rem;font-weight:600">Producto</th>
+            <th style="text-align:center;padding:.5rem;font-weight:600">Stock</th>
+            <th style="text-align:center;padding:.5rem;font-weight:600">Mínimo</th>
           </tr>
         </thead>
         <tbody>
           ${d.productos_bajo_stock.slice(0, 10).map(p => `
             <tr style="border-bottom:1px solid var(--border)">
-              <td style="padding:.5rem">${p.codigo}</td>
-              <td style="padding:.5rem">${p.nombre}</td>
+              <td style="padding:.5rem;color:#333">${p.codigo}</td>
+              <td style="padding:.5rem;color:#333">${p.nombre}</td>
               <td style="text-align:center;color:var(--red);font-weight:600">${p.stock_actual}</td>
-              <td style="text-align:center">${p.stock_minimo}</td>
+              <td style="text-align:center;color:#333">${p.stock_minimo}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -824,39 +888,39 @@ async function generarReporteBajoStock() {
     el.innerHTML = tabla;
     window.rpBajoStockData = d;
   } catch {
-    el.innerHTML = '<div class="empty"><span>❌</span>Error generando reporte</div>';
+    el.innerHTML = '<div class="empty">Error generando reporte</div>';
   }
 }
 
 async function generarTopProductos() {
   const periodo = document.getElementById('rpTopPeriodo').value;
   const el = document.getElementById('rpTopResult');
-  el.innerHTML = '<div class="empty"><span>⏳</span>Generando…</div>';
+  el.innerHTML = '<div class="empty">Generando…</div>';
   try {
     const r = await fetch(API.reportes + `?tipo=ventas&periodo=${periodo}`);
     const d = await r.json();
     
     if (!d.top_productos || d.top_productos.length === 0) {
-      el.innerHTML = '<div class="empty"><span>—</span>Sin ventas</div>';
+      el.innerHTML = '<div class="empty">Sin ventas en el período</div>';
       return;
     }
 
     const tabla = `
-      <table style="width:100%;font-size:.8rem;border-collapse:collapse">
+      <table style="width:100%;font-size:.8rem;border-collapse:collapse;background:#f8f9fa;border:1px solid var(--border)">
         <thead>
-          <tr style="background:rgba(0,0,0,.2);border-bottom:2px solid var(--border)">
-            <th style="text-align:left;padding:.5rem">Ranking</th>
-            <th style="text-align:left;padding:.5rem">Producto</th>
-            <th style="text-align:center;padding:.5rem">Unidades</th>
-            <th style="text-align:right;padding:.5rem">Ingresos</th>
+          <tr style="background:var(--green);color:white;border:none">
+            <th style="text-align:center;padding:.5rem;font-weight:600;width:15%">Ranking</th>
+            <th style="text-align:left;padding:.5rem;font-weight:600">Producto</th>
+            <th style="text-align:center;padding:.5rem;font-weight:600">Unidades</th>
+            <th style="text-align:right;padding:.5rem;font-weight:600">Ingresos</th>
           </tr>
         </thead>
         <tbody>
           ${d.top_productos.slice(0, 10).map((p, i) => `
             <tr style="border-bottom:1px solid var(--border)">
-              <td style="padding:.5rem;font-weight:600;color:var(--orange)">#${i+1}</td>
-              <td style="padding:.5rem">${p.nombre}</td>
-              <td style="text-align:center;padding:.5rem">${p.unidades_vendidas}</td>
+              <td style="padding:.5rem;font-weight:700;text-align:center;color:var(--orange)">N°${i+1}</td>
+              <td style="padding:.5rem;color:#333">${p.nombre}</td>
+              <td style="text-align:center;padding:.5rem;font-weight:600;color:#333">${p.unidades_vendidas}</td>
               <td style="text-align:right;padding:.5rem;color:var(--green);font-weight:600">${fmt$(p.ingreso_total)}</td>
             </tr>
           `).join('')}
@@ -865,7 +929,7 @@ async function generarTopProductos() {
     el.innerHTML = tabla;
     window.rpTopData = d;
   } catch {
-    el.innerHTML = '<div class="empty"><span>❌</span>Error generando reporte</div>';
+    el.innerHTML = '<div class="empty">Error generando reporte</div>';
   }
 }
 
@@ -1113,14 +1177,50 @@ function exportarReporteAlquileres(formato = 'csv') {
       doc.setFontSize(10);
       doc.text(`Período: ${d.desde} al ${d.hasta}`, 20, 30);
       
+      let yPos = 40;
+      
+      // RESUMEN
       doc.setFontSize(12);
-      doc.text('RESUMEN', 20, 45);
+      doc.text('RESUMEN GENERAL', 20, yPos);
+      yPos += 8;
       
       doc.setFontSize(10);
-      doc.text(`Total alquileres: ${d.total}`, 20, 55);
-      doc.text(`Activos: ${d.activos}`, 20, 62);
-      doc.text(`Finalizados: ${d.finalizados}`, 20, 69);
-      doc.text(`Ingresos totales: $${d.ingresos_total?.toLocaleString('es-CO')}`, 20, 76);
+      doc.text(`Total alquileres: ${d.total}`, 20, yPos);
+      doc.text(`Activos: ${d.activos}`, 100, yPos);
+      yPos += 6;
+      
+      doc.text(`Finalizados: ${d.finalizados}`, 20, yPos);
+      doc.text(`Ingresos totales: $${d.ingresos_total?.toLocaleString('es-CO')}`, 100, yPos);
+      yPos += 12;
+      
+      // INFORMACIÓN DEL ALQUILER ACTIVO
+      if (d.alquileres_activos && d.alquileres_activos.length > 0) {
+        doc.setFontSize(12);
+        doc.text('INFORMACIÓN DEL ALQUILER ACTIVO', 20, yPos);
+        yPos += 8;
+        
+        // Tabla de alquileres activos
+        const tableData = d.alquileres_activos.slice(0, 10).map(a => [
+          a.maquinaria_nombre,
+          a.cliente_nombre,
+          a.cliente_id || '—',
+          a.cliente_telefono || '—',
+          a.fecha_inicio + ' a ' + a.fecha_fin,
+          a.dias_restantes.toString() + 'd',
+          `$${a.monto?.toLocaleString('es-CO')}`
+        ]);
+        
+        if (typeof doc.autoTable === 'function') {
+          doc.autoTable({
+            head: [['Máquina', 'Cliente', 'ID', 'Teléfono', 'Período', 'Días', 'Monto']],
+            body: tableData,
+            startY: yPos,
+            margin: 20,
+            theme: 'grid',
+            styles: { font: 'helvetica', fontSize: 8 }
+          });
+        }
+      }
       
       doc.save(`Reporte-Alquileres-${d.desde}.pdf`);
       console.log('✓ PDF descargado');
@@ -1132,12 +1232,33 @@ function exportarReporteAlquileres(formato = 'csv') {
     const csv = [
       ['REPORTE DE ALQUILERES', d.desde, 'al', d.hasta],
       [],
+      ['RESUMEN GENERAL'],
       ['Métrica', 'Valor'],
       ['Total alquileres', d.total],
       ['Activos', d.activos],
       ['Finalizados', d.finalizados],
-      ['Ingresos totales', d.ingresos_total]
+      ['Ingresos totales', d.ingresos_total],
+      []
     ];
+    
+    // Agregar detalle de alquileres activos
+    if (d.alquileres_activos && d.alquileres_activos.length > 0) {
+      csv.push(['INFORMACIÓN DEL ALQUILER ACTIVO']);
+      csv.push(['Máquina', 'Cliente', 'Identificación', 'Teléfono', 'Email', 'Dirección', 'Inicio', 'Fin', 'Días Restantes', 'Monto']);
+      d.alquileres_activos.forEach(a => csv.push([
+        a.maquinaria_nombre,
+        a.cliente_nombre,
+        a.cliente_id || '—',
+        a.cliente_telefono || '—',
+        a.cliente_email || '—',
+        a.cliente_direccion || '—',
+        a.fecha_inicio,
+        a.fecha_fin,
+        a.dias_restantes,
+        a.monto
+      ]));
+    }
+    
     descargarCSV(csv, `Reporte-Alquileres-${d.desde}.csv`);
   }
 }

@@ -170,6 +170,33 @@ switch ($tipo) {
         $stmt->execute([$desde, $hasta]);
         $totales = $stmt->fetch();
 
+        // Alquileres ACTIVOS con detalles del cliente y maquinaria
+        $stmt_activos = $pdo->prepare("
+            SELECT 
+                a.id,
+                a.fecha_inicio,
+                a.fecha_fin,
+                a.monto,
+                a.estado,
+                a.fecha_registro,
+                DATEDIFF(a.fecha_fin, CURDATE()) AS dias_restantes,
+                c.nombre AS cliente_nombre,
+                c.identificacion AS cliente_id,
+                c.telefono AS cliente_telefono,
+                c.email AS cliente_email,
+                c.direccion AS cliente_direccion,
+                m.nombre AS maquinaria_nombre,
+                m.descripcion AS maquinaria_descripcion,
+                m.tarifa_alquiler
+            FROM alquileres a
+            JOIN clientes c ON c.id = a.id_cliente
+            JOIN maquinaria m ON m.id = a.id_maquinaria
+            WHERE a.estado = 'activo'
+            ORDER BY a.fecha_fin ASC
+        ");
+        $stmt_activos->execute();
+        $alquileres_activos = $stmt_activos->fetchAll();
+
         // Maquinaria más alquilada
         $stmt2 = $pdo->prepare("
             SELECT m.nombre, COUNT(a.id) AS veces_alquilada,
@@ -185,13 +212,14 @@ switch ($tipo) {
         $top_maquinaria = $stmt2->fetchAll();
 
         echo json_encode([
-            'desde'           => $desde,
-            'hasta'           => $hasta,
-            'total'           => (int)$totales['total'],
-            'activos'         => (int)$totales['activos'],
-            'finalizados'     => (int)$totales['finalizados'],
-            'ingresos_total'  => (float)$totales['ingresos_total'],
-            'top_maquinaria'  => $top_maquinaria,
+            'desde'              => $desde,
+            'hasta'              => $hasta,
+            'total'              => (int)$totales['total'],
+            'activos'            => (int)$totales['activos'],
+            'finalizados'        => (int)$totales['finalizados'],
+            'ingresos_total'     => (float)$totales['ingresos_total'],
+            'alquileres_activos' => $alquileres_activos,
+            'top_maquinaria'     => $top_maquinaria,
         ]);
         break;
 
