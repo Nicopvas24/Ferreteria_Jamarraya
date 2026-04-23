@@ -116,18 +116,12 @@ switch ($accion) {
         }
 
         $input        = json_decode(file_get_contents('php://input'), true);
-        $id_usuario   = (int)($_SESSION['id_usuario'] ?? 0);  // Del admin logueado
+        $id_usuario   = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : null;
         $id_cliente   = (int)($input['id_cliente']   ?? 0);
         $id_maquinaria= (int)($input['id_maquinaria']?? 0);
         $fecha_inicio = $input['fecha_inicio'] ?? null;
         $fecha_fin    = $input['fecha_fin']    ?? null;
         $monto        = (float)($input['monto'] ?? 0);
-
-        if (!$id_usuario) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Usuario no autenticado']);
-            exit;
-        }
 
         if (!$id_cliente || !$id_maquinaria || !$fecha_inicio || !$fecha_fin || !$monto) {
             http_response_code(400);

@@ -424,11 +424,11 @@ function abrirCheckout() {
     return;
   }
 
-  const productosCarrito = state.carrito.filter(x => x.kind !== 'rental');
+  const productosCarrito = state.carrito;
   if (productosCarrito.length === 0) return;
   
   // Actualizar resumen
-  const total = productosCarrito.reduce((s,x) => s + x.precio * x.qty, 0);
+  const total = productosCarrito.reduce((s,x) => s + (x.precio || x.tarifa || 0) * x.qty, 0);
   checkoutTotal.textContent = fmt(total);
 
   // Autollenado desde sesión para no exigir captura manual
@@ -449,8 +449,8 @@ function abrirCheckout() {
   
   summaryItems.innerHTML = productosCarrito.map(item => `
     <div class="pp-summary-item">
-      <span>${item.nombre} <strong>x${item.qty}</strong></span>
-      <strong>${fmt(item.precio * item.qty)}</strong>
+      <span>${item.nombre} <strong>x${item.qty}</strong> <small style="font-size:0.7em;color:#aaa">${item.kind === 'rental' ? '(Alquiler)' : ''}</small></span>
+      <strong>${fmt((item.precio || item.tarifa || 0) * item.qty)}</strong>
     </div>
   `).join('');
   
@@ -496,9 +496,9 @@ async function procesarCompra(e) {
   const submitBtn = checkoutForm.querySelector('button[type="submit"]');
   const submitText = submitBtn.querySelector('.pp-submit-text');
   const submitSpinner = submitBtn.querySelector('.pp-submit-spinner');
-  const productosCarrito = state.carrito.filter(x => x.kind !== 'rental');
+  const productosCarrito = state.carrito;
   if (productosCarrito.length === 0) {
-    alert('Tu carrito no tiene productos para comprar.');
+    alert('Tu carrito está vacío.');
     return;
   }
   
@@ -516,7 +516,7 @@ async function procesarCompra(e) {
     codigo: formData.get('codigo'),
     notas: formData.get('notas'),
     carrito: productosCarrito,
-    total: productosCarrito.reduce((s,x) => s + x.precio * x.qty, 0)
+    total: productosCarrito.reduce((s,x) => s + (x.precio || x.tarifa || 0) * x.qty, 0)
   };
   
   // Simular envío
@@ -533,7 +533,7 @@ async function procesarCompra(e) {
     submitText.style.display = '';
     submitSpinner.hidden = true;
     checkoutForm.reset();
-    state.carrito = state.carrito.filter(x => x.kind === 'rental');
+    state.carrito = [];
     renderCarrito();
     mostrarMensajeExito();
   });
@@ -560,41 +560,77 @@ function registrarVenta(datos, callback) {
       throw new Error('No se pudo crear/obtener cliente: ' + JSON.stringify(clienteData));
     }
     
-    // Transformar carrito a estructura esperada por backend
-    const items = datos.carrito.map(item => ({
-      id_producto: item.id,
-      cantidad: item.qty,
-      precio_unitario: item.precio
-    }));
-    
-    // Registrar venta (el backend descontará stock automáticamente)
-    return fetch('../backend/api/ventas.php?accion=registrar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id_cliente: idCliente,
-        items: items,
-        total: datos.total,
-        notas: datos.notas,
-        delivery: datos.delivery
-      })
-    });
-  })
-  .then(r => r.json())
-  .then(ventaData => {
-    if (ventaData.ok || ventaData.id_venta) {
-      console.log('✓ Venta registrada:', ventaData);
-      alert(`✓ ¡Compra exitosa! Comprobante: ${ventaData.comprobante}`);
-    } else {
-      console.error('Error en venta:', ventaData);
-      alert('❌ Error: ' + (ventaData.mensaje || ventaData.error || 'Desconocido'));
+    const productos = datos.carrito.filter(x => x.kind !== 'rental');
+    const alquileres = datos.carrito.filter(x => x.kind === 'rental');
+    const promises = [];
+
+    // 1. Registrar venta de productos
+    if (productos.length > 0) {
+      const items = productos.map(item => ({
+        id_producto: item.id,
+        cantidad: item.qty,
+        precio_unitario: item.precio
+      }));
+      const totalVenta = productos.reduce((s,x) => s + x.precio * x.qty, 0);
+
+      promises.push(
+        fetch('../backend/api/ventas.php?accion=registrar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id_cliente: idCliente,
+            items: items,
+            total: totalVenta,
+            notas: datos.notas,
+            delivery: datos.delivery
+          })
+        }).then(r => r.json()).then(res => {
+          if (!res.ok && !res.id_venta) throw new Error(res.mensaje || res.error || 'Error en venta');
+          return res;
+        })
+      );
     }
-    setTimeout(callback, 1500);
+
+    // 2. Registrar alquileres
+    if (alquileres.length > 0) {
+      const hoy = new Date().toISOString().split('T')[0];
+      const manana = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      
+      for (const alq of alquileres) {
+        promises.push(
+          fetch('../backend/api/alquileres.php?accion=registrar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id_cliente: idCliente,
+              id_maquinaria: alq.id,
+              fecha_inicio: hoy,
+              fecha_fin: manana,
+              monto: (alq.tarifa || 0) * alq.qty
+            })
+          }).then(r => r.json()).then(res => {
+            if (!res.ok && !res.id_alquiler) throw new Error(res.mensaje || res.error || 'Error en alquiler');
+            return res;
+          })
+        );
+      }
+    }
+
+    return Promise.all(promises);
+  })
+  .then(resultados => {
+    console.log('✓ Pedido registrado:', resultados);
+    callback();
   })
   .catch(err => {
-    console.error('Error registrando venta:', err);
-    alert('❌ Error al procesar la compra: ' + err.message);
-    setTimeout(callback, 500);
+    console.error('Error registrando el pedido:', err);
+    alert('❌ Error: ' + err.message);
+    const submitBtn = checkoutForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.querySelector('.pp-submit-text').style.display = '';
+      submitBtn.querySelector('.pp-submit-spinner').hidden = true;
+    }
   });
 }
 

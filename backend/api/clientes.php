@@ -131,8 +131,10 @@ switch ($accion) {
             // Verificar identificación única
             $check = $pdo->prepare("SELECT id FROM clientes WHERE identificacion = ?");
             $check->execute([$identificacion]);
-            if ($check->fetch()) {
-                echo json_encode(['ok' => false, 'mensaje' => 'Ya existe un cliente con esa identificación']);
+            $row = $check->fetch();
+            if ($row) {
+                // Return existing customer ID
+                echo json_encode(['ok' => true, 'id_cliente' => (int)$row['id'], 'id' => (int)$row['id']]);
                 exit;
             }
 
