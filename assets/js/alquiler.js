@@ -64,14 +64,14 @@ function leerCarritoCompartido() {
   try {
     const raw = localStorage.getItem(CART_KEY);
     const data = raw ? JSON.parse(raw) : [];
-    return Array.isArray(data) ? data : [];
+    return normalizarCarrito(data);
   } catch {
     return [];
   }
 }
 
 function guardarCarritoCompartido(items) {
-  localStorage.setItem(CART_KEY, JSON.stringify(items));
+  localStorage.setItem(CART_KEY, JSON.stringify(normalizarCarrito(items)));
 }
 
 let carrito = leerCarritoCompartido();
@@ -81,7 +81,17 @@ let modalQty = 1;
 /* ══════════════════════════════════════════
    HELPERS FORMAT
 ══════════════════════════════════════════ */
-const fmt = (n) => '$' + n.toLocaleString('es-CO');
+const fmt = (n) => '$' + (Number(n) || 0).toLocaleString('es-CO');
+
+function normalizarCarrito(items) {
+  return (Array.isArray(items) ? items : []).map(item => ({
+    ...item,
+    kind: item.kind || (item.precio != null && item.tarifa == null ? 'producto' : 'rental'),
+    qty: Number(item.qty) || 1,
+    tarifa: Number(item.tarifa) || 0,
+    precio: Number(item.precio) || 0,
+  }));
+}
 
 /* ══════════════════════════════════════════
    FUNCIONES AUXILIARES
@@ -326,6 +336,7 @@ function agregarAlCarrito(id, qty = 1) {
 }
 
 function renderCarrito() {
+  carrito = normalizarCarrito(carrito);
   guardarCarritoCompartido(carrito);
 
   const subtotalProductos = carrito
@@ -354,9 +365,10 @@ function renderCarrito() {
   }
 
   cartItems.innerHTML = carrito.map(item => {
-    const rutaImagen = item.imagen.startsWith('http') || item.imagen.startsWith('../') 
-      ? item.imagen 
-      : `../assets/img/maquinaria/${item.imagen}`;
+    const imagen = item.imagen || 'default.png';
+    const rutaImagen = imagen.startsWith('http') || imagen.startsWith('../') 
+      ? imagen 
+      : `../assets/img/maquinaria/${imagen}`;
     
     return `
     <div class="alq-cart-item" data-id="${item.id}" data-kind="${item.kind || 'rental'}">
@@ -565,4 +577,13 @@ async function cargarEquipos() {
 /* ══════════════════════════════════════════
    INIT
 ══════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', cargarEquipos);
+function iniciarAlquileres() {
+  if (!grid) return;
+  cargarEquipos();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', iniciarAlquileres);
+} else {
+  iniciarAlquileres();
+}

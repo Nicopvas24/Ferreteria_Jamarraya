@@ -310,7 +310,7 @@ function agregarAlCarrito(id, qty = 1) {
   if (existe) {
     existe.qty = Math.min(existe.qty + qty, p.stock);
   } else {
-    state.carrito.push({ id, qty, nombre: p.nombre, precio: p.precio, imagen: p.imagen });
+    state.carrito.push({ id, kind: 'producto', qty, nombre: p.nombre, precio: p.precio, imagen: p.imagen });
   }
   renderCarrito();
 }
