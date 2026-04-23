@@ -316,6 +316,22 @@ function agregarAlCarrito(id, qty = 1) {
   const p = state.productos.find(x => x.id === id);
   if (!p || p.stock <= 0) return;
 
+  if (window.GlobalCart) {
+    window.GlobalCart.agregar({
+      id,
+      kind:     'producto',
+      qty,
+      nombre:   p.nombre,
+      precio:   p.precio,
+      imagen:   p.imagen,
+      maxStock: p.stock,
+    });
+    // Sync estado local para checkout
+    state.carrito = window.GlobalCart.leer();
+    return;
+  }
+
+  // Fallback
   const existe = state.carrito.find(x => x.id === id);
   if (existe) {
     existe.qty = Math.min(existe.qty + qty, p.stock);
@@ -337,23 +353,23 @@ function renderCarrito() {
   const total      = subtotalProductos + subtotalAlquiler;
   const totalItems = state.carrito.reduce((s, x) => s + x.qty, 0);
 
-  cartCount.textContent = totalItems;
-  cartTotal.textContent = fmt(total);
+  if (cartCount) cartCount.textContent = totalItems;
+  if (cartTotal) cartTotal.textContent = fmt(total);
 
   if (state.carrito.length === 0) {
-    cartItems.innerHTML = '<p class="pp-cart-empty">Tu carrito está vacío.</p>';
+    if (cartItems) cartItems.innerHTML = '<p class="pp-cart-empty">Tu carrito está vacío.</p>';
     let subt = document.getElementById('pp-cart-subtotals');
     if (!subt) {
       subt = document.createElement('div');
       subt.id = 'pp-cart-subtotals';
       subt.style.cssText = 'font-size:.78rem;color:var(--text-muted);margin:.35rem 0 .5rem;display:grid;gap:.2rem';
-      cartTotal.closest('.pp-cart-total-row')?.insertAdjacentElement('afterend', subt);
+      cartTotal?.closest('.pp-cart-total-row')?.insertAdjacentElement('afterend', subt);
     }
     subt.innerHTML = '';
     return;
   }
 
-  cartItems.innerHTML = state.carrito.map(item => `
+  if (cartItems) cartItems.innerHTML = state.carrito.map(item => `
     <div class="pp-cart-item" data-id="${item.id}" data-kind="${item.kind || 'producto'}">
       <img
         src="${(item.kind === 'rental' ? '../assets/img/maquinaria/' : '../assets/img/productos/') + item.imagen}"
@@ -377,7 +393,7 @@ function renderCarrito() {
       </div>
     </div>`).join('');
 
-  cartItems.querySelectorAll('[data-action]').forEach(btn => {
+  if (cartItems) cartItems.querySelectorAll('[data-action]').forEach(btn => {
     btn.addEventListener('click', () => {
       const id   = Number(btn.dataset.id);
       const kind = btn.closest('.pp-cart-item')?.dataset.kind || 'producto';
@@ -394,7 +410,7 @@ function renderCarrito() {
       renderCarrito();
     });
   });
-  cartItems.querySelectorAll('.pp-cart-item-remove').forEach(btn => {
+  if (cartItems) cartItems.querySelectorAll('.pp-cart-item-remove').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = Number(btn.dataset.id);
       const kind = btn.closest('.pp-cart-item')?.dataset.kind || 'producto';
@@ -408,7 +424,8 @@ function renderCarrito() {
     subt = document.createElement('div');
     subt.id = 'pp-cart-subtotals';
     subt.style.cssText = 'font-size:.78rem;color:var(--text-muted);margin:.35rem 0 .5rem;display:grid;gap:.2rem';
-    cartTotal.closest('.pp-cart-total-row')?.insertAdjacentElement('afterend', subt);
+    cartTotal?.closest('.pp-cart-total-row')?.insertAdjacentElement('afterend', subt);
+
   }
   subt.innerHTML = `
     <div style="display:flex;justify-content:space-between"><span>Subtotal productos</span><strong>${fmt(subtotalProductos)}</strong></div>
@@ -417,18 +434,19 @@ function renderCarrito() {
 }
 
 function abrirCarrito() {
-  cartPanel.classList.add('open');
-  cartOverlay.classList.add('open');
-  cartPanel.setAttribute('aria-hidden', 'false');
+  if (window.GlobalCart) { window.GlobalCart.abrir(); return; }
+  cartPanel?.classList.add('open');
+  cartOverlay?.classList.add('open');
+  cartPanel?.setAttribute('aria-hidden', 'false');
 }
 function cerrarCarrito() {
-  cartPanel.classList.remove('open');
-  cartOverlay.classList.remove('open');
+  cartPanel?.classList.remove('open');
+  cartOverlay?.classList.remove('open');
 }
 
-cartFab.addEventListener('click', abrirCarrito);
-cartClose.addEventListener('click', cerrarCarrito);
-cartOverlay.addEventListener('click', cerrarCarrito);
+if (cartFab)     cartFab.addEventListener('click', abrirCarrito);
+if (cartClose)   cartClose.addEventListener('click', cerrarCarrito);
+if (cartOverlay) cartOverlay.addEventListener('click', cerrarCarrito);
 
 /* ══════════════════════════════════════════
    MODAL CHECKOUT
@@ -1044,35 +1062,32 @@ async function cargarProductos() {
 cargarProductos();
 
 /* ══════════════════════════════════════════
-   SINCRONIZAR CARRITO CON NAVBAR
+   INTEGRACIÓN CON CARRITO GLOBAL
 ══════════════════════════════════════════ */
-(function() {
-  const headerCartBtn = document.getElementById('headerCartBtn');
-  const headerCartCount = document.getElementById('headerCartCount');
-
-  if (headerCartBtn && headerCartCount) {
-    // Mostrar botón del carrito en la página de productos
-    headerCartBtn.style.display = 'block';
-
-    // Actualizar el contador cuando cambia el carrito
-    const originalRenderCarrito = window.renderCarrito;
-    window.renderCarrito = function() {
-      originalRenderCarrito.call(this);
-      
-      const totalItems = state.carrito.reduce((s, x) => s + x.qty, 0);
-      headerCartCount.textContent = totalItems;
-    };
-
-    // Conectar click del botón del navbar al carrito flotante
-    headerCartBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      abrirCarrito();
+(function initGlobalCartIntegration() {
+  // Registrar el checkout de esta página en GlobalCart
+  function registrar() {
+    if (!window.GlobalCart) return;
+    // Cuando se pulse "Confirmar compra" en el carrito del navbar
+    window.GlobalCart.registrarCheckout(async () => {
+      state.carrito = window.GlobalCart.leer();
+      await abrirCheckout();
     });
-
-    // Inicializar contador en el navbar
-    setTimeout(() => {
-      const totalItems = state.carrito.reduce((s, x) => s + x.qty, 0);
-      headerCartCount.textContent = totalItems;
-    }, 100);
+    // Sincronizar state.carrito cuando GlobalCart cambie
+    window.GlobalCart.onCambio((items) => {
+      state.carrito = items;
+    });
+    // Actualizar carrito inicial
+    state.carrito = window.GlobalCart.leer();
   }
-})();
+
+  // GlobalCart puede cargar ligeramente después
+  if (window.GlobalCart) {
+    registrar();
+  } else {
+    const t = setInterval(() => {
+      if (window.GlobalCart) { clearInterval(t); registrar(); }
+    }, 80);
+    setTimeout(() => clearInterval(t), 5000);
+  }
+})();

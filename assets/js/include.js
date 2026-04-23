@@ -46,6 +46,14 @@ if (document.getElementById('navbar')) {
   cargar("navbar", "../components/layout/navbar.html", "../assets/css/header.css");
 }
 
+// Cargar carrito global (disponible en todas las páginas con navbar)
+if (!document.getElementById('_cart-js-loaded')) {
+  const _cartScript = document.createElement('script');
+  _cartScript.id  = '_cart-js-loaded';
+  _cartScript.src = '../assets/js/cart.js';
+  document.head.appendChild(_cartScript);
+}
+
 if (document.getElementById('footer')) {
   cargar("footer", "../components/layout/footer.html", "../assets/css/footer.css");
 }
