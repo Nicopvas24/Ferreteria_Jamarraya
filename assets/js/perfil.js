@@ -5,10 +5,12 @@
    Rutas API:
    - Verificar sesión: /backend/usuarios.php?accion=verificar
    - Clientes:        /backend/api/clientes.php
+   - Ventas:          /backend/api/ventas.php
 ══════════════════════════════════════════ */
 
 const API_USUARIOS = '../backend/usuarios.php';
 const API_CLIENTES = '../backend/api/clientes.php';
+const API_VENTAS = '../backend/api/ventas.php';
 
 /* ── DOM ── */
 const form          = document.getElementById('pf-form');
@@ -41,7 +43,7 @@ function mostrarExito(msg) {
 }
 
 /* ══════════════════════════════════════════
-   CARGAR PERFIL
+   CARGAR PERFIL Y COMPRAS
 ══════════════════════════════════════════ */
 async function cargarPerfil() {
   try {
@@ -80,6 +82,9 @@ async function cargarPerfil() {
         document.getElementById('per_telefono').value       = c.telefono        || '';
         document.getElementById('per_ciudad').value         = c.ciudad          || '';
         document.getElementById('per_direccion').value      = c.direccion       || '';
+
+        // Cargar compras después de obtener el ID del cliente
+        await cargarMisCompras(clienteId);
       } else {
         mostrarError('No se encontró tu perfil de cliente.');
       }
@@ -97,6 +102,111 @@ async function cargarPerfil() {
     mostrarError('Error de conexión al cargar el perfil.');
   }
 }
+
+/* ══════════════════════════════════════════
+   CARGAR MIS COMPRAS
+══════════════════════════════════════════ */
+async function cargarMisCompras(idCliente) {
+  try {
+    const res = await fetch(`${API_VENTAS}?accion=mis_compras&id_cliente=${idCliente}`);
+    const data = await res.json();
+
+    if (!data.ok) {
+      mostrarError(data.error || 'Error al cargar compras');
+      return;
+    }
+
+    renderizarMisCompras(data.compras || []);
+  } catch (err) {
+    console.error('Error cargando compras:', err);
+    // No mostrar error al usuario, solo en consola
+  }
+}
+
+/* ══════════════════════════════════════════
+   RENDERIZAR MIS COMPRAS
+══════════════════════════════════════════ */
+function renderizarMisCompras(compras) {
+  const container = document.getElementById('pf-compras-container');
+  
+  if (!container) return;
+
+  if (compras.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+        <p>📋 No tienes compras registradas aún.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const fmt = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n);
+
+  let html = `
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="background: rgba(255,107,0,.08); border-bottom: 2px solid var(--border);">
+            <th style="padding: .75rem; text-align: left; font-weight: 700; color: var(--text);">Comprobante</th>
+            <th style="padding: .75rem; text-align: center; font-weight: 700; color: var(--text);">Productos</th>
+            <th style="padding: .75rem; text-align: right; font-weight: 700; color: var(--text);">Total</th>
+            <th style="padding: .75rem; text-align: left; font-weight: 700; color: var(--text);">Fecha</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  compras.forEach(compra => {
+    html += `
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding: .75rem;"><strong>${compra.comprobante}</strong></td>
+        <td style="padding: .75rem; text-align: center;">${compra.num_productos}</td>
+        <td style="padding: .75rem; text-align: right; color: #FF6B00; font-weight: 600;">${fmt(compra.total)}</td>
+        <td style="padding: .75rem; font-size: .85rem; color: var(--text-muted);">${compra.fecha_formateada}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+/* ══════════════════════════════════════════
+   NAVEGACIÓN DE SECCIONES
+══════════════════════════════════════════ */
+document.querySelectorAll('.pf-nav-link').forEach(link => {
+  link.addEventListener('click', (e) => {
+    const href = link.getAttribute('href');
+    if (href === '#' || href?.startsWith('javascript')) {
+      return;
+    }
+
+    if (href && href !== '#pf-logout') {
+      e.preventDefault();
+      
+      // Remover actividad de todos
+      document.querySelectorAll('.pf-nav-link').forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+
+      // Ocultar todos los cards
+      document.querySelectorAll('.pf-card').forEach(card => {
+        card.style.display = 'none';
+      });
+
+      // Mostrar el card seleccionado
+      const sectionId = href.substring(1);
+      const section = document.getElementById(sectionId);
+      if (section) {
+        section.style.display = 'block';
+      }
+    }
+  });
+});
 
 /* ══════════════════════════════════════════
    GUARDAR CAMBIOS

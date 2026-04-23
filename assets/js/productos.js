@@ -838,3 +838,37 @@ async function cargarProductos() {
 }
 
 cargarProductos();
+
+/* ══════════════════════════════════════════
+   SINCRONIZAR CARRITO CON NAVBAR
+══════════════════════════════════════════ */
+(function() {
+  const headerCartBtn = document.getElementById('headerCartBtn');
+  const headerCartCount = document.getElementById('headerCartCount');
+
+  if (headerCartBtn && headerCartCount) {
+    // Mostrar botón del carrito en la página de productos
+    headerCartBtn.style.display = 'block';
+
+    // Actualizar el contador cuando cambia el carrito
+    const originalRenderCarrito = window.renderCarrito;
+    window.renderCarrito = function() {
+      originalRenderCarrito.call(this);
+      
+      const totalItems = state.carrito.reduce((s, x) => s + x.qty, 0);
+      headerCartCount.textContent = totalItems;
+    };
+
+    // Conectar click del botón del navbar al carrito flotante
+    headerCartBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      abrirCarrito();
+    });
+
+    // Inicializar contador en el navbar
+    setTimeout(() => {
+      const totalItems = state.carrito.reduce((s, x) => s + x.qty, 0);
+      headerCartCount.textContent = totalItems;
+    }, 100);
+  }
+})();

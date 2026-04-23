@@ -199,6 +199,42 @@ switch ($accion) {
         }
         break;
 
+    // ----------------------------------------------------------
+    //  MIS COMPRAS — obtener historial del cliente logueado
+    // ----------------------------------------------------------
+    case 'mis_compras':
+        session_start();
+        $id_cliente = (int)($_GET['id_cliente'] ?? $_POST['id_cliente'] ?? 0);
+
+        if (!$id_cliente) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID cliente requerido']);
+            exit;
+        }
+
+        $sql = "SELECT v.id, v.comprobante, v.fecha, v.total,
+                       COUNT(dv.id_producto) AS num_productos
+                FROM ventas v
+                LEFT JOIN detalle_venta dv ON dv.id_venta = v.id
+                WHERE v.id_cliente = ?
+                GROUP BY v.id
+                ORDER BY v.fecha DESC
+                LIMIT 50";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$id_cliente]);
+        $ventas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($ventas as &$v) {
+            $v['id'] = (int)$v['id'];
+            $v['total'] = (float)$v['total'];
+            $v['num_productos'] = (int)$v['num_productos'];
+            $v['fecha_formateada'] = (new DateTime($v['fecha']))->format('d/m/Y H:i');
+        }
+
+        echo json_encode(['ok' => true, 'compras' => $ventas]);
+        break;
+
     default:
         http_response_code(400);
         echo json_encode(['error' => 'Acción no válida']);

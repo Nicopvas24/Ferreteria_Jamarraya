@@ -216,6 +216,7 @@ button { cursor: pointer; font-family: inherit; }
   border: 1px solid var(--border);
   scrollbar-width: thin;
   scrollbar-color: rgba(255,165,0,.3) transparent;
+  -webkit-overflow-scrolling: touch;
 }
 .table-wrap::-webkit-scrollbar {
   width: 8px;
@@ -236,11 +237,35 @@ thead tr { border-bottom: 1px solid var(--border); }
 th {
   padding: .6rem .75rem; text-align: left;
   font-size: .7rem; font-weight: 700; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--text-muted);
+  text-transform: uppercase; color: var(--text-muted); white-space: nowrap;
 }
 td { padding: .7rem .75rem; border-bottom: 1px solid rgba(255,255,255,.04); color: var(--text); }
 tbody tr:hover { background: rgba(255,255,255,.025); }
 tbody tr:last-child td { border-bottom: none; }
+
+/* Responsivo para móvil — ocultar columnas menos importantes */
+@media (max-width: 768px) {
+  .table-wrap {
+    max-height: 500px;
+  }
+  
+  th, td {
+    padding: .5rem .5rem;
+    font-size: .75rem;
+  }
+  
+  /* Ocultar columnas en móvil para alquileres */
+  table th:nth-child(1),
+  table td:nth-child(1) { 
+    display: none; 
+  }
+  
+  /* Columna de acciones más compacta */
+  table th:last-child,
+  table td:last-child {
+    white-space: nowrap;
+  }
+}
 
 /* ══════════════════════════════════════════
    BADGES / TAGS
