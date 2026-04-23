@@ -211,17 +211,44 @@ switch ($accion) {
             exit;
         }
 
+        // Recolectar TODOS los id_cliente vinculados a este usuario
+        // (puede existir más de un registro de cliente para el mismo usuario)
+        $ids_cliente = [$id_cliente];
+
+        // Buscar si el cliente tiene id_usuario y obtener otros registros del mismo usuario
+        $stmtUser = $pdo->prepare("SELECT id_usuario FROM clientes WHERE id = ? LIMIT 1");
+        $stmtUser->execute([$id_cliente]);
+        $rowUser = $stmtUser->fetch(PDO::FETCH_ASSOC);
+        if ($rowUser && $rowUser['id_usuario']) {
+            $id_usuario = (int)$rowUser['id_usuario'];
+            $stmtOtros = $pdo->prepare("SELECT id FROM clientes WHERE id_usuario = ?");
+            $stmtOtros->execute([$id_usuario]);
+            foreach ($stmtOtros->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $ids_cliente[] = (int)$r['id'];
+            }
+        }
+        // También buscar por id_usuario en sesión como fallback adicional
+        if (isset($_SESSION['id_usuario'])) {
+            $stmtSess = $pdo->prepare("SELECT id FROM clientes WHERE id_usuario = ?");
+            $stmtSess->execute([$_SESSION['id_usuario']]);
+            foreach ($stmtSess->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $ids_cliente[] = (int)$r['id'];
+            }
+        }
+        $ids_cliente = array_values(array_unique($ids_cliente));
+        $placeholders = implode(',', array_fill(0, count($ids_cliente), '?'));
+
         $sql = "SELECT v.id, v.comprobante, v.fecha, v.total,
                        COUNT(dv.id_producto) AS num_productos
                 FROM ventas v
                 LEFT JOIN detalle_venta dv ON dv.id_venta = v.id
-                WHERE v.id_cliente = ?
+                WHERE v.id_cliente IN ($placeholders)
                 GROUP BY v.id
                 ORDER BY v.fecha DESC
                 LIMIT 50";
 
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$id_cliente]);
+        $stmt->execute($ids_cliente);
         $ventas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($ventas as &$v) {
@@ -236,11 +263,11 @@ switch ($accion) {
                           m.nombre AS maquinaria
                    FROM alquileres a
                    LEFT JOIN maquinaria m ON m.id = a.id_maquinaria
-                   WHERE a.id_cliente = ?
+                   WHERE a.id_cliente IN ($placeholders)
                    ORDER BY a.fecha_registro DESC
                    LIMIT 50";
         $stmtAlq = $pdo->prepare($sqlAlq);
-        $stmtAlq->execute([$id_cliente]);
+        $stmtAlq->execute($ids_cliente);
         $alquileres = $stmtAlq->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($alquileres as &$a) {

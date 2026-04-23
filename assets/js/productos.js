@@ -433,7 +433,9 @@ cartOverlay.addEventListener('click', cerrarCarrito);
 /* ══════════════════════════════════════════
    MODAL CHECKOUT
 ══════════════════════════════════════════ */
-function abrirCheckout() {
+let _cachedClienteId = null; // id_cliente guardado al abrir el checkout
+
+async function abrirCheckout() {
   const usuario = sessionStorage.getItem('jm_nombre');
   if (!usuario) {
     alert('Debes iniciar sesión o registrarte para comprar.');
@@ -442,35 +444,52 @@ function abrirCheckout() {
 
   const productosCarrito = state.carrito;
   if (productosCarrito.length === 0) return;
-  
-  // Actualizar resumen
+
+  // 1. Obtener id_cliente real y datos del cliente desde la sesión
+  _cachedClienteId = null;
+  try {
+    const resV = await fetch('../backend/usuarios.php?accion=verificar');
+    const dataV = await resV.json();
+    if (dataV.ok && dataV.id_cliente) {
+      _cachedClienteId = dataV.id_cliente;
+
+      // Rellenar formulario con datos reales de la BD
+      const resC = await fetch(`../backend/api/clientes.php?accion=detalle&id=${_cachedClienteId}`);
+      const cliente = await resC.json();
+      if (!cliente.error) {
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+        set('co-nombre',         cliente.nombre         || usuario);
+        set('co-email',          cliente.email          || '');
+        set('co-telefono',       cliente.telefono       || '');
+        set('co-identificacion', cliente.identificacion || '');
+      }
+    } else {
+      // Sin cliente vinculado — rellenar solo nombre
+      const el = document.getElementById('co-nombre');
+      if (el) el.value = usuario;
+    }
+  } catch (e) {
+    console.warn('No se pudieron obtener datos del cliente:', e);
+    const el = document.getElementById('co-nombre');
+    if (el) el.value = usuario;
+  }
+
+  // Mostrar sección de datos personales
+  const datosSection = document.getElementById('pp-datos-personales');
+  if (datosSection) datosSection.style.display = '';
+
+  // 2. Actualizar resumen
   const total = productosCarrito.reduce((s,x) => s + (x.precio || x.tarifa || 0) * x.qty, 0);
   checkoutTotal.textContent = fmt(total);
 
-  // Autollenado desde sesión para no exigir captura manual
-  const nombre = sessionStorage.getItem('jm_nombre') || 'Cliente Web';
-  const email = sessionStorage.getItem('jm_email') || `${nombre.replace(/\s+/g, '.').toLowerCase()}@cliente.local`;
-  const telefono = sessionStorage.getItem('jm_telefono') || '3000000000';
-  const identificacion = sessionStorage.getItem('jm_identificacion') || `WEB-${nombre.replace(/\s+/g, '').toUpperCase()}`;
-  const nombreEl = document.getElementById('co-nombre');
-  const emailEl = document.getElementById('co-email');
-  const telefonoEl = document.getElementById('co-telefono');
-  const idEl = document.getElementById('co-identificacion');
-  if (nombreEl) nombreEl.value = nombre;
-  if (emailEl) emailEl.value = email;
-  if (telefonoEl) telefonoEl.value = telefono;
-  if (idEl) idEl.value = identificacion;
-  const datosSection = document.getElementById('pp-datos-personales');
-  if (datosSection) datosSection.style.display = 'none';
-  
   summaryItems.innerHTML = productosCarrito.map(item => `
     <div class="pp-summary-item">
       <span>${item.nombre} <strong>x${item.qty}</strong> <small style="font-size:0.7em;color:#aaa">${item.kind === 'rental' ? '(Alquiler)' : ''}</small></span>
       <strong>${fmt((item.precio || item.tarifa || 0) * item.qty)}</strong>
     </div>
   `).join('');
-  
-  // Abrir modal
+
+  // 3. Abrir modal
   checkoutModal.classList.add('open');
   checkoutOverlay.classList.add('open');
   checkoutModal.setAttribute('aria-hidden', 'false');
@@ -480,6 +499,7 @@ function abrirCheckout() {
   }
   cerrarCarrito();
 }
+
 
 function esperar(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -531,19 +551,32 @@ async function procesarCompra(e) {
     alert('Tu carrito está vacío.');
     return;
   }
-  
-  // Obtener datos del formulario
+
+  // 1. Usar id_cliente cacheado al abrir el checkout, o buscar de nuevo
+  let idClienteSession = _cachedClienteId;
+  if (!idClienteSession) {
+    try {
+      const resVerify = await fetch('../backend/usuarios.php?accion=verificar');
+      const dataVerify = await resVerify.json();
+      console.log('🔍 Verificar respuesta:', dataVerify);
+      if (dataVerify.ok) {
+        idClienteSession = dataVerify.id_cliente || null;
+        _cachedClienteId = idClienteSession;
+      }
+    } catch (err) {
+      console.error('Error verificando sesión:', err);
+    }
+  }
+
+  if (!idClienteSession) {
+    alert('Tu cuenta no tiene un perfil de cliente registrado.\n\nVe a Mi Perfil y guarda tus datos de contacto primero, o contacta con la tienda.');
+    return;
+  }
+
   const formData = new FormData(checkoutForm);
   const datos = {
-    nombre: formData.get('nombre'),
-    email: formData.get('email'),
-    telefono: formData.get('telefono'),
-    identificacion: formData.get('identificacion'),
     delivery: formData.get('delivery'),
     direccion: formData.get('delivery') === 'domicilio' ? formData.get('direccion') : 'Recolección en tienda',
-    ciudad: formData.get('ciudad'),
-    departamento: formData.get('departamento'),
-    codigo: formData.get('codigo'),
     notas: formData.get('notas'),
     carrito: productosCarrito,
     total: productosCarrito.reduce((s,x) => s + (x.precio || x.tarifa || 0) * x.qty, 0)
@@ -556,8 +589,8 @@ async function procesarCompra(e) {
   await simularPago(datos.total);
   submitText.style.display = 'none';
   
-  // Registrar venta en la BD
-  registrarVenta(datos, () => {
+  // Registrar venta usando el id_cliente real de sesión
+  registrarVenta(datos, idClienteSession, (resultados) => {
     cerrarCheckout();
     submitBtn.disabled = false;
     submitText.style.display = '';
@@ -565,30 +598,23 @@ async function procesarCompra(e) {
     checkoutForm.reset();
     state.carrito = [];
     renderCarrito();
-    mostrarMensajeExito();
+    
+    const ventaResult = resultados && resultados.find(r => r.id_venta);
+    if (ventaResult) {
+      verDetalleVentaCheckout(ventaResult.id_venta);
+    } else {
+      mostrarMensajeExito();
+    }
   });
 }
 
-function registrarVenta(datos, callback) {
-  // Primero registrar el cliente si no existe
-  fetch('../backend/api/clientes.php?accion=registrar', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      nombre: datos.nombre,
-      identificacion: datos.identificacion,
-      telefono: datos.telefono,
-      email: datos.email,
-      direccion: datos.direccion
-    })
-  })
-  .then(r => r.json())
-  .then(clienteData => {
-    const idCliente = clienteData.id || clienteData.id_cliente || 0;
-    
-    if (!idCliente) {
-      throw new Error('No se pudo crear/obtener cliente: ' + JSON.stringify(clienteData));
-    }
+function registrarVenta(datos, idClienteDirecto, callback) {
+  // Usar el id_cliente de la sesión directamente — sin pasar por registrar cliente
+  const promesaCliente = Promise.resolve(idClienteDirecto);
+
+  promesaCliente
+  .then(idCliente => {
+    if (!idCliente) throw new Error('No se pudo obtener el cliente de la sesión.');
     
     const productos = datos.carrito.filter(x => x.kind !== 'rental');
     const alquileres = datos.carrito.filter(x => x.kind === 'rental');
@@ -652,7 +678,7 @@ function registrarVenta(datos, callback) {
   })
   .then(resultados => {
     console.log('✓ Pedido registrado:', resultados);
-    callback();
+    callback(resultados);
   })
   .catch(err => {
     console.error('Error registrando el pedido:', err);
@@ -675,17 +701,9 @@ function procesarInventario(carrito) {
 function mostrarMensajeExito() {
   const msg = document.createElement('div');
   msg.style.cssText = `
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: #1a1a1a;
-    border: 2px solid #FF6B00;
-    border-radius: 12px;
-    padding: 32px;
-    text-align: center;
-    z-index: 3000;
-    max-width: 400px;
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: #1a1a1a; border: 2px solid #FF6B00; border-radius: 12px;
+    padding: 32px; text-align: center; z-index: 3000; max-width: 400px;
     box-shadow: 0 20px 60px rgba(255,107,0,0.3);
   `;
   msg.innerHTML = `
@@ -697,6 +715,151 @@ function mostrarMensajeExito() {
   document.body.appendChild(msg);
   setTimeout(() => msg.remove(), 4000);
 }
+
+async function verDetalleVentaCheckout(idVenta) {
+  try {
+    const response = await fetch('../backend/api/ventas.php?accion=detalle&id=' + idVenta);
+    const venta = await response.json();
+    if (venta.error) { mostrarMensajeExito(); return; }
+
+    const fmt2 = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n);
+
+    // Eliminar modal anterior si existe
+    document.getElementById('pp-detalle-checkout-modal')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'pp-detalle-checkout-modal';
+    overlay.style.cssText = [
+      'position:fixed', 'inset:0', 'z-index:99999',
+      'background:rgba(0,0,0,0.85)', 'backdrop-filter:blur(6px)',
+      'display:flex', 'align-items:center', 'justify-content:center',
+      'padding:20px', 'font-family:Barlow,sans-serif'
+    ].join(';');
+
+    const itemsHTML = (venta.items || []).map(item => `
+      <tr>
+        <td style="padding:.6rem .75rem;color:#aaa;font-size:.82rem">${item.codigo || '-'}</td>
+        <td style="padding:.6rem .75rem;font-weight:600">${item.nombre}</td>
+        <td style="padding:.6rem .75rem;text-align:center">${item.cantidad}</td>
+        <td style="padding:.6rem .75rem;text-align:right">${fmt2(item.precio_unitario)}</td>
+        <td style="padding:.6rem .75rem;text-align:right;color:#4CAF50;font-weight:700">${fmt2(item.subtotal)}</td>
+      </tr>
+    `).join('');
+
+    overlay.innerHTML = `
+      <div style="
+        background:#181818;
+        border:1px solid rgba(255,255,255,0.12);
+        border-radius:16px;
+        padding:0;
+        max-width:620px;
+        width:100%;
+        max-height:90vh;
+        overflow-y:auto;
+        box-shadow:0 24px 80px rgba(0,0,0,0.7);
+        color:#fff;
+      ">
+        <!-- Header -->
+        <div style="
+          background:linear-gradient(135deg,#FF6B00,#e55a00);
+          padding:1.5rem 2rem;
+          border-radius:16px 16px 0 0;
+          display:flex;
+          justify-content:space-between;
+          align-items:flex-start;
+        ">
+          <div>
+            <div style="font-size:.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.8;margin-bottom:.4rem">✓ Compra Exitosa</div>
+            <h2 style="margin:0;font-size:1.4rem;font-weight:900">${venta.comprobante}</h2>
+            <p style="margin:.3rem 0 0;font-size:.85rem;opacity:.85">${venta.fecha}</p>
+          </div>
+          <button id="pp-detalle-close-btn" style="
+            background:rgba(255,255,255,0.2);
+            border:none;
+            color:#fff;
+            width:34px;height:34px;
+            border-radius:50%;
+            font-size:1.1rem;
+            cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            flex-shrink:0;
+          ">✕</button>
+        </div>
+
+        <!-- Info cliente -->
+        <div style="padding:1rem 2rem;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;gap:2rem;flex-wrap:wrap">
+          <div><span style="font-size:.75rem;color:#aaa;display:block;margin-bottom:.2rem">CLIENTE</span><strong>${venta.cliente || '-'}</strong></div>
+          <div><span style="font-size:.75rem;color:#aaa;display:block;margin-bottom:.2rem">REGISTRADO POR</span><strong>${venta.registrado_por || 'Sistema Web'}</strong></div>
+        </div>
+
+        <!-- Tabla productos -->
+        <div style="padding:1.5rem 2rem">
+          <h3 style="margin:0 0 1rem;font-size:.8rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#aaa">Productos Adquiridos</h3>
+          <div style="overflow-x:auto;border-radius:8px;border:1px solid rgba(255,255,255,0.08)">
+            <table style="width:100%;border-collapse:collapse;font-size:.88rem">
+              <thead>
+                <tr style="background:rgba(255,107,0,0.12)">
+                  <th style="padding:.6rem .75rem;text-align:left;font-size:.75rem;font-weight:700;letter-spacing:1px;color:#FF6B00">CÓDIGO</th>
+                  <th style="padding:.6rem .75rem;text-align:left;font-size:.75rem;font-weight:700;letter-spacing:1px;color:#FF6B00">PRODUCTO</th>
+                  <th style="padding:.6rem .75rem;text-align:center;font-size:.75rem;font-weight:700;letter-spacing:1px;color:#FF6B00">CANT.</th>
+                  <th style="padding:.6rem .75rem;text-align:right;font-size:.75rem;font-weight:700;letter-spacing:1px;color:#FF6B00">P.U.</th>
+                  <th style="padding:.6rem .75rem;text-align:right;font-size:.75rem;font-weight:700;letter-spacing:1px;color:#FF6B00">SUBTOTAL</th>
+                </tr>
+              </thead>
+              <tbody style="color:#fff">${itemsHTML}</tbody>
+            </table>
+          </div>
+
+          <!-- Total -->
+          <div style="
+            margin-top:1rem;
+            padding:1rem 1.25rem;
+            background:rgba(76,175,80,0.1);
+            border:1px solid rgba(76,175,80,0.25);
+            border-radius:8px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+          ">
+            <span style="font-weight:600;color:#aaa">Total Pagado</span>
+            <span style="font-size:1.4rem;font-weight:900;color:#4CAF50">${fmt2(venta.total)}</span>
+          </div>
+
+          <!-- Botón cerrar -->
+          <button id="pp-detalle-accept-btn" style="
+            display:block;
+            width:100%;
+            margin-top:1.25rem;
+            padding:.85rem;
+            background:#FF6B00;
+            color:#fff;
+            border:none;
+            border-radius:8px;
+            font-size:1rem;
+            font-weight:700;
+            cursor:pointer;
+            transition:background .2s;
+          ">Aceptar y cerrar</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Cerrar con botones o click fuera
+    const closeModal = () => overlay.remove();
+    document.getElementById('pp-detalle-close-btn').addEventListener('click', closeModal);
+    document.getElementById('pp-detalle-accept-btn').addEventListener('click', closeModal);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+  } catch (e) {
+    console.error('Error modal detalle:', e);
+    mostrarMensajeExito();
+  }
+}
+
+
+
 
 checkoutClose?.addEventListener('click', cerrarCheckout);
 checkoutOverlay?.addEventListener('click', cerrarCheckout);

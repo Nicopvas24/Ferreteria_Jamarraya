@@ -128,20 +128,40 @@ switch ($accion) {
                 exit;
             }
 
+            // Comprobar si el usuario está logueado
+            $id_usuario = isset($_SESSION['id_usuario']) ? $_SESSION['id_usuario'] : null;
+
+            if ($id_usuario) {
+                // Buscar si ya tiene un perfil de cliente
+                $checkUser = $pdo->prepare("SELECT id FROM clientes WHERE id_usuario = ? LIMIT 1");
+                $checkUser->execute([$id_usuario]);
+                if ($rowUser = $checkUser->fetch()) {
+                    // Actualizar datos del cliente existente
+                    $update = $pdo->prepare("UPDATE clientes SET nombre=?, identificacion=?, telefono=?, email=?, direccion=? WHERE id=?");
+                    $update->execute([$nombre, $identificacion, $telefono, $email, $direccion, $rowUser['id']]);
+                    echo json_encode(['ok' => true, 'id_cliente' => (int)$rowUser['id'], 'id' => (int)$rowUser['id']]);
+                    exit;
+                }
+            }
+
             // Verificar identificación única
-            $check = $pdo->prepare("SELECT id FROM clientes WHERE identificacion = ?");
+            $check = $pdo->prepare("SELECT id, id_usuario FROM clientes WHERE identificacion = ?");
             $check->execute([$identificacion]);
             $row = $check->fetch();
             if ($row) {
-                // Return existing customer ID
+                // Si la identificación existe, asociar al usuario si no tiene
+                if ($id_usuario && empty($row['id_usuario'])) {
+                    $update = $pdo->prepare("UPDATE clientes SET id_usuario = ? WHERE id = ?");
+                    $update->execute([$id_usuario, $row['id']]);
+                }
                 echo json_encode(['ok' => true, 'id_cliente' => (int)$row['id'], 'id' => (int)$row['id']]);
                 exit;
             }
 
             // Insertar cliente
-            $stmt = $pdo->prepare("INSERT INTO clientes (nombre, identificacion, telefono, email, direccion)
-                                   VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$nombre, $identificacion, $telefono, $email, $direccion]);
+            $stmt = $pdo->prepare("INSERT INTO clientes (id_usuario, nombre, identificacion, telefono, email, direccion)
+                                   VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$id_usuario, $nombre, $identificacion, $telefono, $email, $direccion]);
 
             echo json_encode(['ok' => true, 'id_cliente' => (int)$pdo->lastInsertId(), 'id' => (int)$pdo->lastInsertId()]);
         } catch (Exception $e) {

@@ -58,7 +58,7 @@ async function cargarPerfil() {
       return;
     }
 
-    const { rol, nombre } = dataVerify;
+    const { rol, nombre, id_cliente } = dataVerify;
 
     // 2. Actualizar sidebar
     sidebarNombre.textContent  = nombre || 'Usuario';
@@ -68,14 +68,26 @@ async function cargarPerfil() {
 
     // 3. Si es cliente cargar sus datos
     if (rol === 'cliente') {
-      const nombreGuardado = sessionStorage.getItem('jm_nombre') || nombre;
-      const resClientes = await fetch(
-        `${API_CLIENTES}?accion=listar&buscar=${encodeURIComponent(nombreGuardado)}`
-      );
-      const clientes = await resClientes.json();
+      let c = null;
 
-      if (clientes.length > 0) {
-        const c = clientes[0];
+      if (id_cliente) {
+        const resCliente = await fetch(`${API_CLIENTES}?accion=detalle&id=${id_cliente}`);
+        c = await resCliente.json();
+        if (c.error) c = null;
+      }
+
+      if (!c) {
+        const nombreGuardado = sessionStorage.getItem('jm_nombre') || nombre;
+        const resClientes = await fetch(
+          `${API_CLIENTES}?accion=listar&buscar=${encodeURIComponent(nombreGuardado)}`
+        );
+        const clientes = await resClientes.json();
+        if (clientes.length > 0) {
+          c = clientes[0];
+        }
+      }
+
+      if (c) {
         clienteId = c.id;
         document.getElementById('per_nombre').value         = c.nombre         || '';
         document.getElementById('per_email').value          = c.email          || '';

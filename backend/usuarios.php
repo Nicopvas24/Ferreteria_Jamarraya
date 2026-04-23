@@ -283,10 +283,38 @@ switch ($accion) {
     // ----------------------------------------------------------
     case 'verificar':
         if (isset($_SESSION['id_usuario'])) {
+            $id_cliente = null;
+            if ($_SESSION['rol'] === 'cliente') {
+                $pdo = conectar();
+
+                // 1º Buscar por id_usuario (vínculo directo)
+                $stmt = $pdo->prepare("SELECT id FROM clientes WHERE id_usuario = ? LIMIT 1");
+                $stmt->execute([$_SESSION['id_usuario']]);
+                if ($row = $stmt->fetch()) {
+                    $id_cliente = $row['id'];
+                }
+
+                // 2º Fallback: buscar por nombre del usuario y vincular
+                if (!$id_cliente) {
+                    $nombre_usuario = $_SESSION['nombre'] ?? '';
+                    $stmtN = $pdo->prepare(
+                        "SELECT id FROM clientes WHERE nombre = ? AND (id_usuario IS NULL OR id_usuario = 0) LIMIT 1"
+                    );
+                    $stmtN->execute([$nombre_usuario]);
+                    if ($rowN = $stmtN->fetch()) {
+                        $id_cliente = $rowN['id'];
+                        // Vincular automáticamente para futuras consultas
+                        $pdo->prepare("UPDATE clientes SET id_usuario = ? WHERE id = ?")
+                            ->execute([$_SESSION['id_usuario'], $id_cliente]);
+                    }
+                }
+            }
             echo json_encode([
-                'ok'     => true,
-                'nombre' => $_SESSION['nombre'],
-                'rol'    => $_SESSION['rol'],
+                'ok'         => true,
+                'nombre'     => $_SESSION['nombre'],
+                'rol'        => $_SESSION['rol'],
+                'id_usuario' => $_SESSION['id_usuario'],
+                'id_cliente' => $id_cliente
             ]);
         } else {
             echo json_encode(['ok' => false]);
