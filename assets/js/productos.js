@@ -45,6 +45,7 @@ const deliveryRadios = document.querySelectorAll('input[name="delivery"]');
 const direccionSection = $('#pp-direccion-section');
 const summaryItems = $('#pp-summary-items');
 const checkoutTotal = $('#pp-checkout-total');
+const gatewayStatus = $('#pp-gateway-status');
 // Paginación
 const prevBtn       = $('#pp-prev');
 const nextBtn       = $('#pp-next');
@@ -68,6 +69,22 @@ let state = {
   modalProducto: null,
   modalCantidad: 1,
 };
+
+const CART_KEY = 'jm_shared_cart';
+
+function leerCarritoCompartido() {
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    const data = raw ? JSON.parse(raw) : [];
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function guardarCarritoCompartido(items) {
+  localStorage.setItem(CART_KEY, JSON.stringify(items));
+}
 
 /* ══════════════════════════════════════════
    HELPERS
@@ -299,7 +316,15 @@ function agregarAlCarrito(id, qty = 1) {
 }
 
 function renderCarrito() {
-  const total      = state.carrito.reduce((s, x) => s + x.precio * x.qty, 0);
+  guardarCarritoCompartido(state.carrito);
+
+  const subtotalProductos = state.carrito
+    .filter(x => (x.kind || 'producto') === 'producto')
+    .reduce((s, x) => s + ((x.precio || 0) * x.qty), 0);
+  const subtotalAlquiler = state.carrito
+    .filter(x => (x.kind || 'producto') === 'rental')
+    .reduce((s, x) => s + ((x.tarifa || 0) * x.qty), 0);
+  const total      = subtotalProductos + subtotalAlquiler;
   const totalItems = state.carrito.reduce((s, x) => s + x.qty, 0);
 
   cartCount.textContent = totalItems;
@@ -307,20 +332,29 @@ function renderCarrito() {
 
   if (state.carrito.length === 0) {
     cartItems.innerHTML = '<p class="pp-cart-empty">Tu carrito está vacío.</p>';
+    let subt = document.getElementById('pp-cart-subtotals');
+    if (!subt) {
+      subt = document.createElement('div');
+      subt.id = 'pp-cart-subtotals';
+      subt.style.cssText = 'font-size:.78rem;color:var(--text-muted);margin:.35rem 0 .5rem;display:grid;gap:.2rem';
+      cartTotal.closest('.pp-cart-total-row')?.insertAdjacentElement('afterend', subt);
+    }
+    subt.innerHTML = '';
     return;
   }
 
   cartItems.innerHTML = state.carrito.map(item => `
-    <div class="pp-cart-item" data-id="${item.id}">
+    <div class="pp-cart-item" data-id="${item.id}" data-kind="${item.kind || 'producto'}">
       <img
-        src="../assets/img/productos/${item.imagen}"
+        src="${(item.kind === 'rental' ? '../assets/img/maquinaria/' : '../assets/img/productos/') + item.imagen}"
         alt="${item.nombre}"
         class="pp-cart-item-img"
         onerror="this.src='../assets/img/productos/nombreimagen.webp'"
       />
       <div class="pp-cart-item-info">
+        <div style="display:inline-flex;align-items:center;font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:#fff;margin-bottom:.25rem;background:${item.kind === 'rental' ? 'rgba(88,166,255,.95)' : 'rgba(249,115,22,.95)'};padding:.12rem .45rem;border-radius:999px;font-weight:700">${item.kind === 'rental' ? 'Alquiler' : 'Producto'}</div>
         <p class="pp-cart-item-name">${item.nombre}</p>
-        <span class="pp-cart-item-price">${fmt(item.precio)}</span>
+        <span class="pp-cart-item-price">${fmt(item.kind === 'rental' ? item.tarifa : item.precio)}${item.kind === 'rental' ? '/día' : ''}</span>
         <div class="pp-cart-qty-mini">
           <button data-action="minus" data-id="${item.id}">−</button>
           <span>${item.qty}</span>
@@ -335,8 +369,9 @@ function renderCarrito() {
   cartItems.querySelectorAll('[data-action]').forEach(btn => {
     btn.addEventListener('click', () => {
       const id   = Number(btn.dataset.id);
-      const item = state.carrito.find(x => x.id === id);
-      const prod = state.productos.find(x => x.id === id);
+      const kind = btn.closest('.pp-cart-item')?.dataset.kind || 'producto';
+      const item = state.carrito.find(x => x.id === id && (x.kind || 'producto') === kind);
+      const prod = kind === 'producto' ? state.productos.find(x => x.id === id) : null;
       if (!item) return;
       if (btn.dataset.action === 'plus')  item.qty = Math.min(item.qty + 1, prod?.stock || 99);
       if (btn.dataset.action === 'minus') item.qty = Math.max(item.qty - 1, 1);
@@ -346,10 +381,23 @@ function renderCarrito() {
   cartItems.querySelectorAll('.pp-cart-item-remove').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = Number(btn.dataset.id);
-      state.carrito = state.carrito.filter(x => x.id !== id);
+      const kind = btn.closest('.pp-cart-item')?.dataset.kind || 'producto';
+      state.carrito = state.carrito.filter(x => !(x.id === id && (x.kind || 'producto') === kind));
       renderCarrito();
     });
   });
+
+  let subt = document.getElementById('pp-cart-subtotals');
+  if (!subt) {
+    subt = document.createElement('div');
+    subt.id = 'pp-cart-subtotals';
+    subt.style.cssText = 'font-size:.78rem;color:var(--text-muted);margin:.35rem 0 .5rem;display:grid;gap:.2rem';
+    cartTotal.closest('.pp-cart-total-row')?.insertAdjacentElement('afterend', subt);
+  }
+  subt.innerHTML = `
+    <div style="display:flex;justify-content:space-between"><span>Subtotal productos</span><strong>${fmt(subtotalProductos)}</strong></div>
+    <div style="display:flex;justify-content:space-between"><span>Subtotal alquileres</span><strong>${fmt(subtotalAlquiler)}</strong></div>
+  `;
 }
 
 function abrirCarrito() {
@@ -369,24 +417,37 @@ cartOverlay.addEventListener('click', cerrarCarrito);
 /* ══════════════════════════════════════════
    MODAL CHECKOUT
 ══════════════════════════════════════════ */
-function validarSesion() {
+function abrirCheckout() {
   const usuario = sessionStorage.getItem('jm_nombre');
   if (!usuario) {
-    alert('⚠️ Debes iniciar sesión o crear cuenta para realizar una compra. Por favor, inicia sesión en el navbar.');
-    return false;
+    alert('Debes iniciar sesión o registrarte para comprar.');
+    return;
   }
-  return true;
-}
 
-function abrirCheckout() {
-  if (!validarSesion()) return;
-  if (state.carrito.length === 0) return;
+  const productosCarrito = state.carrito.filter(x => x.kind !== 'rental');
+  if (productosCarrito.length === 0) return;
   
   // Actualizar resumen
-  const total = state.carrito.reduce((s,x) => s + x.precio * x.qty, 0);
+  const total = productosCarrito.reduce((s,x) => s + x.precio * x.qty, 0);
   checkoutTotal.textContent = fmt(total);
+
+  // Autollenado desde sesión para no exigir captura manual
+  const nombre = sessionStorage.getItem('jm_nombre') || 'Cliente Web';
+  const email = sessionStorage.getItem('jm_email') || `${nombre.replace(/\s+/g, '.').toLowerCase()}@cliente.local`;
+  const telefono = sessionStorage.getItem('jm_telefono') || '3000000000';
+  const identificacion = sessionStorage.getItem('jm_identificacion') || `WEB-${nombre.replace(/\s+/g, '').toUpperCase()}`;
+  const nombreEl = document.getElementById('co-nombre');
+  const emailEl = document.getElementById('co-email');
+  const telefonoEl = document.getElementById('co-telefono');
+  const idEl = document.getElementById('co-identificacion');
+  if (nombreEl) nombreEl.value = nombre;
+  if (emailEl) emailEl.value = email;
+  if (telefonoEl) telefonoEl.value = telefono;
+  if (idEl) idEl.value = identificacion;
+  const datosSection = document.getElementById('pp-datos-personales');
+  if (datosSection) datosSection.style.display = 'none';
   
-  summaryItems.innerHTML = state.carrito.map(item => `
+  summaryItems.innerHTML = productosCarrito.map(item => `
     <div class="pp-summary-item">
       <span>${item.nombre} <strong>x${item.qty}</strong></span>
       <strong>${fmt(item.precio * item.qty)}</strong>
@@ -397,7 +458,31 @@ function abrirCheckout() {
   checkoutModal.classList.add('open');
   checkoutOverlay.classList.add('open');
   checkoutModal.setAttribute('aria-hidden', 'false');
+  if (gatewayStatus) {
+    gatewayStatus.style.display = 'none';
+    gatewayStatus.textContent = '';
+  }
   cerrarCarrito();
+}
+
+function esperar(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function simularPago(total) {
+  const pasos = [
+    'Validando datos de compra...',
+    'Autorizando medio de pago...',
+    `Confirmando transacción por ${fmt(total)}...`
+  ];
+
+  if (gatewayStatus) gatewayStatus.style.display = 'block';
+  for (const paso of pasos) {
+    if (gatewayStatus) gatewayStatus.textContent = `Pasarela ficticia: ${paso}`;
+    checkoutForm.querySelector('.pp-submit-text').textContent = paso;
+    await esperar(650);
+  }
+  if (gatewayStatus) gatewayStatus.textContent = 'Pago aprobado. Registrando compra...';
 }
 
 function cerrarCheckout() {
@@ -406,11 +491,16 @@ function cerrarCheckout() {
   checkoutModal.setAttribute('aria-hidden', 'true');
 }
 
-function procesarCompra(e) {
+async function procesarCompra(e) {
   e.preventDefault();
   const submitBtn = checkoutForm.querySelector('button[type="submit"]');
   const submitText = submitBtn.querySelector('.pp-submit-text');
   const submitSpinner = submitBtn.querySelector('.pp-submit-spinner');
+  const productosCarrito = state.carrito.filter(x => x.kind !== 'rental');
+  if (productosCarrito.length === 0) {
+    alert('Tu carrito no tiene productos para comprar.');
+    return;
+  }
   
   // Obtener datos del formulario
   const formData = new FormData(checkoutForm);
@@ -425,14 +515,16 @@ function procesarCompra(e) {
     departamento: formData.get('departamento'),
     codigo: formData.get('codigo'),
     notas: formData.get('notas'),
-    carrito: state.carrito,
-    total: state.carrito.reduce((s,x) => s + x.precio * x.qty, 0)
+    carrito: productosCarrito,
+    total: productosCarrito.reduce((s,x) => s + x.precio * x.qty, 0)
   };
   
   // Simular envío
   submitBtn.disabled = true;
-  submitText.style.display = 'none';
+  submitText.style.display = '';
   submitSpinner.hidden = false;
+  await simularPago(datos.total);
+  submitText.style.display = 'none';
   
   // Registrar venta en la BD
   registrarVenta(datos, () => {
@@ -441,7 +533,7 @@ function procesarCompra(e) {
     submitText.style.display = '';
     submitSpinner.hidden = true;
     checkoutForm.reset();
-    state.carrito = [];
+    state.carrito = state.carrito.filter(x => x.kind === 'rental');
     renderCarrito();
     mostrarMensajeExito();
   });
@@ -695,6 +787,7 @@ async function cargarProductos() {
     }));
 
     state.productos = productos;
+    state.carrito = leerCarritoCompartido();
     state.filtrados = productos;
     aplicarFiltros();
     renderCarrito();

@@ -177,34 +177,77 @@ function renderAlertas(alertas, contenedorId) {
 /* ══════════════════════════════════════════
    VENTAS
 ══════════════════════════════════════════ */
+let ventasCacheUrl = '';
+let ventasCacheData = null;
+let ventasCacheTime = 0;
+let ventasInFlight = null;
+const VENTAS_CACHE_MS = 15000;
+
+function renderVentasTabla(ventas) {
+  const tbody = document.getElementById('tablaVentas');
+  if (!tbody) return;
+
+  tbody.innerHTML = ventas.length
+    ? ventas.map(v => `
+        <tr>
+          <td><code style="color:var(--orange);font-size:.8rem">${v.comprobante||v.id}</code></td>
+          <td style="font-size:.82rem;color:var(--text-muted)">${fmtFecha(v.fecha)}</td>
+          <td>${v.cliente||'—'}</td>
+          <td style="font-size:.82rem">${v.num_productos||'—'} item(s)</td>
+          <td style="font-weight:600">${fmt$(v.total)}</td>
+          <td>
+            <button class="btn-sm btn-ghost" onclick="verDetalleVenta(${v.id})">Ver</button>
+          </td>
+        </tr>`).join('')
+    : filaVacia(6, 'No hay ventas con los filtros seleccionados');
+}
+
 async function cargarVentas() {
   const desde = document.getElementById('ventaDesde')?.value || '';
   const hasta = document.getElementById('ventaHasta')?.value || '';
+  const cliente = (document.getElementById('ventaCliente')?.value || '').trim();
+  const producto = (document.getElementById('ventaProducto')?.value || '').trim();
   let url = API.ventas + '?accion=listar';
   if (desde) url += `&desde=${desde}`;
   if (hasta) url += `&hasta=${hasta}`;
+  if (cliente) url += `&cliente=${encodeURIComponent(cliente)}`;
+  if (producto) url += `&producto=${encodeURIComponent(producto)}`;
 
   const tbody = document.getElementById('tablaVentas');
+  const now = Date.now();
+
+  if (ventasCacheUrl === url && ventasCacheData && (now - ventasCacheTime) < VENTAS_CACHE_MS) {
+    renderVentasTabla(ventasCacheData);
+    return;
+  }
+
+  if (ventasInFlight && ventasInFlight.url === url) {
+    try {
+      const ventas = await ventasInFlight.promise;
+      renderVentasTabla(ventas);
+    } catch {
+      tbody.innerHTML = filaVacia(6, 'Error cargando ventas');
+    }
+    return;
+  }
+
   tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>`;
 
   try {
-    const r = await fetch(url);
-    const ventas = await r.json();
-    tbody.innerHTML = ventas.length
-      ? ventas.map(v => `
-          <tr>
-            <td><code style="color:var(--orange);font-size:.8rem">${v.comprobante||v.id}</code></td>
-            <td style="font-size:.82rem;color:var(--text-muted)">${fmtFecha(v.fecha)}</td>
-            <td>${v.cliente||'—'}</td>
-            <td style="font-size:.82rem">${v.num_productos||'—'} item(s)</td>
-            <td style="font-weight:600">${fmt$(v.total)}</td>
-            <td>
-              <button class="btn-sm btn-ghost" onclick="verDetalleVenta(${v.id})">Ver</button>
-            </td>
-          </tr>`).join('')
-      : filaVacia(6, 'No hay ventas en el período seleccionado');
+    ventasInFlight = {
+      url,
+      promise: fetch(url).then(r => r.json())
+    };
+
+    const ventas = await ventasInFlight.promise;
+    ventasCacheUrl = url;
+    ventasCacheData = ventas;
+    ventasCacheTime = Date.now();
+    renderVentasTabla(ventas);
   } catch {
     tbody.innerHTML = filaVacia(6, 'Error cargando ventas');
+  } finally {
+    if (ventasInFlight && ventasInFlight.url === url) ventasInFlight = null;
   }
 }
 
@@ -704,7 +747,7 @@ async function generarReporteInventario() {
   try {
     const r = await fetch(API.reportes + '?tipo=inventario');
     const d = await r.json();
-    el.innerHTML = `
+    let html = `
       <div style="font-size:.875rem;display:flex;flex-direction:column;gap:1rem">
         <table style="width:100%;border-collapse:collapse;background:#f8f9fa;border:1px solid var(--border)">
           <tr style="border-bottom:2px solid var(--border)">
@@ -729,6 +772,27 @@ async function generarReporteInventario() {
           </tr>
         </table>
       </div>`;
+
+    if (d.sin_movimiento && d.sin_movimiento.length > 0) {
+      html += `
+      <div style="margin-top:1rem">
+        <h4 style="margin:0 0 .75rem 0;font-size:.9rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Productos sin movimientos (30 días)</h4>
+        <table style="width:100%;border-collapse:collapse;font-size:.8rem;background:#f8f9fa;border:1px solid var(--border)">
+          <tr style="background:var(--orange);color:white;border:none">
+            <td style="padding:.5rem .75rem;font-weight:600">Producto</td>
+            <td style="padding:.5rem .75rem;font-weight:600;text-align:right">Stock Actual</td>
+          </tr>
+          ${d.sin_movimiento.slice(0, 20).map(p => `
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:.5rem .75rem;color:#333">${p.nombre}</td>
+              <td style="padding:.5rem .75rem;text-align:right;color:#333;font-weight:600">${p.stock_actual}</td>
+            </tr>
+          `).join('')}
+        </table>
+      </div>`;
+    }
+
+    el.innerHTML = html;
     window.rpInvData = d;
   } catch {
     el.innerHTML = '<div class="empty">Error generando reporte</div>';
@@ -843,6 +907,27 @@ async function generarReporteAlquileres() {
           </table>
         </div>`;
     }
+
+    if (d.top_maquinaria && d.top_maquinaria.length > 0) {
+      html += `
+        <div style="margin-top:1rem">
+          <h4 style="margin:0 0 .75rem 0;font-size:.9rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Maquinaria más alquilada</h4>
+          <table style="width:100%;border-collapse:collapse;font-size:.8rem;background:#f8f9fa;border:1px solid var(--border)">
+            <tr style="background:var(--blue);color:white;border:none">
+              <td style="padding:.5rem .75rem;font-weight:600">Máquina</td>
+              <td style="padding:.5rem .75rem;font-weight:600;text-align:right">Veces</td>
+              <td style="padding:.5rem .75rem;font-weight:600;text-align:right">Ingreso</td>
+            </tr>
+            ${d.top_maquinaria.slice(0, 10).map(m => `
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:.5rem .75rem;color:#333">${m.nombre}</td>
+                <td style="padding:.5rem .75rem;text-align:right;color:#333;font-weight:600">${m.veces_alquilada}</td>
+                <td style="padding:.5rem .75rem;text-align:right;color:#333;font-weight:600">${fmt$(m.ingreso_generado || 0)}</td>
+              </tr>
+            `).join('')}
+          </table>
+        </div>`;
+    }
     
     html += `</div>`;
     el.innerHTML = html;
@@ -934,11 +1019,48 @@ async function generarTopProductos() {
 }
 
 // EXPORTACIÓN A CSV/PDF
-function exportarReporteVentas(formato = 'csv') {
+let pdfLibsPromise = null;
+
+function loadScriptOnce(src, timeoutMs = 7000) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      if (existing.dataset.loaded === '1') return resolve(true);
+      existing.addEventListener('load', () => resolve(true), { once: true });
+      existing.addEventListener('error', () => reject(new Error('No se pudo cargar script')), { once: true });
+      return;
+    }
+
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    s.onload = () => { s.dataset.loaded = '1'; resolve(true); };
+    s.onerror = () => reject(new Error('No se pudo cargar script'));
+    document.head.appendChild(s);
+
+    setTimeout(() => reject(new Error('Timeout cargando script')), timeoutMs);
+  });
+}
+
+async function ensurePdfLibsLoaded() {
+  if (window.jspdf && typeof window.jspdf.jsPDF === 'function') return true;
+  if (!pdfLibsPromise) {
+    pdfLibsPromise = (async () => {
+      await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+      await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js');
+      return !!(window.jspdf && typeof window.jspdf.jsPDF === 'function');
+    })().catch(() => false).finally(() => { pdfLibsPromise = null; });
+  }
+  return pdfLibsPromise;
+}
+
+async function exportarReporteVentas(formato = 'csv') {
   if (!window.rpVentasData) { alert('Genera el reporte primero'); return; }
   const d = window.rpVentasData;
   
   if (formato === 'pdf') {
+    const okPdf = await ensurePdfLibsLoaded();
+    if (!okPdf) { alert('PDF no disponible en este momento. Usa CSV.'); return; }
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -1017,11 +1139,13 @@ function exportarReporteVentas(formato = 'csv') {
   }
 }
 
-function exportarReporteInventario(formato = 'csv') {
+async function exportarReporteInventario(formato = 'csv') {
   if (!window.rpInvData) { alert('Genera el reporte primero'); return; }
   const d = window.rpInvData;
   
   if (formato === 'pdf') {
+    const okPdf = await ensurePdfLibsLoaded();
+    if (!okPdf) { alert('PDF no disponible en este momento. Usa CSV.'); return; }
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -1040,6 +1164,7 @@ function exportarReporteInventario(formato = 'csv') {
       doc.text(`Valor total: $${d.valor_total?.toLocaleString('es-CO')}`, 20, 62);
       doc.text(`Bajo stock: ${d.bajo_stock}`, 20, 69);
       doc.text(`Sin stock: ${d.sin_stock}`, 20, 76);
+      doc.text(`Sin movimiento (30d): ${d.sin_movimiento?.length || 0}`, 20, 83);
       
       if (d.productos_bajo_stock && d.productos_bajo_stock.length > 0) {
         doc.setFontSize(12);
@@ -1097,20 +1222,27 @@ function exportarReporteInventario(formato = 'csv') {
       ['Valor total', d.valor_total],
       ['Bajo stock', d.bajo_stock],
       ['Sin stock', d.sin_stock],
+      ['Sin movimiento 30 días', d.sin_movimiento?.length || 0],
       [],
       ['PRODUCTOS CON BAJO STOCK'],
       ['Código', 'Producto', 'Stock', 'Mínimo', 'Valor']
     ];
     d.productos_bajo_stock?.forEach(p => csv.push([p.codigo, p.nombre, p.stock_actual, p.stock_minimo, p.valor_stock]));
+    csv.push([]);
+    csv.push(['PRODUCTOS SIN MOVIMIENTO (30 DÍAS)']);
+    csv.push(['Producto', 'Stock Actual']);
+    d.sin_movimiento?.forEach(p => csv.push([p.nombre, p.stock_actual]));
     descargarCSV(csv, `Reporte-Inventario-${new Date().toISOString().split('T')[0]}.csv`);
   }
 }
 
-function exportarBalance(formato = 'csv') {
+async function exportarBalance(formato = 'csv') {
   if (!window.rpBalanceData) { alert('Genera el reporte primero'); return; }
   const d = window.rpBalanceData;
   
   if (formato === 'pdf') {
+    const okPdf = await ensurePdfLibsLoaded();
+    if (!okPdf) { alert('PDF no disponible en este momento. Usa CSV.'); return; }
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -1162,11 +1294,13 @@ function exportarBalance(formato = 'csv') {
   }
 }
 
-function exportarReporteAlquileres(formato = 'csv') {
+async function exportarReporteAlquileres(formato = 'csv') {
   if (!window.rpAlqData) { alert('Genera el reporte primero'); return; }
   const d = window.rpAlqData;
   
   if (formato === 'pdf') {
+    const okPdf = await ensurePdfLibsLoaded();
+    if (!okPdf) { alert('PDF no disponible en este momento. Usa CSV.'); return; }
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -1221,6 +1355,28 @@ function exportarReporteAlquileres(formato = 'csv') {
           });
         }
       }
+
+      if (d.top_maquinaria && d.top_maquinaria.length > 0) {
+        doc.setFontSize(12);
+        doc.text('MAQUINARIA MÁS ALQUILADA', 20, 150);
+
+        const topData = d.top_maquinaria.slice(0, 10).map(m => [
+          m.nombre,
+          String(m.veces_alquilada),
+          `$${Number(m.ingreso_generado || 0).toLocaleString('es-CO')}`
+        ]);
+
+        if (typeof doc.autoTable === 'function') {
+          doc.autoTable({
+            head: [['Máquina', 'Veces', 'Ingreso']],
+            body: topData,
+            startY: 155,
+            margin: 20,
+            theme: 'grid',
+            styles: { font: 'helvetica', fontSize: 8 }
+          });
+        }
+      }
       
       doc.save(`Reporte-Alquileres-${d.desde}.pdf`);
       console.log('✓ PDF descargado');
@@ -1258,16 +1414,29 @@ function exportarReporteAlquileres(formato = 'csv') {
         a.monto
       ]));
     }
+
+    if (d.top_maquinaria && d.top_maquinaria.length > 0) {
+      csv.push([]);
+      csv.push(['MAQUINARIA MÁS ALQUILADA']);
+      csv.push(['Máquina', 'Veces alquilada', 'Ingreso generado']);
+      d.top_maquinaria.forEach(m => csv.push([
+        m.nombre,
+        m.veces_alquilada,
+        m.ingreso_generado
+      ]));
+    }
     
     descargarCSV(csv, `Reporte-Alquileres-${d.desde}.csv`);
   }
 }
 
-function exportarReporteBajoStock(formato = 'csv') {
+async function exportarReporteBajoStock(formato = 'csv') {
   if (!window.rpBajoStockData) { alert('Genera el reporte primero'); return; }
   const d = window.rpBajoStockData;
   
   if (formato === 'pdf') {
+    const okPdf = await ensurePdfLibsLoaded();
+    if (!okPdf) { alert('PDF no disponible en este momento. Usa CSV.'); return; }
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();

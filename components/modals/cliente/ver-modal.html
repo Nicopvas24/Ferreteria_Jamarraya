@@ -11,12 +11,14 @@
   .modal-content {
     background: var(--dark-2); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 2rem;
-    max-width: 600px; width: 90%; max-height: 85vh; overflow-y: auto;
+    max-width: 700px; width: 90%; max-height: 85vh; overflow-y: auto;
     box-shadow: 0 10px 40px rgba(0,0,0,.5);
+    display: flex; flex-direction: column;
   }
   .modal-header {
     display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.5rem; position: sticky; top: 0; background: var(--dark-2);
+    z-index: 10; padding-bottom: 1rem; border-bottom: 1px solid var(--border);
   }
   .modal-header h2 { font-size: 1.3rem; font-weight: 700; margin: 0; }
   .modal-close {
@@ -61,7 +63,8 @@
   }
   .modal-footer {
     display: flex; gap: .75rem; margin-top: 1.5rem; padding-top: 1rem;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--border); position: sticky; bottom: 0;
+    background: var(--dark-2); z-index: 10;
   }
   .modal-footer button { flex: 1; }
 </style>
@@ -109,7 +112,7 @@
               <th>Total</th>
             </tr>
           </thead>
-          <tbody id="tablaCompras">
+          <tbody id="modalVerClienteCompras">
             <tr><td colspan="3" class="empty-state">Cargando…</td></tr>
           </tbody>
         </table>
@@ -130,7 +133,7 @@
               <th>Estado</th>
             </tr>
           </thead>
-          <tbody id="tablaAlquileres">
+          <tbody id="modalVerClienteAlquileres">
             <tr><td colspan="5" class="empty-state">Cargando…</td></tr>
           </tbody>
         </table>
@@ -138,7 +141,7 @@
     </div>
 
     <div class="modal-footer">
-      <button class="btn-sm btn-orange" onclick="ClienteEditModal.abrir(ClienteVerModal.getCurrentId())">Editar</button>
+      <!-- <button class="btn-sm btn-orange" onclick="ClienteEditModal.abrir(ClienteVerModal.getCurrentId())">Editar</button> -->
       <button class="btn-sm btn-ghost" onclick="ClienteVerModal.cerrar()">Cerrar</button>
     </div>
   </div>

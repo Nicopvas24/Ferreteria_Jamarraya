@@ -5,7 +5,7 @@
  */
 
 const ClienteEditModal = (() => {
-  const API = '../backend/api/clientes.php';
+  const API = '/Ferreteria_Jamarraya/backend/api/clientes.php';
   let isInitialized = false;
   let maxWaitTime = 5000; // 5 segundos
   let waitStartTime = 0;

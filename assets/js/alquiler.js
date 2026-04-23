@@ -49,7 +49,7 @@ const pagesEl       = $('#alq-pages');
 let state = {
   equipos: [],
   filtrados: [],
-  tarifaMax: 500000,
+  tarifaMax: 5000000,
   soloDisponible: true,
   busqueda: '',
   orderBy: 'default',
@@ -58,7 +58,23 @@ let state = {
   itemsPerPage: 12,
 };
 
-let carrito = [];
+const CART_KEY = 'jm_shared_cart';
+
+function leerCarritoCompartido() {
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    const data = raw ? JSON.parse(raw) : [];
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function guardarCarritoCompartido(items) {
+  localStorage.setItem(CART_KEY, JSON.stringify(items));
+}
+
+let carrito = leerCarritoCompartido();
 let modalEquipo = null;
 let modalQty = 1;
 
@@ -300,17 +316,25 @@ function agregarAlCarrito(id, qty = 1) {
   const e = state.equipos.find(x => x.id === id);
   if (!e || e.stock <= 0) return;
 
-  const existe = carrito.find(x => x.id === id);
+  const existe = carrito.find(x => x.id === id && x.kind === 'rental');
   if (existe) {
     existe.qty = Math.min(existe.qty + qty, e.stock);
   } else {
-    carrito.push({ id, qty, nombre: e.nombre, tarifa: e.tarifa_diaria, imagen: e.imagen });
+    carrito.push({ id, kind: 'rental', qty, nombre: e.nombre, tarifa: e.tarifa_diaria, imagen: e.imagen });
   }
   renderCarrito();
 }
 
 function renderCarrito() {
-  const total      = carrito.reduce((s, x) => s + x.tarifa * x.qty, 0);
+  guardarCarritoCompartido(carrito);
+
+  const subtotalProductos = carrito
+    .filter(x => (x.kind || 'rental') === 'producto')
+    .reduce((s, x) => s + ((x.precio || 0) * x.qty), 0);
+  const subtotalAlquiler = carrito
+    .filter(x => (x.kind || 'rental') === 'rental')
+    .reduce((s, x) => s + ((x.tarifa || 0) * x.qty), 0);
+  const total      = subtotalProductos + subtotalAlquiler;
   const totalItems = carrito.reduce((s, x) => s + x.qty, 0);
 
   cartCount.textContent = totalItems;
@@ -318,6 +342,14 @@ function renderCarrito() {
 
   if (carrito.length === 0) {
     cartItems.innerHTML = '<p class="alq-cart-empty">Tu solicitud está vacía.</p>';
+    let subt = document.getElementById('alq-cart-subtotals');
+    if (!subt) {
+      subt = document.createElement('div');
+      subt.id = 'alq-cart-subtotals';
+      subt.style.cssText = 'font-size:.78rem;color:var(--text-muted);margin:.35rem 0 .5rem;display:grid;gap:.2rem';
+      cartTotal.closest('.alq-cart-total-row')?.insertAdjacentElement('afterend', subt);
+    }
+    subt.innerHTML = '';
     return;
   }
 
@@ -327,16 +359,17 @@ function renderCarrito() {
       : `../assets/img/maquinaria/${item.imagen}`;
     
     return `
-    <div class="alq-cart-item" data-id="${item.id}">
+    <div class="alq-cart-item" data-id="${item.id}" data-kind="${item.kind || 'rental'}">
       <img
         src="${rutaImagen}"
         alt="${item.nombre}"
         class="alq-cart-item-img"
-        onerror="this.src='../assets/img/default-maquinaria.png'"
+        onerror="this.src='../assets/img/productos/nombreimagen.webp'"
       />
       <div class="alq-cart-item-info">
+        <div style="display:inline-flex;align-items:center;font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:#fff;margin-bottom:.25rem;background:${item.kind === 'producto' ? 'rgba(249,115,22,.95)' : 'rgba(88,166,255,.95)'};padding:.12rem .45rem;border-radius:999px;font-weight:700">${item.kind === 'producto' ? 'Producto' : 'Alquiler'}</div>
         <p class="alq-cart-item-name">${item.nombre}</p>
-        <span class="alq-cart-item-price">${fmt(item.tarifa)}/día</span>
+        <span class="alq-cart-item-price">${fmt(item.kind === 'producto' ? item.precio : item.tarifa)}${item.kind === 'producto' ? '' : '/día'}</span>
         <div class="alq-cart-qty-mini">
           <button data-action="minus" data-id="${item.id}">−</button>
           <span>${item.qty}</span>
@@ -352,8 +385,9 @@ function renderCarrito() {
   $$('[data-action]', cartItems).forEach(btn => {
     btn.addEventListener('click', () => {
       const id   = Number(btn.dataset.id);
-      const item = carrito.find(x => x.id === id);
-      const prod = state.equipos.find(x => x.id === id);
+      const kind = btn.closest('.alq-cart-item')?.dataset.kind || 'rental';
+      const item = carrito.find(x => x.id === id && (x.kind || 'rental') === kind);
+      const prod = kind === 'rental' ? state.equipos.find(x => x.id === id) : null;
       if (!item) return;
       if (btn.dataset.action === 'plus')  item.qty = Math.min(item.qty + 1, prod?.stock || 99);
       if (btn.dataset.action === 'minus') item.qty = Math.max(item.qty - 1, 1);
@@ -363,10 +397,23 @@ function renderCarrito() {
   $$('.alq-cart-item-remove', cartItems).forEach(btn => {
     btn.addEventListener('click', () => {
       const id = Number(btn.dataset.id);
-      carrito = carrito.filter(x => x.id !== id);
+      const kind = btn.closest('.alq-cart-item')?.dataset.kind || 'rental';
+      carrito = carrito.filter(x => !(x.id === id && (x.kind || 'rental') === kind));
       renderCarrito();
     });
   });
+
+  let subt = document.getElementById('alq-cart-subtotals');
+  if (!subt) {
+    subt = document.createElement('div');
+    subt.id = 'alq-cart-subtotals';
+    subt.style.cssText = 'font-size:.78rem;color:var(--text-muted);margin:.35rem 0 .5rem;display:grid;gap:.2rem';
+    cartTotal.closest('.alq-cart-total-row')?.insertAdjacentElement('afterend', subt);
+  }
+  subt.innerHTML = `
+    <div style="display:flex;justify-content:space-between"><span>Subtotal productos</span><strong>${fmt(subtotalProductos)}</strong></div>
+    <div style="display:flex;justify-content:space-between"><span>Subtotal alquileres</span><strong>${fmt(subtotalAlquiler)}</strong></div>
+  `;
 }
 
 function abrirCarrito() {
@@ -388,11 +435,12 @@ cartOverlay.addEventListener('click', cerrarCarrito);
    SOLICITUD/CONTACTO
 ══════════════════════════════════════════ */
 cartCta.addEventListener('click', () => {
-  if (carrito.length === 0) return;
-  const lineas = carrito
+  const alquileres = carrito.filter(x => x.kind === 'rental');
+  if (alquileres.length === 0) return;
+  const lineas = alquileres
     .map(x => `• ${x.nombre} x${x.qty} = ${fmt(x.tarifa * x.qty)}`)
     .join('%0A');
-  const total = carrito.reduce((s,x) => s + x.tarifa * x.qty, 0);
+  const total = alquileres.reduce((s,x) => s + x.tarifa * x.qty, 0);
   const msg = encodeURIComponent(
     `Hola, quiero solicitar el alquiler de estos equipos:%0A%0A${lineas}%0A%0ATotal estimado: ${fmt(total)}`
   );
@@ -425,11 +473,12 @@ sortSel?.addEventListener('change', () => {
 });
 
 clearBtn?.addEventListener('click', () => {
-  state.tarifaMax       = 500000;
+  const maxRange = Number(priceRange?.max || 5000000);
+  state.tarifaMax       = maxRange;
   state.soloDisponible  = true;
   state.busqueda        = '';
   state.orderBy         = 'default';
-  if (priceRange)   { priceRange.value = 500000; priceVal.textContent = fmt(500000); }
+  if (priceRange)   { priceRange.value = maxRange; priceVal.textContent = fmt(maxRange); }
   if (inStockCheck)   inStockCheck.checked = true;
   if (searchInput)    searchInput.value = '';
   if (sortSel)        sortSel.value = 'default';
@@ -492,6 +541,14 @@ async function cargarEquipos() {
       estado:         e.estado,
       badge:          null,
     }));
+
+    const maxTarifa = Math.max(...equipos.map(x => Number(x.tarifa_diaria) || 0), 500000);
+    if (priceRange) {
+      priceRange.max = String(maxTarifa);
+      priceRange.value = String(maxTarifa);
+    }
+    if (priceVal) priceVal.textContent = fmt(maxTarifa);
+    state.tarifaMax = maxTarifa;
 
     state.equipos = equipos;
     state.filtrados = equipos;

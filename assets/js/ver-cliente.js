@@ -5,7 +5,7 @@
  */
 
 const ClienteVerModal = (() => {
-  const API = '../backend/api/clientes.php';
+  const API = '/Ferreteria_Jamarraya/backend/api/clientes.php';
   let isInitialized = false;
   let maxWaitTime = 5000; // 5 segundos
   let waitStartTime = 0;
@@ -64,9 +64,24 @@ const ClienteVerModal = (() => {
     modal.classList.add('active');
 
     // Fetch datos del cliente
-    fetch(`${API}?accion=detalle&id=${clienteId}`)
-      .then(r => r.json())
+    const url = `${API}?accion=detalle&id=${clienteId}`;
+    console.log('🔍 ClienteVerModal.abrir() - Fetching:', url);
+    
+    fetch(url)
+      .then(r => {
+        console.log('📡 Response status:', r.status, r.statusText);
+        if (!r.ok) {
+          throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        }
+        return r.json();
+      })
       .then(cliente => {
+        console.log('✅ Cliente data received:', cliente);
+        
+        if (cliente.error) {
+          throw new Error(cliente.error);
+        }
+
         // Llenar info básica
         document.getElementById('ver_cli_nombre').textContent = cliente.nombre || '—';
         document.getElementById('ver_cli_identificacion').textContent = cliente.identificacion || '—';
@@ -75,17 +90,19 @@ const ClienteVerModal = (() => {
         document.getElementById('ver_cli_direccion').textContent = cliente.direccion || '—';
 
         // Llenar tabla de compras
+        console.log('📊 Ventas:', cliente.ventas);
         renderCompras(cliente.ventas || []);
 
         // Llenar tabla de alquileres
+        console.log('🔧 Alquileres:', cliente.alquileres);
         renderAlquileres(cliente.alquileres || []);
       })
       .catch(err => {
-        console.error('Error fetching cliente:', err);
-        document.getElementById('tablaCompras').innerHTML = 
-          '<tr><td colspan="3" class="empty-state">Error cargando datos</td></tr>';
-        document.getElementById('tablaAlquileres').innerHTML = 
-          '<tr><td colspan="5" class="empty-state">Error cargando datos</td></tr>';
+        console.error('❌ Error fetching cliente:', err);
+        document.getElementById('modalVerClienteCompras').innerHTML = 
+          '<tr><td colspan="3" class="empty-state">Error: ' + err.message + '</td></tr>';
+        document.getElementById('modalVerClienteAlquileres').innerHTML = 
+          '<tr><td colspan="5" class="empty-state">Error: ' + err.message + '</td></tr>';
       });
   };
 
@@ -93,7 +110,7 @@ const ClienteVerModal = (() => {
    * Renderiza tabla de compras
    */
   const renderCompras = (ventas) => {
-    const tbody = document.getElementById('tablaCompras');
+    const tbody = document.getElementById('modalVerClienteCompras');
     
     if (!ventas || ventas.length === 0) {
       tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Sin compras registradas</td></tr>';
@@ -113,30 +130,45 @@ const ClienteVerModal = (() => {
    * Renderiza tabla de alquileres
    */
   const renderAlquileres = (alquileres) => {
-    const tbody = document.getElementById('tablaAlquileres');
+    const tbody = document.getElementById('modalVerClienteAlquileres');
+    
+    console.log('📋 renderAlquileres() called');
+    console.log('   tbody element:', tbody);
+    console.log('   alquileres array:', alquileres);
+    
+    if (!tbody) {
+      console.error('❌ tablaAlquileres element NOT found in DOM!');
+      return;
+    }
     
     if (!alquileres || alquileres.length === 0) {
+      console.log('📭 No alquileres, showing empty state');
       tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Sin alquileres registrados</td></tr>';
       return;
     }
 
-    tbody.innerHTML = alquileres.map(a => {
+    console.log('✅ Rendering', alquileres.length, 'alquileres');
+    
+    tbody.innerHTML = alquileres.map((a, idx) => {
       const estadoClass = {
         'activo': 'badge-orange',
         'finalizado': 'badge-blue',
         'cancelado': 'badge-red'
       }[a.estado] || 'badge-blue';
 
-      return `
-      <tr>
+      const html = `<tr>
         <td style="color:var(--text-muted);font-size:.8rem">#${a.id}</td>
         <td>${a.maquinaria || '—'}</td>
         <td style="font-size:.8rem">${formatFecha(a.fecha_inicio)} a ${formatFecha(a.fecha_fin)}</td>
         <td style="font-weight:600">${formatMoney(a.monto || 0)}</td>
         <td><span class="badge ${estadoClass}">${a.estado || '—'}</span></td>
-      </tr>
-    `;
+      </tr>`;
+      
+      console.log(`   Row ${idx + 1}:`, html);
+      return html;
     }).join('');
+    
+    console.log('📊 Tabla de alquileres renderizada');
   };
 
   /**

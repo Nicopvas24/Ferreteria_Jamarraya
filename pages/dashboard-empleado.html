@@ -285,13 +285,15 @@
         <div class="panel">
           <div class="panel__head">
             <span class="panel__title">Ventas</span>
-            <button class="btn-sm btn-orange" onclick="alert('Módulo: Registrar venta')">+ Registrar venta</button>
+            <button class="btn-sm btn-orange" onclick="abrirCrearVenta()">+ Registrar venta</button>
           </div>
           <div class="panel__body">
             <div class="readonly-notice">ℹ️ Puedes registrar ventas y consultar el historial. Para modificar o eliminar, contacta al administrador.</div>
             <div class="filter-bar" style="margin-bottom:1rem">
               <label>Desde</label><input type="date" id="ventaDesde"/>
               <label>Hasta</label><input type="date" id="ventaHasta"/>
+              <label>Cliente</label><input type="text" id="ventaCliente" placeholder="Nombre o identificación"/>
+              <label>Producto</label><input type="text" id="ventaProducto" placeholder="Nombre del producto"/>
               <button class="btn-sm btn-orange" onclick="cargarVentas()">Filtrar</button>
             </div>
           </div>
@@ -313,7 +315,7 @@
         <div class="panel">
           <div class="panel__head">
             <span class="panel__title">Alquileres</span>
-            <button class="btn-sm btn-orange" onclick="alert('Módulo: Registrar alquiler')">+ Registrar alquiler</button>
+            <button class="btn-sm btn-orange" onclick="abrirCrearAlquiler()">+ Registrar alquiler</button>
           </div>
           <div class="panel__body">
             <div class="readonly-notice">ℹ️ Puedes registrar alquileres y procesar devoluciones.</div>
@@ -389,6 +391,8 @@
   </div><!-- /main -->
 </div><!-- /app -->
 
+<div id="modulosContainer"></div>
+
 <script>
 const API = {
   dashboard:  '../backend/dashboard.php',
@@ -459,6 +463,145 @@ function estadoBadge(estado) {
   return `<span class="badge badge-${map[estado]||'blue'}">${estado}</span>`;
 }
 
+async function cargarModulosEmpleado() {
+  const container = document.getElementById('modulosContainer');
+  if (!container) return;
+
+  const modals = [
+    '../components/modals/venta/crear-modal.html',
+    '../components/modals/alquiler/crear-modal.html'
+  ];
+
+  for (const url of modals) {
+    try {
+      const r = await fetch(url);
+      if (r.ok) container.innerHTML += await r.text();
+    } catch (e) {
+      console.warn('No se pudo cargar modal:', url);
+    }
+  }
+
+  const scripts = [
+    '../assets/js/crear-venta.js',
+    '../assets/js/crear-alquiler.js'
+  ];
+
+  for (const src of scripts) {
+    await new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = false;
+      s.onload = resolve;
+      s.onerror = resolve;
+      document.body.appendChild(s);
+    });
+  }
+
+  window.CrearVentaModal?.init?.();
+  window.CrearAlquilerModal?.init?.();
+}
+
+function abrirCrearVenta() {
+  if (window.CrearVentaModal?.abrir) {
+    window.CrearVentaModal.abrir();
+  } else {
+    alert('El módulo de ventas aún no está listo');
+  }
+}
+
+function abrirCrearAlquiler() {
+  if (window.CrearAlquilerModal?.abrir) {
+    window.CrearAlquilerModal.abrir();
+  } else {
+    alert('El módulo de alquileres aún no está listo');
+  }
+}
+
+function verDetalleVenta(idVenta) {
+  (async () => {
+    try {
+      const r = await fetch(API.ventas + '?accion=detalle&id=' + idVenta);
+      const venta = await r.json();
+
+      if (venta.error) {
+        alert('Error: ' + venta.error);
+        return;
+      }
+
+      mostrarModalDetalleVenta(venta);
+    } catch (error) {
+      alert('Error al cargar detalle: ' + error.message);
+    }
+  })();
+}
+
+function mostrarModalDetalleVenta(venta) {
+  let subtotal = 0;
+  if (venta.items && Array.isArray(venta.items)) {
+    subtotal = venta.items.reduce((sum, item) => sum + (item.cantidad * item.precio_unitario), 0);
+  }
+  const iva = subtotal * 0.19;
+
+  const itemsHTML = (venta.items || []).map(item => {
+    const sub = item.cantidad * item.precio_unitario;
+    return `
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #333">${item.codigo}</td>
+        <td style="padding:8px;border-bottom:1px solid #333">${item.nombre}</td>
+        <td style="padding:8px;border-bottom:1px solid #333;text-align:center">${item.cantidad}</td>
+        <td style="padding:8px;border-bottom:1px solid #333;text-align:right">$${parseFloat(item.precio_unitario).toLocaleString('es-CO')}</td>
+        <td style="padding:8px;border-bottom:1px solid #333;text-align:right">$${sub.toLocaleString('es-CO')}</td>
+      </tr>`;
+  }).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'ventaModalOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:20px;max-width:760px;width:92%;max-height:85vh;overflow-y:auto;color:#fff;';
+  box.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="margin:0">Detalle de Venta</h3>
+      <button onclick="document.getElementById('ventaModalOverlay').remove()" style="background:none;border:none;color:#aaa;font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div style="margin-bottom:12px;color:#ddd">Comprobante: <b>${venta.comprobante}</b> | Cliente: <b>${venta.cliente || 'N/A'}</b></div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px;">
+      <thead><tr style="background:#222"><th style="padding:8px;text-align:left">Código</th><th style="padding:8px;text-align:left">Producto</th><th style="padding:8px;text-align:center">Cant.</th><th style="padding:8px;text-align:right">P.U.</th><th style="padding:8px;text-align:right">Subtotal</th></tr></thead>
+      <tbody>${itemsHTML}</tbody>
+    </table>
+    <div style="text-align:right;line-height:1.7">
+      <div>Subtotal: <b>$${subtotal.toLocaleString('es-CO')}</b></div>
+      <div>IVA (19%): <b>$${iva.toLocaleString('es-CO')}</b></div>
+      <div style="font-size:18px;color:#4caf50">Total: <b>$${parseFloat(venta.total).toLocaleString('es-CO')}</b></div>
+    </div>
+  `;
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+async function confirmarDevolucion(id) {
+  if (!confirm('¿Confirmar devolución del alquiler #' + id + '?')) return;
+  try {
+    const r = await fetch(API.alquileres + '?accion=devolver', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    const res = await r.json();
+    if (res.ok) {
+      alert('Alquiler devuelto correctamente');
+      await cargarAlquileres();
+      await cargarDashboard();
+      return;
+    }
+    alert('No se pudo devolver: ' + (res.mensaje || res.error || 'Error desconocido'));
+  } catch (e) {
+    alert('Error al devolver alquiler');
+  }
+}
+
 async function cargarDashboard() {
   try {
     const r = await fetch(API.dashboard);
@@ -506,9 +649,13 @@ async function cargarDashboard() {
 async function cargarVentas() {
   const desde = document.getElementById('ventaDesde')?.value || '';
   const hasta = document.getElementById('ventaHasta')?.value || '';
+  const cliente = (document.getElementById('ventaCliente')?.value || '').trim();
+  const producto = (document.getElementById('ventaProducto')?.value || '').trim();
   let url = API.ventas + '?accion=listar';
   if (desde) url += `&desde=${desde}`;
   if (hasta) url += `&hasta=${hasta}`;
+  if (cliente) url += `&cliente=${encodeURIComponent(cliente)}`;
+  if (producto) url += `&producto=${encodeURIComponent(producto)}`;
   const tbody = document.getElementById('tablaVentas');
   tbody.innerHTML = filaVacia(5, 'Cargando…');
   try {
@@ -521,7 +668,7 @@ async function cargarVentas() {
             <td style="font-size:.82rem;color:var(--text-muted)">${fmtFecha(v.fecha)}</td>
             <td>${v.cliente||'—'}</td>
             <td style="font-weight:600">${fmt$(v.total)}</td>
-            <td><button class="btn-sm btn-ghost" onclick="alert('Ver venta ${v.id}')">Ver</button></td>
+            <td><button class="btn-sm btn-ghost" onclick="verDetalleVenta(${v.id})">Ver</button></td>
           </tr>`).join('')
       : filaVacia(5, 'Sin ventas en el período');
   } catch { tbody.innerHTML = filaVacia(5, 'Error cargando ventas'); }
@@ -546,7 +693,7 @@ async function cargarAlquileres() {
             <td style="font-size:.8rem">${fmtFecha(a.fecha_fin)}</td>
             <td style="font-weight:600">${fmt$(a.monto)}</td>
             <td>${estadoBadge(a.estado)}</td>
-            <td>${a.estado==='activo'?`<button class="btn-sm btn-orange" onclick="alert('Devolver ${a.id}')">Devolver</button>`:'—'}</td>
+            <td>${a.estado==='activo'?`<button class="btn-sm btn-orange" onclick="confirmarDevolucion(${a.id})">Devolver</button>`:'—'}</td>
           </tr>`).join('')
       : filaVacia(8, 'Sin alquileres');
   } catch { tbody.innerHTML = filaVacia(8, 'Error cargando alquileres'); }
@@ -599,6 +746,7 @@ document.getElementById('topbarDate').textContent =
   new Date().toLocaleDateString('es-CO', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
 (async function init() {
+  await cargarModulosEmpleado();
   await verificarAcceso();
   await cargarDashboard();
 })();

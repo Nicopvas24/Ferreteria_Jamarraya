@@ -15,9 +15,15 @@ $pdo    = conectar();
 $input  = null;
 $accion = $_GET['accion'] ?? $_POST['accion'] ?? null;
 
-if (!$accion && $_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $rawInput = file_get_contents('php://input');
-    $input = json_decode($rawInput, true);
+    $decoded = json_decode($rawInput, true);
+    if (is_array($decoded)) {
+        $input = $decoded;
+    }
+}
+
+if (!$accion && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $input['accion'] ?? 'listar';
 } else if (!$accion) {
     $accion = 'listar';
@@ -86,7 +92,7 @@ switch ($accion) {
         $stmt3 = $pdo->prepare("SELECT a.id, a.fecha_inicio, a.fecha_fin, a.monto, a.estado,
                                         m.nombre AS maquinaria
                                  FROM alquileres a
-                                 JOIN maquinaria m ON m.id = a.id_maquinaria
+                                 LEFT JOIN maquinaria m ON m.id = a.id_maquinaria
                                  WHERE a.id_cliente = ?
                                  ORDER BY a.fecha_inicio DESC LIMIT 10");
         $stmt3->execute([$id]);

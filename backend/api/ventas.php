@@ -20,12 +20,30 @@ switch ($accion) {
     case 'listar':
         $desde = $_GET['desde'] ?? null;
         $hasta = $_GET['hasta'] ?? null;
+        $cliente = trim($_GET['cliente'] ?? '');
+        $producto = trim($_GET['producto'] ?? '');
 
         $where  = ['1=1'];
         $params = [];
 
         if ($desde) { $where[] = 'DATE(v.fecha) >= ?'; $params[] = $desde; }
         if ($hasta) { $where[] = 'DATE(v.fecha) <= ?'; $params[] = $hasta; }
+        if ($cliente !== '') {
+            $where[] = '(c.nombre LIKE ? OR c.identificacion LIKE ?)';
+            $likeCliente = "%{$cliente}%";
+            $params[] = $likeCliente;
+            $params[] = $likeCliente;
+        }
+        if ($producto !== '') {
+            $where[] = "EXISTS (
+                SELECT 1
+                FROM detalle_venta dvf
+                JOIN productos pf ON pf.id = dvf.id_producto
+                WHERE dvf.id_venta = v.id
+                  AND pf.nombre LIKE ?
+            )";
+            $params[] = "%{$producto}%";
+        }
 
         $sql = "SELECT v.id, v.comprobante, v.fecha, v.total,
                        c.nombre AS cliente,

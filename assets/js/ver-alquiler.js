@@ -34,7 +34,14 @@ const VerAlquilerModal = {
       const r = await fetch(this.API + `?accion=detalle&id=${id}`);
       const alq = await r.json();
 
+      if (!r.ok || alq.error) {
+        console.error('Error de API:', alq);
+        alert('Error: ' + (alq.error || 'Alquiler no encontrado'));
+        return;
+      }
+
       if (!alq.id) {
+        console.error('Respuesta sin ID:', alq);
         alert('Error: Alquiler no encontrado');
         return;
       }
@@ -51,13 +58,15 @@ const VerAlquilerModal = {
       document.getElementById('verAlquilerFechaFin').textContent = this.fmtFecha(alq.fecha_fin);
       document.getElementById('verAlquilerMonto').textContent = this.fmt$(alq.monto);
       document.getElementById('verAlquilerEstado').innerHTML = this.estadoBadge(alq.estado);
+      document.getElementById('verAlquilerRegistradoPor').textContent = alq.registrado_por || '—';
 
       const modal = document.getElementById('modalVerAlquilerBackdrop');
       if (modal) {
         modal.classList.add('active');
       }
     } catch (e) {
-      alert('Error al cargar los detalles del alquiler');
+      console.error('Error fetching alquiler:', e);
+      alert('Error al cargar los detalles del alquiler: ' + e.message);
     }
   },
 

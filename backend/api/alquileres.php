@@ -90,11 +90,14 @@ switch ($accion) {
         if (!$id) { http_response_code(400); echo json_encode(['error' => 'ID requerido']); exit; }
 
         $stmt = $pdo->prepare("
-            SELECT a.*, c.nombre AS cliente, c.identificacion, c.telefono, c.email,
-                   m.nombre AS maquinaria, m.tarifa_alquiler
+            SELECT a.id, a.fecha_inicio, a.fecha_fin, a.monto, a.estado, a.fecha_registro,
+                   c.nombre AS cliente, c.identificacion, c.telefono, c.email,
+                   m.nombre AS maquinaria, m.tarifa_alquiler,
+                   u.nombre AS registrado_por
             FROM alquileres a
             LEFT JOIN clientes   c ON c.id = a.id_cliente
             LEFT JOIN maquinaria m ON m.id = a.id_maquinaria
+            LEFT JOIN usuarios   u ON u.id = a.id_usuario
             WHERE a.id = ?
         ");
         $stmt->execute([$id]);
