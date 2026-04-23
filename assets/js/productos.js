@@ -54,42 +54,52 @@ const pagesEl       = $('#pp-pages');
 /* ══════════════════════════════════════════
    ESTADO
 ══════════════════════════════════════════ */
-let state = {
-  productos: [],
-  filtrados: [],
-  categoriaActiva: 'todos',
-  precioMax: 2000000,
-  soloStock: true,
-  badgeActivo: null,
-  orden: 'default',
-  vista: 'grid',
-  pagina: 1,
-  porPagina: 6,
-  carrito: [],
-  modalProducto: null,
-  modalCantidad: 1,
-};
+  let state = {
+    productos: [],
+    filtrados: [],
+    categoriaActiva: 'todos',
+    precioMax: 2000000,
+    soloStock: true,
+    badgeActivo: null,
+    orden: 'default',
+    vista: 'grid',
+    pagina: 1,
+    porPagina: 6,
+    carrito: leerCarritoCompartido(),
+    modalProducto: null,
+    modalCantidad: 1,
+  };
 
 const CART_KEY = 'jm_shared_cart';
+
+function normalizarCarrito(items) {
+  return (Array.isArray(items) ? items : []).map(item => ({
+    ...item,
+    kind: item.kind || (item.precio != null && item.tarifa == null ? 'producto' : 'rental'),
+    qty: Number(item.qty) || 1,
+    tarifa: Number(item.tarifa) || 0,
+    precio: Number(item.precio) || 0,
+  }));
+}
 
 function leerCarritoCompartido() {
   try {
     const raw = localStorage.getItem(CART_KEY);
     const data = raw ? JSON.parse(raw) : [];
-    return Array.isArray(data) ? data : [];
+    return normalizarCarrito(data);
   } catch {
     return [];
   }
 }
 
 function guardarCarritoCompartido(items) {
-  localStorage.setItem(CART_KEY, JSON.stringify(items));
+  localStorage.setItem(CART_KEY, JSON.stringify(normalizarCarrito(items)));
 }
 
 /* ══════════════════════════════════════════
    HELPERS
 ══════════════════════════════════════════ */
-const fmt = (n) => '$' + n.toLocaleString('es-CO');
+const fmt = (n) => '$' + (Number(n) || 0).toLocaleString('es-CO');
 
 function stockLabel(stock) {
   if (stock <= 0)  return { text: 'Agotado', cls: 'out' };
@@ -355,11 +365,12 @@ function renderCarrito() {
         <div style="display:inline-flex;align-items:center;font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:#fff;margin-bottom:.25rem;background:${item.kind === 'rental' ? 'rgba(88,166,255,.95)' : 'rgba(249,115,22,.95)'};padding:.12rem .45rem;border-radius:999px;font-weight:700">${item.kind === 'rental' ? 'Alquiler' : 'Producto'}</div>
         <p class="pp-cart-item-name">${item.nombre}</p>
         <span class="pp-cart-item-price">${fmt(item.kind === 'rental' ? item.tarifa : item.precio)}${item.kind === 'rental' ? '/día' : ''}</span>
-        <div class="pp-cart-qty-mini">
-          <button data-action="minus" data-id="${item.id}">−</button>
-          <span>${item.qty}</span>
-          <button data-action="plus" data-id="${item.id}">+</button>
-        </div>
+            ${item.kind === 'rental' ? `<div style="font-size:.75rem;color:var(--text-muted);margin:.25rem 0"><strong>${item.qty}</strong> día${item.qty !== 1 ? 's' : ''}</div>` : ''}
+            <div class="pp-cart-qty-mini">
+              <button data-action="minus" data-id="${item.id}" title="${item.kind === 'rental' ? 'Menos días' : 'Menos'}">−</button>
+              <span>${item.qty}</span>
+              <button data-action="plus" data-id="${item.id}" title="${item.kind === 'rental' ? 'Más días' : 'Más'}">+</button>
+            </div>
       </div>
       <div class="pp-cart-item-qty">
         <button class="pp-cart-item-remove" data-id="${item.id}" title="Eliminar">✕</button>
@@ -371,10 +382,15 @@ function renderCarrito() {
       const id   = Number(btn.dataset.id);
       const kind = btn.closest('.pp-cart-item')?.dataset.kind || 'producto';
       const item = state.carrito.find(x => x.id === id && (x.kind || 'producto') === kind);
-      const prod = kind === 'producto' ? state.productos.find(x => x.id === id) : null;
       if (!item) return;
-      if (btn.dataset.action === 'plus')  item.qty = Math.min(item.qty + 1, prod?.stock || 99);
-      if (btn.dataset.action === 'minus') item.qty = Math.max(item.qty - 1, 1);
+      if (kind === 'rental') {
+        if (btn.dataset.action === 'plus')  item.qty = Math.min(item.qty + 1, 365);
+        if (btn.dataset.action === 'minus') item.qty = Math.max(item.qty - 1, 1);
+      } else {
+        const prod = state.productos.find(x => x.id === id);
+        if (btn.dataset.action === 'plus')  item.qty = Math.min(item.qty + 1, prod?.stock || 99);
+        if (btn.dataset.action === 'minus') item.qty = Math.max(item.qty - 1, 1);
+      }
       renderCarrito();
     });
   });
@@ -467,6 +483,20 @@ function abrirCheckout() {
 
 function esperar(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function sumarDiasIncluyente(fechaBase, dias) {
+  const d = new Date(fechaBase.getTime());
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + Math.max(0, (Number(dias) || 1) - 1));
+  return d;
+}
+
+function toISODateLocal(fecha) {
+  const y = fecha.getFullYear();
+  const m = String(fecha.getMonth() + 1).padStart(2, '0');
+  const d = String(fecha.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 async function simularPago(total) {
@@ -593,10 +623,12 @@ function registrarVenta(datos, callback) {
 
     // 2. Registrar alquileres
     if (alquileres.length > 0) {
-      const hoy = new Date().toISOString().split('T')[0];
-      const manana = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-      
+      const hoyDate = new Date();
+      hoyDate.setHours(0, 0, 0, 0);
+      const fechaInicio = toISODateLocal(hoyDate);
+
       for (const alq of alquileres) {
+        const fechaFin = toISODateLocal(sumarDiasIncluyente(hoyDate, alq.qty));
         promises.push(
           fetch('../backend/api/alquileres.php?accion=registrar', {
             method: 'POST',
@@ -604,8 +636,8 @@ function registrarVenta(datos, callback) {
             body: JSON.stringify({
               id_cliente: idCliente,
               id_maquinaria: alq.id,
-              fecha_inicio: hoy,
-              fecha_fin: manana,
+              fecha_inicio: fechaInicio,
+              fecha_fin: fechaFin,
               monto: (alq.tarifa || 0) * alq.qty
             })
           }).then(r => r.json()).then(res => {
@@ -696,11 +728,20 @@ cartCta?.addEventListener('click', abrirCheckout);
 cartQuote?.addEventListener('click', () => {
   if (state.carrito.length === 0) return;
   const lineas = state.carrito
-    .map(x => `• ${x.nombre} x${x.qty} = ${fmt(x.precio * x.qty)}`)
+    .map(x => {
+      const unit = Number(x.kind === 'rental' ? x.tarifa : x.precio) || 0;
+      const detalle = x.kind === 'rental'
+        ? `${x.qty} día${x.qty !== 1 ? 's' : ''}`
+        : `x${x.qty}`;
+      return `• ${x.nombre} (${x.kind === 'rental' ? 'Alquiler' : 'Producto'}) ${detalle} = ${fmt(unit * x.qty)}`;
+    })
     .join('%0A');
-  const total = state.carrito.reduce((s,x) => s + x.precio * x.qty, 0);
+  const total = state.carrito.reduce((s, x) => {
+    const unit = Number(x.kind === 'rental' ? x.tarifa : x.precio) || 0;
+    return s + unit * x.qty;
+  }, 0);
   const msg = encodeURIComponent(
-    `Hola, quiero cotizar estos productos:${lineas}Total estimado: ${fmt(total)}`
+    `Hola, quiero cotizar estos items del carrito:%0A${lineas}%0A%0ATotal estimado: ${fmt(total)}`
   );
   window.open(`https://wa.me/573017213193?text=${msg}`, '_blank');
 });

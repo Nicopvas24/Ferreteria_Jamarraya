@@ -203,7 +203,6 @@ switch ($accion) {
     //  MIS COMPRAS — obtener historial del cliente logueado
     // ----------------------------------------------------------
     case 'mis_compras':
-        session_start();
         $id_cliente = (int)($_GET['id_cliente'] ?? $_POST['id_cliente'] ?? 0);
 
         if (!$id_cliente) {
@@ -232,7 +231,25 @@ switch ($accion) {
             $v['fecha_formateada'] = (new DateTime($v['fecha']))->format('d/m/Y H:i');
         }
 
-        echo json_encode(['ok' => true, 'compras' => $ventas]);
+        // Fetch alquileres
+        $sqlAlq = "SELECT a.id, a.fecha_inicio, a.fecha_fin, a.monto, a.estado, a.fecha_registro,
+                          m.nombre AS maquinaria
+                   FROM alquileres a
+                   LEFT JOIN maquinaria m ON m.id = a.id_maquinaria
+                   WHERE a.id_cliente = ?
+                   ORDER BY a.fecha_registro DESC
+                   LIMIT 50";
+        $stmtAlq = $pdo->prepare($sqlAlq);
+        $stmtAlq->execute([$id_cliente]);
+        $alquileres = $stmtAlq->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($alquileres as &$a) {
+            $a['id'] = (int)$a['id'];
+            $a['monto'] = (float)$a['monto'];
+            $a['fecha_formateada'] = (new DateTime($a['fecha_registro']))->format('d/m/Y H:i');
+        }
+
+        echo json_encode(['ok' => true, 'compras' => $ventas, 'alquileres' => $alquileres]);
         break;
 
     default:

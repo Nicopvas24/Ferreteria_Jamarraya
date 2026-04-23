@@ -266,3 +266,41 @@
 
 /* Loading */
 #perfil-page .pf-loading { opacity: 0.5; pointer-events: none; }
+
+/* ── MODAL DETALLE COMPRA ── */
+#perfil-page .pf-modal {
+  display: none;
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7); z-index: 9999;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+#perfil-page .pf-modal.show { display: flex; }
+#perfil-page .pf-modal-content {
+  background: #1F2937; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; width: 90%; max-width: 600px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+#perfil-page .pf-modal-header {
+  padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex; justify-content: space-between; align-items: center;
+}
+#perfil-page .pf-modal-header h3 {
+  margin: 0; font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.4rem; color: #fff; text-transform: uppercase;
+}
+#perfil-page .pf-modal-close {
+  background: none; border: none; color: rgba(255,255,255,0.5);
+  font-size: 1.8rem; cursor: pointer; line-height: 1; transition: color .2s;
+}
+#perfil-page .pf-modal-close:hover { color: #F97316; }
+#perfil-page .pf-modal-body { padding: 24px; }
+#perfil-page .pf-modal-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+#perfil-page .pf-modal-table th, #perfil-page .pf-modal-table td {
+  padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); text-align: left;
+}
+#perfil-page .pf-modal-table th { color: rgba(255,255,255,0.5); font-size: 0.85rem; text-transform: uppercase; }
+#perfil-page .pf-modal-summary {
+  margin-top: 20px; text-align: right; font-size: 1.2rem; font-weight: 700; color: #F97316;
+}

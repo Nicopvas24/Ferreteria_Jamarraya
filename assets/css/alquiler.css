@@ -884,6 +884,10 @@
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 1.2rem;
 }
+#alq-page .alq-cart-buttons {
+  display: grid;
+  gap: 10px;
+}
 #alq-page .alq-cart-cta {
   width: 100%;
   background: #FF6B00;
@@ -898,6 +902,20 @@
   transition: background .2s;
 }
 #alq-page .alq-cart-cta:hover { background: #FF8C33; }
+#alq-page .alq-cart-buy {
+  background: #FF6B00;
+}
+#alq-page .alq-cart-buy:hover {
+  background: #FF8C33;
+}
+#alq-page .alq-cart-quote {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.22);
+  color: rgba(255,255,255,0.9);
+}
+#alq-page .alq-cart-quote:hover {
+  background: rgba(255,255,255,0.08);
+}
 
 /* ══════════════════════════════════════════
    DURACIÓN DE ALQUILER

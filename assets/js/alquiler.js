@@ -36,6 +36,7 @@ const cartPanel     = $('#alq-cart-panel');
 const cartOverlay   = $('#alq-cart-overlay');
 const cartClose     = $('#alq-cart-close');
 const cartCta       = $('#alq-cart-cta');
+const cartQuote     = $('#alq-cart-quote');
 const cartItems     = $('#alq-cart-items');
 const cartTotal     = $('#alq-cart-total');
 // Paginación
@@ -275,6 +276,10 @@ function abrirModal(id) {
   const stockEl = $('#alq-modal-stock');
   stockEl.textContent = text;
   stockEl.className   = `alq-modal-stock ${cls}`;
+  
+  // Mostrar label de días
+  const daysLabel = document.getElementById('alq-modal-days-label');
+  if (daysLabel) daysLabel.textContent = modalQty + ' día' + (modalQty !== 1 ? 's' : '');
   modalQtyVal.textContent = 1;
 
   const badgeEl = $('#alq-modal-badge');
@@ -305,11 +310,14 @@ modal.addEventListener('click', (e) => { if (e.target === modal) cerrarModal(); 
 
 modalQtyMinus.addEventListener('click', () => {
   if (modalQty > 1) modalQty--;
+  const daysLabel = document.getElementById('alq-modal-days-label');
+  if (daysLabel) daysLabel.textContent = modalQty + ' día' + (modalQty !== 1 ? 's' : '');
   modalQtyVal.textContent = modalQty;
 });
 modalQtyPlus.addEventListener('click', () => {
-  if (modalEquipo && modalQty < modalEquipo.stock)
-    modalQty++;
+  if (modalQty < 365) modalQty++;
+  const daysLabel = document.getElementById('alq-modal-days-label');
+  if (daysLabel) daysLabel.textContent = modalQty + ' día' + (modalQty !== 1 ? 's' : '');
   modalQtyVal.textContent = modalQty;
 });
 modalAddCart.addEventListener('click', () => {
@@ -328,7 +336,7 @@ function agregarAlCarrito(id, qty = 1) {
 
   const existe = carrito.find(x => x.id === id && x.kind === 'rental');
   if (existe) {
-    existe.qty = Math.min(existe.qty + qty, e.stock);
+    existe.qty = Math.min(existe.qty + qty, 365);
   } else {
     carrito.push({ id, kind: 'rental', qty, nombre: e.nombre, tarifa: e.tarifa_diaria, imagen: e.imagen });
   }
@@ -382,10 +390,11 @@ function renderCarrito() {
         <div style="display:inline-flex;align-items:center;font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:#fff;margin-bottom:.25rem;background:${item.kind === 'producto' ? 'rgba(249,115,22,.95)' : 'rgba(88,166,255,.95)'};padding:.12rem .45rem;border-radius:999px;font-weight:700">${item.kind === 'producto' ? 'Producto' : 'Alquiler'}</div>
         <p class="alq-cart-item-name">${item.nombre}</p>
         <span class="alq-cart-item-price">${fmt(item.kind === 'producto' ? item.precio : item.tarifa)}${item.kind === 'producto' ? '' : '/día'}</span>
+        ${item.kind === 'rental' ? `<div style="font-size:.75rem;color:var(--text-muted);margin:.25rem 0"><strong>${item.qty}</strong> día${item.qty !== 1 ? 's' : ''}</div>` : ''}
         <div class="alq-cart-qty-mini">
-          <button data-action="minus" data-id="${item.id}">−</button>
+          <button data-action="minus" data-id="${item.id}" title="Menos días">−</button>
           <span>${item.qty}</span>
-          <button data-action="plus" data-id="${item.id}">+</button>
+          <button data-action="plus" data-id="${item.id}" title="Más días">+</button>
         </div>
       </div>
       <div class="alq-cart-item-qty">
@@ -399,10 +408,15 @@ function renderCarrito() {
       const id   = Number(btn.dataset.id);
       const kind = btn.closest('.alq-cart-item')?.dataset.kind || 'rental';
       const item = carrito.find(x => x.id === id && (x.kind || 'rental') === kind);
-      const prod = kind === 'rental' ? state.equipos.find(x => x.id === id) : null;
       if (!item) return;
-      if (btn.dataset.action === 'plus')  item.qty = Math.min(item.qty + 1, prod?.stock || 99);
-      if (btn.dataset.action === 'minus') item.qty = Math.max(item.qty - 1, 1);
+      if (kind === 'rental') {
+        if (btn.dataset.action === 'plus')  item.qty = Math.min(item.qty + 1, 365);
+        if (btn.dataset.action === 'minus') item.qty = Math.max(item.qty - 1, 1);
+      } else {
+        const prod = state.productos.find(x => x.id === id);
+        if (btn.dataset.action === 'plus')  item.qty = Math.min(item.qty + 1, prod?.stock || 99);
+        if (btn.dataset.action === 'minus') item.qty = Math.max(item.qty - 1, 1);
+      }
       renderCarrito();
     });
   });
@@ -447,17 +461,183 @@ cartOverlay.addEventListener('click', cerrarCarrito);
    SOLICITUD/CONTACTO
 ══════════════════════════════════════════ */
 cartCta.addEventListener('click', () => {
-  const alquileres = carrito.filter(x => x.kind === 'rental');
-  if (alquileres.length === 0) return;
-  const lineas = alquileres
-    .map(x => `• ${x.nombre} x${x.qty} = ${fmt(x.tarifa * x.qty)}`)
-    .join('%0A');
-  const total = alquileres.reduce((s,x) => s + x.tarifa * x.qty, 0);
-  const msg = encodeURIComponent(
-    `Hola, quiero solicitar el alquiler de estos equipos:%0A%0A${lineas}%0A%0ATotal estimado: ${fmt(total)}`
-  );
-  window.open(`https://wa.me/573000000000?text=${msg}`, '_blank');
+  const usuario = sessionStorage.getItem('jm_nombre');
+  if (!usuario) {
+    alert('Debes iniciar sesión o registrarte para alquilar.');
+    return;
+  }
+  if (carrito.length === 0) return;
+  abrirCheckout();
 });
+
+cartQuote?.addEventListener('click', () => {
+  if (carrito.length === 0) return;
+
+  const lineas = carrito
+    .map(x => {
+      const unit = Number(x.kind === 'rental' ? x.tarifa : x.precio) || 0;
+      const detalle = x.kind === 'rental'
+        ? `${x.qty} día${x.qty !== 1 ? 's' : ''}`
+        : `x${x.qty}`;
+      return `• ${x.nombre} (${x.kind === 'rental' ? 'Alquiler' : 'Producto'}) ${detalle} = ${fmt(unit * x.qty)}`;
+    })
+    .join('%0A');
+
+  const total = carrito.reduce((s, x) => {
+    const unit = Number(x.kind === 'rental' ? x.tarifa : x.precio) || 0;
+    return s + unit * x.qty;
+  }, 0);
+
+  const msg = encodeURIComponent(
+    `Hola, quiero cotizar estos items del carrito:%0A${lineas}%0A%0ATotal estimado: ${fmt(total)}`
+  );
+  window.open(`https://wa.me/573017213193?text=${msg}`, '_blank');
+});
+
+/* ══════════════════════════════════════════
+   CHECKOUT MODAL
+══════════════════════════════════════════ */
+let checkoutModal = null;
+
+function abrirCheckout() {
+  // Crear modal dinámico si no existe
+  if (!checkoutModal) {
+    checkoutModal = document.createElement('div');
+    checkoutModal.id = 'alq-checkout-modal';
+    checkoutModal.style.cssText = `
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;
+      background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center;
+    `;
+    checkoutModal.innerHTML = `
+      <div style="background: #fff; border-radius: 12px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; padding: 2rem">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem">
+          <h2 style="margin: 0; font-size: 1.5rem">Procesar alquiler</h2>
+          <button id="alq-checkout-close" style="background: none; border: none; font-size: 1.5rem; cursor: pointer">✕</button>
+        </div>
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #eee">
+          <h3 style="margin-top: 0; font-size: 0.9rem; color: #666">Resumen del alquiler</h3>
+          <div id="alq-checkout-summary" style="font-size: 0.9rem"></div>
+          <div style="display: flex; justify-content: space-between; margin-top: 1rem; font-weight: 700; font-size: 1.1rem">
+            <span>Total estimado:</span>
+            <span id="alq-checkout-total">$0</span>
+          </div>
+        </div>
+        <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f5f5f5; border-radius: 8px">
+          <p style="margin: 0; font-size: 0.85rem; color: #666">📧 Los detalles se enviarán al correo registrado en tu cuenta. Recibirás confirmación y fechas de entrega.</p>
+        </div>
+        <button id="alq-checkout-submit" style="width: 100%; padding: 0.8rem; background: var(--blue); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem">
+          Confirmar solicitud de alquiler
+        </button>
+      </div>
+    `;
+    document.body.appendChild(checkoutModal);
+    
+    document.getElementById('alq-checkout-close').addEventListener('click', cerrarCheckoutAlquiler);
+    checkoutModal.addEventListener('click', (e) => { if (e.target === checkoutModal) cerrarCheckoutAlquiler(); });
+    document.getElementById('alq-checkout-submit').addEventListener('click', procesarAlquiler);
+  }
+  
+  // Actualizar resumen
+  const total = carrito.reduce((s,x) => s + (x.tarifa || x.precio || 0) * x.qty, 0);
+  document.getElementById('alq-checkout-total').textContent = fmt(total);
+  document.getElementById('alq-checkout-summary').innerHTML = carrito.map(item => `
+    <div style="display: flex; justify-content: space-between; margin: 0.5rem 0">
+      <span>${item.nombre} ${item.kind === 'rental' ? `<strong>${item.qty} día${item.qty !== 1 ? 's' : ''}</strong>` : `<strong>x${item.qty}</strong>`}</span>
+      <strong>${fmt((item.tarifa || item.precio || 0) * item.qty)}</strong>
+    </div>
+  `).join('');
+  
+  checkoutModal.style.display = 'flex';
+  cerrarCarrito();
+}
+
+function cerrarCheckoutAlquiler() {
+  if (checkoutModal) checkoutModal.style.display = 'none';
+}
+
+function sumarDiasIncluyente(fechaBase, dias) {
+  const d = new Date(fechaBase.getTime());
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + Math.max(0, (Number(dias) || 1) - 1));
+  return d;
+}
+
+function toISODateLocal(fecha) {
+  const y = fecha.getFullYear();
+  const m = String(fecha.getMonth() + 1).padStart(2, '0');
+  const d = String(fecha.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+async function procesarAlquiler() {
+  const usuario = sessionStorage.getItem('jm_nombre');
+  const email = sessionStorage.getItem('jm_email');
+  const telefono = sessionStorage.getItem('jm_telefono');
+  const identificacion = sessionStorage.getItem('jm_identificacion');
+  
+  if (!usuario || carrito.length === 0) {
+    alert('Datos incompletos');
+    return;
+  }
+  
+  const submitBtn = document.getElementById('alq-checkout-submit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Procesando...';
+  
+  try {
+    // Registrar cliente
+    const clienteRes = await fetch('../backend/api/clientes.php?accion=registrar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre: usuario,
+        identificacion: identificacion,
+        telefono: telefono,
+        email: email,
+        direccion: 'Alquiler web'
+      })
+    });
+    const clienteData = await clienteRes.json();
+    const idCliente = clienteData.id || clienteData.id_cliente;
+    
+    if (!idCliente) throw new Error('No se pudo registrar cliente');
+    
+    // Registrar cada alquiler
+    const hoyDate = new Date();
+    hoyDate.setHours(0, 0, 0, 0);
+    const fechaInicio = toISODateLocal(hoyDate);
+    const alquileres = carrito.filter(x => x.kind === 'rental');
+    
+    for (const alq of alquileres) {
+      const fechaFin = toISODateLocal(sumarDiasIncluyente(hoyDate, alq.qty));
+      await fetch('../backend/api/alquileres.php?accion=registrar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_cliente: idCliente,
+          id_maquinaria: alq.id,
+          fecha_inicio: fechaInicio,
+          fecha_fin: fechaFin,
+          monto: (alq.tarifa || 0) * alq.qty
+        })
+      });
+    }
+    
+    // Limpiar carrito
+    carrito = [];
+    guardarCarritoCompartido(carrito);
+    renderCarrito();
+    cerrarCheckoutAlquiler();
+    
+    alert('✓ Solicitud de alquiler enviada. Nos contactaremos pronto.');
+  } catch (err) {
+    console.error(err);
+    alert('Error: ' + err.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Confirmar solicitud de alquiler';
+  }
+}
 
 /* ══════════════════════════════════════════
    FILTROS – EVENTOS
