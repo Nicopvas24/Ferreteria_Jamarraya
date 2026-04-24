@@ -205,9 +205,9 @@ switch ($accion) {
                 exit;
             }
 
-            if ($alq['estado'] !== 'activo') {
+            if ($alq['estado'] !== 'activo' && $alq['estado'] !== 'vencido') {
                 $pdo->rollBack();
-                echo json_encode(['ok' => false, 'mensaje' => 'El alquiler ya está finalizado']);
+                echo json_encode(['ok' => false, 'mensaje' => 'El alquiler ya está finalizado o no es válido para devolución']);
                 exit;
             }
 

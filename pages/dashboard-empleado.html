@@ -717,7 +717,7 @@ async function cargarAlquileres() {
             <td style="font-size:.8rem">${fmtFecha(a.fecha_fin)}</td>
             <td style="font-weight:600">${fmt$(a.monto)}</td>
             <td>${estadoBadge(a.estado)}</td>
-            <td>${a.estado==='activo'?`<button class="btn-sm btn-orange" onclick="confirmarDevolucion(${a.id})">Devolver</button>`:'—'}</td>
+            <td>${['activo','vencido'].includes(a.estado)?`<button class="btn-sm btn-orange" onclick="confirmarDevolucion(${a.id})">Devolver</button>`:'—'}</td>
           </tr>`).join('')
       : filaVacia(8, 'Sin alquileres');
   } catch { tbody.innerHTML = filaVacia(8, 'Error cargando alquileres'); }

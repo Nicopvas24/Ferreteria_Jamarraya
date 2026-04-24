@@ -454,7 +454,7 @@ async function cargarAlquileres() {
             <td>${estadoBadge(a.estado)}</td>
             <td>
               <button class="btn-sm btn-ghost" onclick="verDetalleAlquiler(${a.id})">Ver</button>
-              ${a.estado==='activo' ? `<button class="btn-sm btn-orange" style="margin-left:.3rem" onclick="abrirModalDevolver(${a.id})">Devolver</button>` : ''}
+              ${['activo','vencido'].includes(a.estado) ? `<button class="btn-sm btn-orange" style="margin-left:.3rem" onclick="abrirModalDevolver(${a.id})">Devolver</button>` : ''}
             </td>
           </tr>`).join('')
       : filaVacia(8, 'Sin alquileres');
