@@ -347,6 +347,7 @@
               <select id="filtroEstadoAlquiler">
                 <option value="">Todos</option>
                 <option value="activo">Activos</option>
+                <option value="vencido">Vencidos</option>
                 <option value="finalizado">Finalizados</option>
               </select>
               <button class="btn-sm btn-orange" onclick="cargarAlquileres()">Filtrar</button>
@@ -482,7 +483,7 @@ const fmtFecha = s => new Date(s).toLocaleDateString('es-CO', { day:'2-digit', m
 const filaVacia = (cols, msg) => `<tr><td colspan="${cols}"><div class="empty"><span>📭</span>${msg}</div></td></tr>`;
 
 function estadoBadge(estado) {
-  const map = { activo:'green', disponible:'green', finalizado:'blue', alquilada:'orange', mantenimiento:'yellow', inactivo:'red' };
+  const map = { activo:'green', disponible:'green', finalizado:'blue', alquilada:'orange', mantenimiento:'yellow', inactivo:'red', vencido:'red' };
   return `<span class="badge badge-${map[estado]||'blue'}">${estado}</span>`;
 }
 

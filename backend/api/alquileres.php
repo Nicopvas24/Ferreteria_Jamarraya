@@ -15,6 +15,9 @@ $accion = $_GET['accion'] ?? $_POST['accion'] ?? 'equipos';
 
 audit_log_request($pdo, 'api/alquileres.php', $accion);
 
+// Auto-actualizar estado de alquileres vencidos en la BD
+$pdo->exec("UPDATE alquileres SET estado = 'vencido' WHERE estado = 'activo' AND fecha_fin < CURDATE()");
+
 switch ($accion) {
 
     // ----------------------------------------------------------
@@ -64,7 +67,10 @@ switch ($accion) {
         $where  = ['1=1'];
         $params = [];
 
-        if ($estado) { $where[] = 'a.estado = ?'; $params[] = $estado; }
+        if ($estado) {
+            $where[] = 'a.estado = ?';
+            $params[] = $estado;
+        }
 
         $stmt = $pdo->prepare("
             SELECT a.id, a.fecha_inicio, a.fecha_fin, a.monto, a.estado,

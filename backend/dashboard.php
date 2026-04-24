@@ -19,6 +19,9 @@ header('Content-Type: application/json');
 $pdo = conectar();
 audit_log_request($pdo, 'backend/dashboard.php', 'resumen');
 
+// Auto-actualizar estado de alquileres vencidos en la BD
+$pdo->exec("UPDATE alquileres SET estado = 'vencido' WHERE estado = 'activo' AND fecha_fin < CURDATE()");
+
 // ---- Ventas de hoy ----
 $stmt = $pdo->query("SELECT COUNT(*) AS total, COALESCE(SUM(total), 0) AS ingresos
                      FROM ventas
@@ -37,22 +40,22 @@ $stockBajo = $stmt->fetch();
 // ---- Alertas ----
 $alertas = [];
 
-// Productos con stock crítico
-$stmt = $pdo->query("SELECT nombre, stock_actual, stock_minimo
-                     FROM productos
-                     WHERE stock_actual < stock_minimo AND activo = 1
-                     ORDER BY stock_actual ASC
-                     LIMIT 5");
-foreach ($stmt->fetchAll() as $p) {
+// 1. Alquileres vencidos (Mayor prioridad)
+$stmt = $pdo->query("SELECT a.id, c.nombre AS cliente, m.nombre AS maquina, a.fecha_fin
+                     FROM alquileres a
+                     JOIN clientes c   ON c.id = a.id_cliente
+                     JOIN maquinaria m ON m.id = a.id_maquinaria
+                     WHERE a.estado = 'vencido'");
+foreach ($stmt->fetchAll() as $al) {
     $alertas[] = [
-        'nombre'  => $p['nombre'],
-        'detalle' => "Stock: {$p['stock_actual']} (mínimo: {$p['stock_minimo']})",
-        'etiqueta'=> 'Stock bajo',
+        'nombre'  => $al['cliente'] . ' — ' . $al['maquina'],
+        'detalle' => 'Venció el ' . date('d/m/Y', strtotime($al['fecha_fin'])),
+        'etiqueta'=> 'Vencido',
         'tipo'    => 'rojo',
     ];
 }
 
-// Alquileres próximos a vencer (2 días)
+// 2. Alquileres próximos a vencer (2 días)
 $stmt = $pdo->query("SELECT a.id, c.nombre AS cliente, m.nombre AS maquina, a.fecha_fin
                      FROM alquileres a
                      JOIN clientes c   ON c.id = a.id_cliente
@@ -68,18 +71,17 @@ foreach ($stmt->fetchAll() as $al) {
     ];
 }
 
-// Alquileres vencidos
-$stmt = $pdo->query("SELECT a.id, c.nombre AS cliente, m.nombre AS maquina, a.fecha_fin
-                     FROM alquileres a
-                     JOIN clientes c   ON c.id = a.id_cliente
-                     JOIN maquinaria m ON m.id = a.id_maquinaria
-                     WHERE a.estado = 'activo'
-                       AND a.fecha_fin < CURDATE()");
-foreach ($stmt->fetchAll() as $al) {
+// 3. Productos con stock crítico
+$stmt = $pdo->query("SELECT nombre, stock_actual, stock_minimo
+                     FROM productos
+                     WHERE stock_actual < stock_minimo AND activo = 1
+                     ORDER BY stock_actual ASC
+                     LIMIT 5");
+foreach ($stmt->fetchAll() as $p) {
     $alertas[] = [
-        'nombre'  => $al['cliente'] . ' — ' . $al['maquina'],
-        'detalle' => 'Venció el ' . date('d/m/Y', strtotime($al['fecha_fin'])),
-        'etiqueta'=> 'Vencido',
+        'nombre'  => $p['nombre'],
+        'detalle' => "Stock: {$p['stock_actual']} (mínimo: {$p['stock_minimo']})",
+        'etiqueta'=> 'Stock bajo',
         'tipo'    => 'rojo',
     ];
 }

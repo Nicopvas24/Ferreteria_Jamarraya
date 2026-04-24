@@ -95,7 +95,7 @@ const fmtFecha = s => new Date(s).toLocaleDateString('es-CO', { day:'2-digit', m
 function estadoBadge(estado) {
   const map = {
     activo:'green', disponible:'green', finalizado:'blue',
-    alquilada:'orange', mantenimiento:'yellow', inactivo:'red',
+    alquilada:'orange', mantenimiento:'yellow', inactivo:'red', vencido:'red'
   };
   return `<span class="badge badge-${map[estado]||'blue'}">${estado}</span>`;
 }
