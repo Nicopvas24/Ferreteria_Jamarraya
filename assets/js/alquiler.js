@@ -785,14 +785,6 @@ function iniciarAlquileres() {
 (function initGlobalCartIntegration() {
   function registrar() {
     if (!window.GlobalCart) return;
-    // Cuando se pulse "Confirmar compra" en el navbar cart
-    window.GlobalCart.registrarCheckout(() => {
-      carrito = window.GlobalCart.leer();
-      if (!carrito.length) return;
-      const usuario = sessionStorage.getItem('jm_nombre');
-      if (!usuario) { alert('Debes iniciar sesión para continuar.'); return; }
-      abrirCheckout();
-    });
     // Sincronizar carrito local con GlobalCart
     window.GlobalCart.onCambio((items) => { carrito = items; });
     carrito = window.GlobalCart.leer();

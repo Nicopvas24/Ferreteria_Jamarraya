@@ -307,16 +307,22 @@
             <span class="panel__title">Gestión de Usuarios del Sistema</span>
             <button class="btn-sm btn-orange" onclick="UsuarioModal.abrir()">+ Usuario</button>
           </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr>
-                <th>#</th><th>Nombre</th><th>Email</th>
-                <th>Rol</th><th>Creado</th><th>Estado</th><th>Acciones</th>
-              </tr></thead>
-              <tbody id="tablaUsuarios">
-                <tr><td colspan="7"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>
-              </tbody>
-            </table>
+          <div class="panel__body" style="padding-bottom: 0;">
+            <div class="filter-bar" style="margin-bottom:1rem">
+              <label for="filtroRolUsuario">Filtrar por Rol</label>
+              <select id="filtroRolUsuario">
+                <option value="">Todos</option>
+                <option value="admin">Administrador</option>
+                <option value="empleado">Empleado</option>
+                <option value="cliente">Cliente</option>
+              </select>
+              <button class="btn-sm btn-orange" onclick="cargarUsuarios()">Filtrar</button>
+            </div>
+          </div>
+          <div class="users-grid-wrap" style="padding: 0 1.25rem 1.25rem; max-height: 600px; overflow-y: auto;">
+            <div class="users-grid" id="gridUsuarios">
+              <div style="grid-column: 1 / -1;"><div class="empty"><span>⏳</span>Cargando…</div></div>
+            </div>
           </div>
         </div>
       </div><!-- /sec-usuarios -->

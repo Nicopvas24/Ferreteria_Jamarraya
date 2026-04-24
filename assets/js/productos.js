@@ -844,16 +844,7 @@ async function mostrarComprobanteUnificado(ventaResult, alqResultados, carritoSn
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 }
 
-// Mantener alias para compatibilidad
-async function verDetalleVentaCheckout(idVenta) {
-  mostrarComprobanteUnificado({ id_venta: idVenta }, [], state.carrito);
-}
-
-checkoutClose?.addEventListener('click', cerrarCheckout);
-checkoutOverlay?.addEventListener('click', cerrarCheckout);
-checkoutForm?.addEventListener('submit', procesarCompra);
-
-
+// Old checkout references removed
 // Toggle dirección
 function toggleDireccionSection() {
   const mostrar = document.querySelector('input[name="delivery"]:checked').value === 'domicilio';
@@ -1035,24 +1026,18 @@ cargarProductos();
 /* ══════════════════════════════════════════
    INTEGRACIÓN CON CARRITO GLOBAL
 ══════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   INTEGRACIÓN CON CARRITO GLOBAL
+══════════════════════════════════════════ */
 (function initGlobalCartIntegration() {
-  // Registrar el checkout de esta página en GlobalCart
   function registrar() {
     if (!window.GlobalCart) return;
-    // Cuando se pulse "Confirmar compra" en el carrito del navbar
-    window.GlobalCart.registrarCheckout(async () => {
-      state.carrito = window.GlobalCart.leer();
-      await abrirCheckout();
-    });
-    // Sincronizar state.carrito cuando GlobalCart cambie
     window.GlobalCart.onCambio((items) => {
       state.carrito = items;
     });
-    // Actualizar carrito inicial
     state.carrito = window.GlobalCart.leer();
   }
 
-  // GlobalCart puede cargar ligeramente después
   if (window.GlobalCart) {
     registrar();
   } else {

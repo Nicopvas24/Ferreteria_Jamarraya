@@ -107,7 +107,30 @@
   .panel__title { font-family: var(--font-d); font-size: 1rem; font-weight: 700; letter-spacing: .03em; }
   .panel__body { padding: 1.25rem; }
 
-  .table-wrap { overflow-x: auto; }
+  .table-wrap {
+    overflow-x: auto; 
+    overflow-y: auto;
+    max-height: 600px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,165,0,.3) transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-wrap::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .table-wrap::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(255,165,0,.3);
+    border-radius: 4px;
+  }
+  .table-wrap::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,165,0,.5);
+  }
   table { width: 100%; border-collapse: collapse; font-size: .875rem; }
   thead tr { border-bottom: 1px solid var(--border); }
   th { padding: .6rem .75rem; text-align: left; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }

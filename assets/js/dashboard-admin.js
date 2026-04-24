@@ -652,11 +652,17 @@ async function cargarClientes() {
    USUARIOS
 ══════════════════════════════════════════ */
 async function cargarUsuarios() {
-  const tbody = document.getElementById('tablaUsuarios');
-  tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>`;
+  const filtroRol = document.getElementById('filtroRolUsuario')?.value || '';
+  const grid = document.getElementById('gridUsuarios');
+  if(!grid) return;
+  grid.innerHTML = `<div style="grid-column: 1 / -1;"><div class="empty"><span>⏳</span>Cargando…</div></div>`;
   try {
     const r = await fetch(API.usuarios + '?accion=listar');
-    const users = await r.json();
+    let users = await r.json();
+    
+    if (filtroRol) {
+      users = users.filter(u => u.rol === filtroRol);
+    }
     
     // Guardar usuarios globalmente para acceso desde modales
     window.usuariosData = {};
@@ -664,22 +670,28 @@ async function cargarUsuarios() {
       window.usuariosData[u.id] = u;
     });
     
-    tbody.innerHTML = users.length
+    grid.innerHTML = users.length
       ? users.map(u => `
-          <tr>
-            <td style="color:var(--text-muted)">${u.id}</td>
-            <td style="font-weight:500">${u.nombre}</td>
-            <td style="font-size:.82rem;color:var(--text-muted)">${u.email}</td>
-            <td>${estadoBadge(u.rol)}</td>
-            <td style="font-size:.8rem">${u.fecha_creacion ? fmtFecha(u.fecha_creacion) : '—'}</td>
-            <td>${u.activo ? '<span class="badge badge-green">Activo</span>' : '<span class="badge badge-red">Inactivo</span>'}</td>
-            <td>
-              <button class="btn-sm btn-ghost" onclick="UsuarioEditModal.abrir(${u.id})">Editar</button>
-            </td>
-          </tr>`).join('')
-      : filaVacia(7, 'Sin usuarios');
+          <div class="user-card ${u.activo ? '' : 'inactive'}">
+            <div class="user-card__header">
+              <span class="user-card__id">ID: ${u.id}</span>
+              ${estadoBadge(u.rol)}
+            </div>
+            <div class="user-card__body">
+              <h4 class="user-card__name">${u.nombre}</h4>
+              <div class="user-card__email">✉️ ${u.email}</div>
+              <div class="user-card__date">📅 Registro: ${u.fecha_creacion ? fmtFecha(u.fecha_creacion) : '—'}</div>
+              <div class="user-card__status">
+                ${u.activo ? '<span class="badge badge-green">Usuario Activo</span>' : '<span class="badge badge-red">Usuario Inactivo</span>'}
+              </div>
+            </div>
+            <div class="user-card__footer">
+              <button class="btn-sm btn-ghost w-100" onclick="UsuarioEditModal.abrir(${u.id})">✏️ Editar Usuario</button>
+            </div>
+          </div>`).join('')
+      : `<div style="grid-column: 1 / -1;"><div class="empty"><span>📭</span>Sin usuarios</div></div>`;
   } catch {
-    tbody.innerHTML = filaVacia(7, 'Error cargando usuarios');
+    grid.innerHTML = `<div style="grid-column: 1 / -1;"><div class="empty"><span>❌</span>Error cargando usuarios</div></div>`;
   }
 }
 

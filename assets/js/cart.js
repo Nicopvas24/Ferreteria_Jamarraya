@@ -268,10 +268,10 @@
     cerrar(); // blur + aria-hidden ya aplicados
     // Esperar un frame para que el panel termine de cerrarse antes de abrir el checkout
     setTimeout(() => {
-      if (typeof window._gcAbrirCheckout === 'function') {
-        window._gcAbrirCheckout();
+      if (window.JMCheckout) {
+        window.JMCheckout.abrir({ carrito: items });
       } else {
-        window.location.href = '../pages/productos.html';
+        console.warn('JMCheckout no está disponible');
       }
     }, 50);
   }
@@ -320,7 +320,7 @@
     },
 
     registrarCheckout(fn) {
-      window._gcAbrirCheckout = fn;
+      // Obsoleto: JMCheckout se encarga ahora. Se mantiene para compatibilidad vacía.
     },
 
     _onChangeHook: null,

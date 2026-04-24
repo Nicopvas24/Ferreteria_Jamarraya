@@ -12,7 +12,7 @@
       <p id="jm-checkout-subtitle">Completa tu información para proceder</p>
     </div>
 
-    <form class="jm-checkout-form" id="jm-checkout-form" novalidate>
+    <form class="jm-checkout-form" id="jm-checkout-form">
 
       <!-- DATOS PERSONALES -->
       <div class="jm-checkout-section">
@@ -20,7 +20,7 @@
         <div class="jm-form-grid">
           <div class="jm-form-group">
             <label for="jm-co-nombre">Nombre completo *</label>
-            <input type="text" id="jm-co-nombre" name="nombre" placeholder="Tu nombre" required />
+            <input type="text" id="jm-co-nombre" name="nombre" placeholder="Tu nombre" minlength="3" required />
           </div>
           <div class="jm-form-group">
             <label for="jm-co-email">Correo electrónico *</label>
@@ -28,11 +28,11 @@
           </div>
           <div class="jm-form-group">
             <label for="jm-co-telefono">Teléfono *</label>
-            <input type="tel" id="jm-co-telefono" name="telefono" placeholder="+57 300 000 0000" required />
+            <input type="tel" id="jm-co-telefono" name="telefono" placeholder="Ej: 3001234567" pattern="[0-9]{7,15}" title="Ingrese un número de teléfono válido, sin signos negativos ni letras" required />
           </div>
           <div class="jm-form-group">
             <label for="jm-co-identificacion">Identificación *</label>
-            <input type="text" id="jm-co-identificacion" name="identificacion" placeholder="CC / NIT" required />
+            <input type="text" id="jm-co-identificacion" name="identificacion" placeholder="CC / NIT" pattern="[a-zA-Z0-9\-]+" title="Solo números y letras sin espacios" required />
           </div>
         </div>
       </div>
