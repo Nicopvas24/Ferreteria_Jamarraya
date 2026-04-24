@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 11-04-2026 a las 05:34:41
+-- Tiempo de generación: 24-04-2026 a las 23:58:02
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -46,7 +46,24 @@ CREATE TABLE IF NOT EXISTS `alquileres` (
   KEY `idx_alquileres_estado` (`estado`),
   KEY `idx_alquileres_fecha_fin` (`fecha_fin`),
   KEY `idx_alquileres_cliente` (`id_cliente`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `alquileres`
+--
+
+INSERT INTO `alquileres` (`id`, `id_cliente`, `id_maquinaria`, `id_usuario`, `fecha_inicio`, `fecha_fin`, `monto`, `estado`, `fecha_registro`) VALUES
+(1, 1, 5, 3, '2026-01-10', '2026-01-15', 300000.00, 'finalizado', '2026-01-10 08:30:00'),
+(2, 3, 1, 4, '2026-01-20', '2026-01-23', 240000.00, 'finalizado', '2026-01-20 09:00:00'),
+(3, 5, 7, 3, '2026-02-05', '2026-02-07', 300000.00, 'finalizado', '2026-02-05 10:00:00'),
+(4, 2, 11, 5, '2026-02-14', '2026-02-16', 170000.00, 'finalizado', '2026-02-14 08:00:00'),
+(5, 7, 3, 6, '2026-02-28', '2026-03-02', 360000.00, 'finalizado', '2026-02-28 09:30:00'),
+(6, 4, 6, 4, '2026-03-10', '2026-03-12', 140000.00, 'finalizado', '2026-03-10 08:00:00'),
+(7, 8, 2, 7, '2026-03-18', '2026-03-20', 90000.00, 'finalizado', '2026-03-18 10:00:00'),
+(8, 6, 10, 5, '2026-03-25', '2026-04-24', 280000.00, 'finalizado', '2026-03-25 09:00:00'),
+(9, 9, 4, 8, '2026-04-18', '2026-04-26', 800000.00, 'activo', '2026-04-18 08:30:00'),
+(10, 10, 8, 3, '2026-04-10', '2026-04-11', 450000.00, 'vencido', '2026-04-20 09:00:00'),
+(11, 6, 5, 1, '2026-04-24', '2026-04-30', 420000.00, 'activo', '2026-04-24 16:19:46');
 
 --
 -- Disparadores `alquileres`
@@ -92,20 +109,23 @@ CREATE TABLE IF NOT EXISTS `clientes` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_clientes_identificacion` (`identificacion`),
   KEY `fk_clientes_usuario` (`id_usuario`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `clientes`
 --
 
 INSERT INTO `clientes` (`id`, `id_usuario`, `nombre`, `identificacion`, `telefono`, `email`, `direccion`) VALUES
-(1, NULL, 'Juan Jose', '34555', '3137287531', 'j.gomez14@gmail.com', 'La vitgin'),
-(2, NULL, 'roche', '123', '3137287531', 'd.rivas@gmail.com', 'cll 20 31 B 41'),
-(3, NULL, 'roche', '123455', '-43137287531', 'd.1rivas@gmail.com', '44'),
-(4, 7, 'Jose', '5544112', '3137287531', 'jose@gmail.com', 'cll 20 31 B 41'),
-(5, NULL, 'pepe', '123432', '1234', 'pep@gmail.com', 'cll 20 31 B 41'),
-(6, 8, 'pepe', '5111', '+573017213193', 'pepe@gmail.com', 'cll 20 31 B 41'),
-(7, NULL, 'eeee', 'sdd', '4444', 'ee@gmail.com', '444');
+(1, 9, 'Pedro Gómez', '10234567', '3001234567', 'pedro.gomez@gmail.com', 'Cra 5 #12-34, Pereira'),
+(2, 10, 'Ana Morales', '10345678', '3109876543', 'ana.morales@gmail.com', 'Cll 19 #8-22, Pereira'),
+(3, 11, 'Ricardo Zapata', '10456789', '3156789012', 'ricardo.zapata@gmail.com', 'Av. 30 de Agosto #45-10, Pereira'),
+(4, 12, 'Sofía Castillo', '10567890', '3003456789', 'sofia.castillo@gmail.com', 'Cll 12 #15-60, Dosquebradas'),
+(5, 13, 'Hernán Vargas', '10678901', '3172345678', 'hernan.vargas@gmail.com', 'Cra 14 #20-55, Pereira'),
+(6, 14, 'Camila Restrepo', '10789012', '3181234567', 'camila.restrepo@gmail.com', 'Cll 25 #10-11, Pereira'),
+(7, NULL, 'Luis Arango', '10890123', '3123456789', 'luis.arango@gmail.com', 'Cra 7 #33-90, Pereira'),
+(8, NULL, 'Natalia Patiño', '10901234', '3204567890', 'natalia.patino@gmail.com', 'Cll 5 #18-44, Cartago'),
+(9, NULL, 'Sebastián Cano', '11012345', '3055678901', 'sebastian.cano@gmail.com', 'Cra 22 #9-15, Pereira'),
+(10, NULL, 'Juliana Mejía', '11123456', '3196789012', 'juliana.mejia@gmail.com', 'Cll 17 #7-80, Pereira');
 
 -- --------------------------------------------------------
 
@@ -124,7 +144,68 @@ CREATE TABLE IF NOT EXISTS `detalle_venta` (
   PRIMARY KEY (`id`),
   KEY `fk_detalle_venta_venta` (`id_venta`),
   KEY `fk_detalle_venta_producto` (`id_producto`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=56 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `detalle_venta`
+--
+
+INSERT INTO `detalle_venta` (`id`, `id_venta`, `id_producto`, `cantidad`, `precio_unitario`, `subtotal`) VALUES
+(1, 1, 1, 1, 289000.00, 289000.00),
+(2, 1, 14, 1, 18000.00, 18000.00),
+(3, 2, 19, 5, 28000.00, 140000.00),
+(4, 2, 24, 2, 6500.00, 13000.00),
+(5, 2, 21, 3, 8000.00, 24000.00),
+(6, 3, 27, 4, 15000.00, 60000.00),
+(7, 3, 29, 2, 9500.00, 19000.00),
+(8, 3, 33, 3, 3500.00, 10500.00),
+(9, 4, 42, 2, 58000.00, 116000.00),
+(10, 4, 44, 1, 18000.00, 18000.00),
+(11, 4, 45, 2, 12000.00, 24000.00),
+(12, 5, 34, 1, 95000.00, 95000.00),
+(13, 5, 36, 3, 14000.00, 42000.00),
+(14, 5, 37, 4, 12000.00, 48000.00),
+(15, 6, 20, 6, 18500.00, 111000.00),
+(16, 6, 22, 50, 1800.00, 90000.00),
+(17, 7, 9, 1, 32000.00, 32000.00),
+(18, 7, 13, 1, 28000.00, 28000.00),
+(19, 7, 15, 1, 42000.00, 42000.00),
+(20, 8, 49, 2, 28000.00, 56000.00),
+(21, 8, 50, 2, 12000.00, 24000.00),
+(22, 8, 25, 2, 9000.00, 18000.00),
+(23, 9, 30, 2, 22000.00, 44000.00),
+(24, 9, 31, 1, 65000.00, 65000.00),
+(25, 9, 32, 1, 18000.00, 18000.00),
+(26, 10, 38, 1, 75000.00, 75000.00),
+(27, 10, 39, 2, 35000.00, 70000.00),
+(28, 10, 41, 1, 45000.00, 45000.00),
+(29, 11, 43, 3, 72000.00, 216000.00),
+(30, 11, 46, 2, 32000.00, 64000.00),
+(31, 11, 47, 4, 7500.00, 30000.00),
+(32, 12, 3, 1, 195000.00, 195000.00),
+(33, 12, 6, 1, 150000.00, 150000.00),
+(34, 13, 23, 4, 55000.00, 220000.00),
+(35, 13, 26, 2, 12000.00, 24000.00),
+(36, 14, 10, 1, 85000.00, 85000.00),
+(37, 14, 17, 1, 48000.00, 48000.00),
+(38, 14, 16, 1, 35000.00, 35000.00),
+(39, 15, 19, 3, 28000.00, 84000.00),
+(40, 15, 20, 4, 18500.00, 74000.00),
+(41, 15, 21, 2, 8000.00, 16000.00),
+(42, 16, 35, 1, 68000.00, 68000.00),
+(43, 16, 40, 3, 22000.00, 66000.00),
+(44, 17, 42, 4, 58000.00, 232000.00),
+(45, 17, 44, 2, 18000.00, 36000.00),
+(46, 17, 48, 3, 15000.00, 45000.00),
+(47, 18, 49, 3, 28000.00, 84000.00),
+(48, 18, 11, 2, 12000.00, 24000.00),
+(49, 18, 12, 2, 12000.00, 24000.00),
+(50, 19, 27, 6, 15000.00, 90000.00),
+(51, 19, 28, 2, 24000.00, 48000.00),
+(52, 19, 30, 3, 22000.00, 66000.00),
+(53, 20, 7, 1, 260000.00, 260000.00),
+(54, 20, 5, 1, 210000.00, 210000.00),
+(55, 21, 27, 2, 15000.00, 30000.00);
 
 --
 -- Disparadores `detalle_venta`
@@ -177,7 +258,59 @@ CREATE TABLE IF NOT EXISTS `logs` (
   `fecha` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_logs_usuario_fecha` (`id_usuario`,`fecha`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `logs`
+--
+
+INSERT INTO `logs` (`id`, `id_usuario`, `accion`, `tabla_afectada`, `id_registro`, `detalle`, `ip_origen`, `fecha`) VALUES
+(1, NULL, 'LOGIN_FALLIDO', 'usuarios', NULL, '{\"motivo\":\"credenciales_invalidas\",\"email\":\"admin@jamarraya.com\"}', '::1', '2026-04-24 15:52:45'),
+(2, NULL, 'LOGIN_FALLIDO', 'usuarios', NULL, '{\"motivo\":\"credenciales_invalidas\",\"email\":\"admin@jamarraya.com\"}', '::1', '2026-04-24 15:52:51'),
+(3, NULL, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/recuperar-contrasena.php\",\"operacion\":\"solicitar_codigo\",\"method\":\"POST\",\"query\":[]}', '::1', '2026-04-24 15:53:16'),
+(4, 1, 'RCP_SOLICITAR_OK', 'usuarios', 1, '{\"rol\":\"admin\",\"email\":\"admin@jamarraya.com\"}', '::1', '2026-04-24 15:53:16'),
+(5, NULL, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/recuperar-contrasena.php\",\"operacion\":\"validar_codigo\",\"method\":\"POST\",\"query\":[]}', '::1', '2026-04-24 15:53:19'),
+(6, 1, 'RCP_VALIDAR_OK', 'usuarios', 1, '{\"rol\":\"admin\"}', '::1', '2026-04-24 15:53:19'),
+(7, NULL, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/recuperar-contrasena.php\",\"operacion\":\"cambiar_contrasena\",\"method\":\"POST\",\"query\":[]}', '::1', '2026-04-24 15:54:34'),
+(8, 1, 'RCP_CAMBIO_OK', 'usuarios', 1, '{\"mensaje\":\"Contrasena actualizada\"}', '::1', '2026-04-24 15:54:34'),
+(9, 1, 'LOGIN_EXITOSO', 'usuarios', 1, '{\"email\":\"admin@jamarraya.com\",\"rol\":\"admin\"}', '::1', '2026-04-24 15:54:40'),
+(10, 1, 'LOGOUT', 'usuarios', 1, '{\"mensaje\":\"Cierre de sesion\"}', '::1', '2026-04-24 15:58:09'),
+(11, NULL, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/recuperar-contrasena.php\",\"operacion\":\"solicitar_codigo\",\"method\":\"POST\",\"query\":[]}', '::1', '2026-04-24 15:58:29'),
+(12, NULL, 'RCP_SOLICITAR_FALLIDO', 'usuarios', NULL, '{\"motivo\":\"email_no_encontrado\",\"email\":\"andres.herrera@gmail.com\"}', '::1', '2026-04-24 15:58:29'),
+(13, NULL, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/recuperar-contrasena.php\",\"operacion\":\"solicitar_codigo\",\"method\":\"POST\",\"query\":[]}', '::1', '2026-04-24 15:58:46'),
+(14, 3, 'RCP_SOLICITAR_OK', 'usuarios', 3, '{\"rol\":\"empleado\",\"email\":\"andres.herrera@jamarraya.com\"}', '::1', '2026-04-24 15:58:46'),
+(15, NULL, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/recuperar-contrasena.php\",\"operacion\":\"validar_codigo\",\"method\":\"POST\",\"query\":[]}', '::1', '2026-04-24 15:58:51'),
+(16, 3, 'RCP_VALIDAR_OK', 'usuarios', 3, '{\"rol\":\"empleado\"}', '::1', '2026-04-24 15:58:51'),
+(17, NULL, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/recuperar-contrasena.php\",\"operacion\":\"cambiar_contrasena\",\"method\":\"POST\",\"query\":[]}', '::1', '2026-04-24 15:59:49'),
+(18, 3, 'RCP_CAMBIO_OK', 'usuarios', 3, '{\"mensaje\":\"Contrasena actualizada\"}', '::1', '2026-04-24 15:59:49'),
+(19, NULL, 'LOGIN_FALLIDO', 'usuarios', NULL, '{\"motivo\":\"credenciales_invalidas\",\"email\":\"andres.herrera@gmail.com\"}', '::1', '2026-04-24 16:02:22'),
+(20, NULL, 'LOGIN_FALLIDO', 'usuarios', NULL, '{\"motivo\":\"credenciales_invalidas\",\"email\":\"andres.herrera@gmail.com\"}', '::1', '2026-04-24 16:02:35'),
+(21, NULL, 'LOGIN_FALLIDO', 'usuarios', NULL, '{\"motivo\":\"credenciales_invalidas\",\"email\":\"andres.herrera@gmail.com\"}', '::1', '2026-04-24 16:02:36'),
+(22, NULL, 'LOGIN_FALLIDO', 'usuarios', NULL, '{\"motivo\":\"credenciales_invalidas\",\"email\":\"andres.herrera@gmail.com\"}', '::1', '2026-04-24 16:02:36'),
+(23, NULL, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/recuperar-contrasena.php\",\"operacion\":\"solicitar_codigo\",\"method\":\"POST\",\"query\":[]}', '::1', '2026-04-24 16:02:53'),
+(24, NULL, 'RCP_SOLICITAR_FALLIDO', 'usuarios', NULL, '{\"motivo\":\"email_no_encontrado\",\"email\":\"andres.herrera@gmail.com\"}', '::1', '2026-04-24 16:02:53'),
+(25, NULL, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/recuperar-contrasena.php\",\"operacion\":\"solicitar_codigo\",\"method\":\"POST\",\"query\":[]}', '::1', '2026-04-24 16:03:02'),
+(26, 3, 'RCP_SOLICITAR_OK', 'usuarios', 3, '{\"rol\":\"empleado\",\"email\":\"andres.herrera@jamarraya.com\"}', '::1', '2026-04-24 16:03:02'),
+(27, NULL, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/recuperar-contrasena.php\",\"operacion\":\"validar_codigo\",\"method\":\"POST\",\"query\":[]}', '::1', '2026-04-24 16:03:04'),
+(28, 3, 'RCP_VALIDAR_OK', 'usuarios', 3, '{\"rol\":\"empleado\"}', '::1', '2026-04-24 16:03:04'),
+(29, NULL, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/recuperar-contrasena.php\",\"operacion\":\"cambiar_contrasena\",\"method\":\"POST\",\"query\":[]}', '::1', '2026-04-24 16:03:19'),
+(30, 3, 'RCP_CAMBIO_OK', 'usuarios', 3, '{\"mensaje\":\"Contrasena actualizada\"}', '::1', '2026-04-24 16:03:19'),
+(31, NULL, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/recuperar-contrasena.php\",\"operacion\":\"solicitar_codigo\",\"method\":\"POST\",\"query\":[]}', '::1', '2026-04-24 16:05:51'),
+(32, 9, 'RCP_SOLICITAR_OK', 'usuarios', 9, '{\"rol\":\"cliente\",\"email\":\"pedro.gomez@gmail.com\"}', '::1', '2026-04-24 16:05:51'),
+(33, NULL, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/recuperar-contrasena.php\",\"operacion\":\"validar_codigo\",\"method\":\"POST\",\"query\":[]}', '::1', '2026-04-24 16:05:53'),
+(34, 9, 'RCP_VALIDAR_OK', 'usuarios', 9, '{\"rol\":\"cliente\"}', '::1', '2026-04-24 16:05:53'),
+(35, NULL, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/recuperar-contrasena.php\",\"operacion\":\"cambiar_contrasena\",\"method\":\"POST\",\"query\":[]}', '::1', '2026-04-24 16:06:07'),
+(36, 9, 'RCP_CAMBIO_OK', 'usuarios', 9, '{\"mensaje\":\"Contrasena actualizada\"}', '::1', '2026-04-24 16:06:07'),
+(37, 13, 'LOGIN_EXITOSO', 'usuarios', 13, '{\"email\":\"hernan.vargas@gmail.com\",\"rol\":\"cliente\"}', '::1', '2026-04-24 16:08:37'),
+(38, 13, 'LOGOUT', 'usuarios', 13, '{\"mensaje\":\"Cierre de sesion\"}', '::1', '2026-04-24 16:17:36'),
+(39, 1, 'LOGIN_EXITOSO', 'usuarios', 1, '{\"email\":\"admin@jamarraya.com\",\"rol\":\"admin\"}', '::1', '2026-04-24 16:17:47'),
+(40, 1, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/alquileres.php\",\"operacion\":\"registrar\",\"method\":\"POST\",\"query\":{\"accion\":\"registrar\"}}', '::1', '2026-04-24 16:19:46'),
+(41, 1, 'ALQUILER_REGISTRADO', 'alquileres', 11, '{\"id_cliente\":6,\"id_maquinaria\":5,\"monto\":420000}', '::1', '2026-04-24 16:19:46'),
+(42, 1, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/alquileres.php\",\"operacion\":\"devolver\",\"method\":\"POST\",\"query\":{\"accion\":\"devolver\"}}', '::1', '2026-04-24 16:22:18'),
+(43, 1, 'ALQUILER_DEVUELTO', 'alquileres', 8, '{\"id_maquinaria\":10}', '::1', '2026-04-24 16:22:18'),
+(44, 1, 'CLIENTE_REGISTRADO', 'clientes', 11, '{\"identificacion\":\"1111111\",\"email\":\"11111@gmail.com\"}', '::1', '2026-04-24 16:55:56'),
+(45, 1, 'VENTA_REGISTRADA', 'ventas', 21, '{\"id_cliente\":5,\"items\":1,\"total\":30000}', '::1', '2026-04-24 16:57:24'),
+(46, 1, 'LOGOUT', 'usuarios', 1, '{\"mensaje\":\"Cierre de sesion\"}', '::1', '2026-04-24 16:57:33');
 
 -- --------------------------------------------------------
 
@@ -195,7 +328,25 @@ CREATE TABLE IF NOT EXISTS `maquinaria` (
   `activo` tinyint(1) NOT NULL DEFAULT 1,
   `img` varchar(150) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `maquinaria`
+--
+
+INSERT INTO `maquinaria` (`id`, `nombre`, `descripcion`, `estado`, `tarifa_alquiler`, `activo`, `img`) VALUES
+(1, 'Concretera 1 Saco', 'Mezcladora de concreto capacidad 1 saco, motor eléctrico 1HP, tambor de 160L', 'disponible', 80000.00, 1, NULL),
+(2, 'Vibrador de Concreto 1.5\"', 'Vibrador eléctrico para concreto, aguja flexible 1.5\", cable 6m, 1450W', 'disponible', 45000.00, 1, NULL),
+(3, 'Cortadora de Piso 14\"', 'Cortadora de piso disco diamantado 14\" 3HP gasolina para concreto, cerámica y asfalto', 'disponible', 120000.00, 1, NULL),
+(4, 'Compresor Industrial 100L', 'Compresor de tornillo 100L 3HP eléctrico, presión máx 125PSI con set de manguera y pistola', 'alquilada', 100000.00, 1, NULL),
+(5, 'Andamio Tubular x3 tramos', 'Andamio multidireccional galvanizado, juego de 3 tramos altura máx 6m con plataforma y ruedas', 'alquilada', 60000.00, 1, NULL),
+(6, 'Martillo Demoledor 11kg', 'Martillo demoledor eléctrico SDS-MAX 1500W 11kg con cinceles plano y punta', 'disponible', 70000.00, 1, NULL),
+(7, 'Generador Eléctrico 5kW', 'Generador a gasolina 5kW monofásico 120/240V con AVR, tanque 15L autonomía 8h', 'disponible', 150000.00, 1, NULL),
+(8, 'Pulidora de Pisos 17\"', 'Pulidora de pisos industrial 17\" 1HP 175RPM para ceras, limpieza y brillado', 'disponible', 90000.00, 1, NULL),
+(9, 'Elevador de Materiales 200kg', 'Montacargas/elevador de materiales 200kg, altura máx 30m, motor eléctrico trifásico', 'disponible', 200000.00, 1, NULL),
+(10, 'Esmeril de Banco 8\"', 'Esmeril de banco 750W disco doble 8\" para afilado y desbaste de metales y herramientas', 'disponible', 40000.00, 1, NULL),
+(11, 'Hidrolavadora 2500PSI', 'Hidrolavadora de alta presión 2500PSI 2HP eléctrica con manguera 8m y lanza regulable', 'disponible', 85000.00, 1, NULL),
+(12, 'Dobladora de Varilla Manual', 'Dobladora manual de varilla hasta 5/8\", capacidad de doble y corte, estructura metálica reforzada', 'disponible', 35000.00, 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -210,29 +361,72 @@ CREATE TABLE IF NOT EXISTS `productos` (
   `nombre` varchar(150) NOT NULL,
   `descripcion` text DEFAULT NULL,
   `categoria` varchar(80) NOT NULL,
-  `precio` decimal(10,2) NOT NULL CHECK (`precio` >= 0),
-  `stock_actual` int(11) NOT NULL DEFAULT 0 CHECK (`stock_actual` >= 0),
-  `stock_minimo` int(11) NOT NULL DEFAULT 0 CHECK (`stock_minimo` >= 0),
+  `precio` decimal(10,2) NOT NULL,
+  `stock_actual` int(11) NOT NULL DEFAULT 0,
+  `stock_minimo` int(11) NOT NULL DEFAULT 0,
   `activo` tinyint(1) NOT NULL DEFAULT 1,
   `img` varchar(150) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_productos_codigo` (`codigo`),
   KEY `idx_productos_stock` (`stock_actual`,`stock_minimo`),
   KEY `idx_productos_categoria` (`categoria`)
-) ENGINE=InnoDB AUTO_INCREMENT=2014 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `productos`
 --
 
 INSERT INTO `productos` (`id`, `codigo`, `nombre`, `descripcion`, `categoria`, `precio`, `stock_actual`, `stock_minimo`, `activo`, `img`) VALUES
-(2007, '1010', 'TALADRO', 'TALADRA INALAMBRICO 20 wats', 'herramientas_electricas', 500000.00, 10, 3, 1, 'Taladro.png'),
-(2008, '1011', 'MANGUERA', 'MANGUERA AGUA 3 METROS', 'fontaneria', 80000.00, 30, 2, 1, 'manguera.png'),
-(2009, '1012', 'Caja de Puntillas', 'Puntilla 1/2', 'materiales', 5500.00, 12, 5, 1, 'puntilla.png'),
-(2010, '2007', 'Cable cobre 1/2\'', '11', 'electricidad', 10000.00, 5, 1, 1, 'prod_1775875932_69d9b75ca1500.png'),
-(2011, '2008', 'Cable cobre 1/2\'', 'jeje', 'pintura', 10000.00, 1, 5, 1, 'prod_1775875284_69d9b4d4d8a4a.png'),
-(2012, '2009', 'Cinta 100 m', 'Cinta muy buena', 'herramientas_manuales', 500000.00, 5, 1, 1, 'prod_1775793145_69d873f9efc2b.png'),
-(2013, '2040', 'Pulidora', 'pule madera y mucho más', 'herramientas_electricas', 500000.00, 5, 2, 1, 'prod_1775850330_69d9535a2c224.png');
+(1, 'HE-001', 'Taladro Percutor 13mm', 'Taladro percutor 700W con reversa y velocidad variable', 'herramientas_electricas', 289000.00, 14, 3, 1, NULL),
+(2, 'HE-002', 'Taladro Inalámbrico 20V', 'Taladro inalámbrico brushless con batería de litio 2Ah', 'herramientas_electricas', 480000.00, 10, 2, 1, NULL),
+(3, 'HE-003', 'Pulidora Angular 4½\"', 'Pulidora angular 800W con disco de corte incluido', 'herramientas_electricas', 195000.00, 11, 3, 1, NULL),
+(4, 'HE-004', 'Sierra Circular 7¼\"', 'Sierra circular 1200W con guía paralela y disco 24 dientes', 'herramientas_electricas', 320000.00, 8, 2, 1, NULL),
+(5, 'HE-005', 'Caladora Eléctrica 500W', 'Caladora 500W con pendulo de 4 posiciones, suela metálica', 'herramientas_electricas', 210000.00, 6, 2, 1, NULL),
+(6, 'HE-006', 'Lijadora Orbital 180W', 'Lijadora orbital 180W con bolsa recolectora de polvo', 'herramientas_electricas', 150000.00, 9, 2, 1, NULL),
+(7, 'HE-007', 'Atornillador Inalámbrico 12V', 'Atornillador inalámbrico 12V con 2 baterías y maletín', 'herramientas_electricas', 260000.00, 8, 2, 1, NULL),
+(8, 'HE-008', 'Compresor de Aire 24L', 'Compresor de aire 1HP 24L con manómetro de doble escala', 'herramientas_electricas', 550000.00, 5, 1, 1, NULL),
+(9, 'HM-001', 'Martillo Carpintero 16oz', 'Martillo de carpintero mango fibra de vidrio antivibraciones', 'herramientas_manuales', 32000.00, 29, 5, 1, NULL),
+(10, 'HM-002', 'Juego de Llaves Mixtas x12', 'Set 12 llaves mixtas cromo vanadio 8–19mm', 'herramientas_manuales', 85000.00, 19, 4, 1, NULL),
+(11, 'HM-003', 'Destornillador Pala 6\"', 'Destornillador pala mango bimaterial hoja 150mm', 'herramientas_manuales', 12000.00, 38, 8, 1, NULL),
+(12, 'HM-004', 'Destornillador Estrella #2', 'Destornillador Phillips #2 mango bimaterial hoja 125mm', 'herramientas_manuales', 12000.00, 38, 8, 1, NULL),
+(13, 'HM-005', 'Alicate Universal 8\"', 'Alicate universal aislado 1000V 200mm', 'herramientas_manuales', 28000.00, 24, 5, 1, NULL),
+(14, 'HM-006', 'Cinta Métrica 5m', 'Cinta métrica 5m x19mm con freno y gancho magnético', 'herramientas_manuales', 18000.00, 34, 5, 1, NULL),
+(15, 'HM-007', 'Nivel Aluminio 60cm', 'Nivel de aluminio 3 burbujas, 60cm de longitud', 'herramientas_manuales', 42000.00, 17, 3, 1, NULL),
+(16, 'HM-008', 'Serrucho 22\"', 'Serrucho 22\" con dientes endurecidos por inducción', 'herramientas_manuales', 35000.00, 14, 3, 1, NULL),
+(17, 'HM-009', 'Llave Stilson 14\"', 'Llave stilson de 14\" con mandíbulas reforzadas', 'herramientas_manuales', 48000.00, 11, 2, 1, NULL),
+(18, 'HM-010', 'Espátula Metálica 4\"', 'Espátula metálica 4\" mango plástico reforzado', 'herramientas_manuales', 14000.00, 30, 5, 1, NULL),
+(19, 'MC-001', 'Cemento Gris 50kg', 'Cemento Portland gris tipo I resistencia 3000 PSI', 'materiales', 28000.00, 72, 20, 1, NULL),
+(20, 'MC-002', 'Varilla Corrugada 3/8\" x6m', 'Varilla corrugada acero 60 3/8\" longitud 6 metros', 'materiales', 18500.00, 50, 15, 1, NULL),
+(21, 'MC-003', 'Arena Fina x bulto 40kg', 'Arena fina lavada para repellos y enchapes, bulto 40kg', 'materiales', 8000.00, 95, 25, 1, NULL),
+(22, 'MC-004', 'Ladrillo Bloque #4 x unidad', 'Bloque de arcilla #4 para mampostería estructural', 'materiales', 1800.00, 450, 50, 1, NULL),
+(23, 'MC-005', 'Plancha Fibrocemento 1.22x2.44', 'Plancha fibrocemento 6mm para cielos rasos y paredes', 'materiales', 55000.00, 26, 5, 1, NULL),
+(24, 'MC-006', 'Puntilla 2½\" x500g', 'Puntilla lisa brillante 2½\" presentación 500 gramos', 'materiales', 6500.00, 48, 10, 1, NULL),
+(25, 'MC-007', 'Tornillo Drywall 3½\" x100und', 'Tornillo drywall fosfatado 3½\" x 100 unidades', 'materiales', 9000.00, 38, 8, 1, NULL),
+(26, 'MC-008', 'Pernos Expansores 3/8\" x25und', 'Taco fisher 3/8\" con perno, bolsa x25 unidades', 'materiales', 12000.00, 33, 5, 1, NULL),
+(27, 'FP-001', 'Tubo PVC Presión 1/2\" x6m', 'Tubo PVC presión RDE-13.5 diámetro 1/2\" longitud 6m', 'plomeria', 15000.00, 28, 8, 1, NULL),
+(28, 'FP-002', 'Tubo PVC Presión 1\" x6m', 'Tubo PVC presión RDE-21 diámetro 1\" longitud 6m', 'plomeria', 24000.00, 28, 6, 1, NULL),
+(29, 'FP-003', 'Codo PVC 90° 1/2\" x bolsa 10', 'Codo PVC presión 90° de 1/2\", bolsa de 10 unidades', 'plomeria', 9500.00, 23, 5, 1, NULL),
+(30, 'FP-004', 'Llave de Paso 1/2\" esfera', 'Llave de paso esférica 1/2\" latón cromado', 'plomeria', 22000.00, 15, 4, 1, NULL),
+(31, 'FP-005', 'Manguera Jardín 1/2\" x15m', 'Manguera flexible 1/2\" x15m con pistola de 7 funciones', 'plomeria', 65000.00, 14, 3, 1, NULL),
+(32, 'FP-006', 'Sifón PVC para Lavaplatos', 'Sifón extensible PVC blanco con tubo de desagüe 40mm', 'plomeria', 18000.00, 19, 4, 1, NULL),
+(33, 'FP-007', 'Teflón Rollo 10m x19mm', 'Cinta teflón para uniones roscadas, rollo 10m ancho 19mm', 'plomeria', 3500.00, 57, 10, 1, NULL),
+(34, 'EL-001', 'Cable THW 12 AWG x100m', 'Carrete cable THW 12AWG ICONTEC resistencia 20A', 'electricidad', 95000.00, 19, 4, 1, NULL),
+(35, 'EL-002', 'Cable Dúplex 2x12 AWG x50m', 'Carrete cable dúplex 2x12AWG para circuitos domiciliarios', 'electricidad', 68000.00, 17, 3, 1, NULL),
+(36, 'EL-003', 'Toma Corriente Doble 15A', 'Toma corriente doble polarizado 15A 125V con placa', 'electricidad', 14000.00, 32, 6, 1, NULL),
+(37, 'EL-004', 'Interruptor Sencillo 10A', 'Interruptor sencillo 10A 250V con placa blanca', 'electricidad', 12000.00, 36, 8, 1, NULL),
+(38, 'EL-005', 'Caja Breaker 4 circuitos', 'Caja breaker din-rail 4 circuitos con puerta transparente', 'electricidad', 75000.00, 9, 2, 1, NULL),
+(39, 'EL-006', 'Breaker Bipolar 20A', 'Disyuntor termomagnético bipolar 20A 240V ICONTEC', 'electricidad', 35000.00, 13, 3, 1, NULL),
+(40, 'EL-007', 'Conduit EMT 3/4\" x3m', 'Conduit de acero esmaltado 3/4\" longitud 3 metros', 'electricidad', 22000.00, 22, 5, 1, NULL),
+(41, 'EL-008', 'Multímetro Digital DT830', 'Multímetro digital VCA/VCC/Amperios/Ohms DT830B', 'electricidad', 45000.00, 11, 2, 1, NULL),
+(42, 'PA-001', 'Pintura Vinilo Interior 1GL', 'Pintura vinilo interior acabado mate lavable, galón', 'pintura', 58000.00, 24, 5, 1, NULL),
+(43, 'PA-002', 'Pintura Vinilo Exterior 1GL', 'Pintura vinilo exterior resistente a la intemperie, galón', 'pintura', 72000.00, 22, 5, 1, NULL),
+(44, 'PA-003', 'Rodillo de Felpa 9\" con Marco', 'Rodillo de felpa corta 9\" con marco metálico', 'pintura', 18000.00, 17, 4, 1, NULL),
+(45, 'PA-004', 'Brocha Cerda Natural 3\"', 'Brocha cerda natural 3\" para esmalte y pintura base aceite', 'pintura', 12000.00, 28, 5, 1, NULL),
+(46, 'PA-005', 'Masilla Multipropósito 4kg', 'Masilla lista para usar en paredes y cielos rasos, balde 4kg', 'pintura', 32000.00, 18, 4, 1, NULL),
+(47, 'PA-006', 'Lija Grano 80 x5 hojas', 'Lija abrasiva papel grano 80, presentación x5 hojas', 'pintura', 7500.00, 36, 8, 1, NULL),
+(48, 'PA-007', 'Sellador Acrílico Blanco 300ml', 'Sellador acrílico blanco para juntas interiores, cartucho', 'pintura', 15000.00, 22, 5, 1, NULL),
+(49, 'SI-001', 'Casco Seguridad Tipo I Blanco', 'Casco de seguridad Tipo I ABS blanco con ajuste deslizante', 'seguridad', 28000.00, 15, 4, 1, NULL),
+(50, 'SI-002', 'Gafas de Seguridad Clara', 'Gafas de seguridad policarbonato clara antiempañante ANSI', 'seguridad', 12000.00, 28, 5, 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -251,23 +445,31 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   `activo` tinyint(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_usuarios_email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `usuarios`
 --
 
 INSERT INTO `usuarios` (`id`, `nombre`, `email`, `contrasena_hash`, `rol`, `fecha_creacion`, `activo`) VALUES
-(1, 'Administrador', 'admin@jamarraya.com', '$2y$10$COjYgEh85KJy9XEcmn7cmOjAPtTmbuqqKKyjZQpxM0F/07AxctXuu', 'admin', '2026-03-31 09:49:50', 1),
-(2, 'poka1234', 'poka@jamarraya.com', '1234', 'admin', '2026-03-31 11:25:43', 1),
-(3, 'Juan', 'd.rivas@gmail.com', '$2y$10$vuet6ImcjOiMsmCHURVkuO2U9RpUsY2xtnZudcJdyEZ5JMSrhZPSa', 'empleado', '2026-04-07 15:27:41', 1),
-(4, 'nico valencia', 'nico@jamarraya.com', '$2y$10$bKc/sHBlZSkVQV6jYwd0GO3Dz0QqDKhu6t/fs.P9TaicGYRyFaeNq', 'cliente', '2026-04-07 15:28:47', 1),
-(5, 'nico', 'n@gmail.com', '$2y$10$pZ0NvKtHodFdym2CvH4PluD5VKOmapD7nvZ5vPwVF5ZCoidWIVje2', 'admin', '2026-04-07 15:34:20', 1),
-(6, 'Marta', 'marta@gmail.com', '$2y$10$Ka2cfqGfULHKTHf9mcjRguoEQS6lwvLAtEuPRuAoBTuQ/nOnY3Eei', 'cliente', '2026-04-08 00:03:59', 1),
-(7, 'Jose', 'jose@gmail.com', '$2y$10$cr5RaF6.vDmhYao5DLB.LOnzgO7UaM0tdNAUBZWrvVMuzlxSq/516', 'cliente', '2026-04-08 00:11:09', 1),
-(8, 'pepe', 'pepe@gmail.com', '$2y$10$hMmKD2RO7/NdnSrTFFfMJOEioIPyCxOrkDtpBY546IPN09AY/cbAK', 'cliente', '2026-04-08 20:41:53', 1),
-(9, 'll', 'dd@gmail.com', '$2y$10$8tyoSXpAuqVBSPVTwoD6ie2DnurLLTfviz0xk5VOorgFSurNJ6GY.', 'empleado', '2026-04-08 20:55:48', 1),
-(10, 'q', 'qqq@sss.com', '$2y$10$gRF0qdy2eITU86eMp8zmD.UIPRiXQwYdF7O5iAatTOm5VwolPkcea', 'cliente', '2026-04-08 21:48:53', 1);
+(1, 'Carlos Ramírez', 'admin@jamarraya.com', '$2y$10$T9NsvwHbWXyDqaEVuY0/4.pNu4dxvCR5QP67UOZeUrfmxRUhzp72S', 'admin', '2025-01-10 08:00:00', 1),
+(2, 'Luisa Fernández', 'luisa.fernandez@jamarraya.com', '$2y$10$T9NsvwHbWXyDqaEVuY0/4.pNu4dxvCR5QP67UOZeUrfmxRUhzp72S', 'admin', '2025-01-10 08:05:00', 1),
+(3, 'Andrés Herrera', 'empleado@jamarraya.com', '$2y$10$9OT8UgjG4Q.GMDtEdp4ES.g0SEY8BC1F2iVZ7Jtzau9XaBeGAOC5u', 'empleado', '2025-02-03 09:00:00', 1),
+(4, 'Marcela Torres', 'marcela.torres@jamarraya.com', '$2y$10$9OT8UgjG4Q.GMDtEdp4ES.g0SEY8BC1F2iVZ7Jtzau9XaBeGAOC5u', 'empleado', '2025-02-10 09:00:00', 1),
+(5, 'Felipe Osorio', 'felipe.osorio@jamarraya.com', '$2y$10$9OT8UgjG4Q.GMDtEdp4ES.g0SEY8BC1F2iVZ7Jtzau9XaBeGAOC5u', 'empleado', '2025-03-01 09:00:00', 1),
+(6, 'Valentina Ríos', 'valentina.rios@jamarraya.com', '$2y$10$9OT8UgjG4Q.GMDtEdp4ES.g0SEY8BC1F2iVZ7Jtzau9XaBeGAOC5u', 'empleado', '2025-03-15 09:00:00', 1),
+(7, 'Jorge Salcedo', 'jorge.salcedo@jamarraya.com', '$2y$10$9OT8UgjG4Q.GMDtEdp4ES.g0SEY8BC1F2iVZ7Jtzau9XaBeGAOC5u', 'empleado', '2025-04-01 09:00:00', 1),
+(8, 'Diana Muñoz', 'diana.munoz@jamarraya.com', '$2y$10$9OT8UgjG4Q.GMDtEdp4ES.g0SEY8BC1F2iVZ7Jtzau9XaBeGAOC5u', 'empleado', '2025-04-20 09:00:00', 1),
+(9, 'Pedro Gómez', 'cliente@gmail.com', '$2y$10$IBN8zrQqH9eXXcFWyIVqj.m9x36sASXxmGqGAKEpJgZTG6Aloewii', 'cliente', '2025-05-05 10:00:00', 1),
+(10, 'Ana Morales', 'ana.morales@gmail.com', '$2y$10$IBN8zrQqH9eXXcFWyIVqj.m9x36sASXxmGqGAKEpJgZTG6Aloewii', 'cliente', '2025-05-12 10:00:00', 1),
+(11, 'Ricardo Zapata', 'ricardo.zapata@gmail.com', '$2y$10$IBN8zrQqH9eXXcFWyIVqj.m9x36sASXxmGqGAKEpJgZTG6Aloewii', 'cliente', '2025-06-01 10:00:00', 1),
+(12, 'Sofía Castillo', 'sofia.castillo@gmail.com', '$2y$10$IBN8zrQqH9eXXcFWyIVqj.m9x36sASXxmGqGAKEpJgZTG6Aloewii', 'cliente', '2025-06-18 10:00:00', 1),
+(13, 'Hernán Vargas', 'hernan.vargas@gmail.com', '$2y$10$IBN8zrQqH9eXXcFWyIVqj.m9x36sASXxmGqGAKEpJgZTG6Aloewii', 'cliente', '2025-07-03 10:00:00', 1),
+(14, 'Camila Restrepo', 'camila.restrepo@gmail.com', '$2y$10$IBN8zrQqH9eXXcFWyIVqj.m9x36sASXxmGqGAKEpJgZTG6Aloewii', 'cliente', '2025-07-22 10:00:00', 1),
+(15, 'Luis Arango', 'luis.arango@gmail.com', '$2y$10$IBN8zrQqH9eXXcFWyIVqj.m9x36sASXxmGqGAKEpJgZTG6Aloewii', 'cliente', '2025-08-08 10:00:00', 1),
+(16, 'Natalia Patiño', 'natalia.patino@gmail.com', '$2y$10$IBN8zrQqH9eXXcFWyIVqj.m9x36sASXxmGqGAKEpJgZTG6Aloewii', 'cliente', '2025-08-30 10:00:00', 1),
+(17, 'Sebastián Cano', 'sebastian.cano@gmail.com', '$2y$10$IBN8zrQqH9eXXcFWyIVqj.m9x36sASXxmGqGAKEpJgZTG6Aloewii', 'cliente', '2025-09-15 10:00:00', 1),
+(18, 'Juliana Mejía', 'juliana.mejia@gmail.com', '$2y$10$IBN8zrQqH9eXXcFWyIVqj.m9x36sASXxmGqGAKEpJgZTG6Aloewii', 'cliente', '2025-10-01 10:00:00', 1);
 
 -- --------------------------------------------------------
 
@@ -288,7 +490,34 @@ CREATE TABLE IF NOT EXISTS `ventas` (
   KEY `fk_ventas_usuario` (`id_usuario`),
   KEY `idx_ventas_fecha` (`fecha`),
   KEY `idx_ventas_cliente` (`id_cliente`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `ventas`
+--
+
+INSERT INTO `ventas` (`id`, `id_cliente`, `id_usuario`, `fecha`, `total`, `comprobante`) VALUES
+(1, 1, 3, '2026-01-12 10:15:00', 307000.00, 'VTA-20260112-001'),
+(2, 2, 4, '2026-01-18 11:30:00', 177000.00, 'VTA-20260118-002'),
+(3, 3, 3, '2026-01-25 09:45:00', 89500.00, 'VTA-20260125-003'),
+(4, 4, 5, '2026-02-03 14:00:00', 158000.00, 'VTA-20260203-004'),
+(5, 5, 6, '2026-02-10 10:30:00', 185000.00, 'VTA-20260210-005'),
+(6, 1, 3, '2026-02-17 16:00:00', 201000.00, 'VTA-20260217-006'),
+(7, 6, 7, '2026-02-24 11:00:00', 102000.00, 'VTA-20260224-007'),
+(8, 7, 4, '2026-03-03 09:30:00', 98000.00, 'VTA-20260303-008'),
+(9, 8, 5, '2026-03-10 13:15:00', 127000.00, 'VTA-20260310-009'),
+(10, 9, 8, '2026-03-15 10:00:00', 190000.00, 'VTA-20260315-010'),
+(11, 10, 6, '2026-03-20 11:45:00', 310000.00, 'VTA-20260320-011'),
+(12, 2, 3, '2026-03-25 09:00:00', 345000.00, 'VTA-20260325-012'),
+(13, 3, 7, '2026-03-28 14:30:00', 244000.00, 'VTA-20260328-013'),
+(14, 4, 4, '2026-04-02 10:00:00', 168000.00, 'VTA-20260402-014'),
+(15, 5, 5, '2026-04-05 15:00:00', 174000.00, 'VTA-20260405-015'),
+(16, 6, 8, '2026-04-08 11:30:00', 134000.00, 'VTA-20260408-016'),
+(17, 7, 3, '2026-04-12 09:15:00', 313000.00, 'VTA-20260412-017'),
+(18, 8, 6, '2026-04-16 13:00:00', 132000.00, 'VTA-20260416-018'),
+(19, 9, 7, '2026-04-20 10:45:00', 204000.00, 'VTA-20260420-019'),
+(20, 10, 4, '2026-04-22 16:30:00', 470000.00, 'VTA-20260422-020'),
+(21, 5, 1, '2026-04-24 16:57:24', 30000.00, 'VTA-20260424-11062');
 
 --
 -- Restricciones para tablas volcadas
