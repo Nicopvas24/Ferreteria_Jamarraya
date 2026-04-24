@@ -4,6 +4,7 @@
 // ============================================================
 
 require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/logger.php';
 
 session_start();
 
@@ -16,6 +17,7 @@ if (!isset($_SESSION['id_usuario'])) {
 header('Content-Type: application/json');
 
 $pdo = conectar();
+audit_log_request($pdo, 'backend/dashboard.php', 'resumen');
 
 // ---- Ventas de hoy ----
 $stmt = $pdo->query("SELECT COUNT(*) AS total, COALESCE(SUM(total), 0) AS ingresos
@@ -107,3 +109,9 @@ echo json_encode([
     'alertas'             => $alertas,
     'ventas_recientes'    => $ventasRecientes,
 ]);
+
+audit_log($pdo, 'DASHBOARD_CONSULTA', 'dashboard', null, [
+    'ventas_hoy' => (int)$hoy['total'],
+    'alquileres_activos' => (int)$alquileres['total'],
+    'stock_critico' => (int)$stockBajo['total']
+], (int)$_SESSION['id_usuario']);

@@ -6,6 +6,7 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
 require_once __DIR__ . '/../conexion.php';
+require_once __DIR__ . '/../logger.php';
 
 session_start();
 
@@ -28,6 +29,8 @@ if (!$accion && $_SERVER['REQUEST_METHOD'] === 'POST') {
 } else if (!$accion) {
     $accion = 'listar';
 }
+
+// audit_log_request($pdo, 'api/clientes.php', $accion ?: 'listar');
 
 switch ($accion) {
 
@@ -67,6 +70,7 @@ switch ($accion) {
         }
 
         echo json_encode($clientes);
+        // audit_log($pdo, 'CLIENTES_LISTAR', 'clientes', null, ['total' => count($clientes), 'buscar' => $buscar], $_SESSION['id_usuario'] ?? null);
         break;
 
     // ----------------------------------------------------------
@@ -74,12 +78,12 @@ switch ($accion) {
     // ----------------------------------------------------------
     case 'detalle':
         $id = (int)($_GET['id'] ?? 0);
-        if (!$id) { http_response_code(400); echo json_encode(['error' => 'ID requerido']); exit; }
+        if (!$id) { http_response_code(400); audit_log($pdo, 'CLIENTE_DETALLE_FALLIDO', 'clientes', null, ['motivo' => 'id_requerido'], $_SESSION['id_usuario'] ?? null); echo json_encode(['error' => 'ID requerido']); exit; }
 
         $stmt = $pdo->prepare("SELECT * FROM clientes WHERE id = ?");
         $stmt->execute([$id]);
         $cliente = $stmt->fetch();
-        if (!$cliente) { http_response_code(404); echo json_encode(['error' => 'No encontrado']); exit; }
+        if (!$cliente) { http_response_code(404); audit_log($pdo, 'CLIENTE_DETALLE_FALLIDO', 'clientes', $id, ['motivo' => 'no_encontrado'], $_SESSION['id_usuario'] ?? null); echo json_encode(['error' => 'No encontrado']); exit; }
 
         // Últimas 10 ventas
         $stmt2 = $pdo->prepare("SELECT id, comprobante, fecha, total
@@ -99,6 +103,7 @@ switch ($accion) {
         $cliente['alquileres'] = $stmt3->fetchAll();
 
         echo json_encode($cliente);
+        // audit_log($pdo, 'CLIENTE_DETALLE', 'clientes', $id, ['ventas' => count($cliente['ventas']), 'alquileres' => count($cliente['alquileres'])], $_SESSION['id_usuario'] ?? null);
         break;
 
     // ----------------------------------------------------------
@@ -163,9 +168,13 @@ switch ($accion) {
                                    VALUES (?, ?, ?, ?, ?, ?)");
             $stmt->execute([$id_usuario, $nombre, $identificacion, $telefono, $email, $direccion]);
 
-            echo json_encode(['ok' => true, 'id_cliente' => (int)$pdo->lastInsertId(), 'id' => (int)$pdo->lastInsertId()]);
+            $idCliente = (int)$pdo->lastInsertId();
+            audit_log($pdo, 'CLIENTE_REGISTRADO', 'clientes', $idCliente, ['identificacion' => $identificacion, 'email' => $email], $_SESSION['id_usuario'] ?? null);
+
+            echo json_encode(['ok' => true, 'id_cliente' => $idCliente, 'id' => $idCliente]);
         } catch (Exception $e) {
             http_response_code(500);
+            audit_log($pdo, 'CLIENTE_REGISTRAR_ERROR', 'clientes', null, ['error' => $e->getMessage()], $_SESSION['id_usuario'] ?? null);
             echo json_encode(['error' => 'Error en base de datos: ' . $e->getMessage()]);
         }
         break;
@@ -224,14 +233,18 @@ switch ($accion) {
                 $id
             ]);
 
+            audit_log($pdo, 'CLIENTE_EDITADO', 'clientes', $id, ['identificacion' => $identificacion, 'email' => $email], $_SESSION['id_usuario'] ?? null);
+
             echo json_encode(['ok' => true]);
         } catch (Exception $e) {
             http_response_code(500);
+            audit_log($pdo, 'CLIENTE_EDITAR_ERROR', 'clientes', $id ?? null, ['error' => $e->getMessage()], $_SESSION['id_usuario'] ?? null);
             echo json_encode(['error' => 'Error en base de datos: ' . $e->getMessage()]);
         }
         break;
 
     default:
         http_response_code(400);
+        audit_log($pdo, 'ACCION_NO_VALIDA', 'api', null, ['endpoint' => 'api/clientes.php', 'accion' => $accion], $_SESSION['id_usuario'] ?? null);
         echo json_encode(['error' => 'Acción no válida']);
 }

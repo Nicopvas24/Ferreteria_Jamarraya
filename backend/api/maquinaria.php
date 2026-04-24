@@ -6,6 +6,7 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
 require_once __DIR__ . '/../conexion.php';
+require_once __DIR__ . '/../logger.php';
 
 session_start();
 
@@ -17,6 +18,8 @@ if (!isset($_SESSION['id_usuario'])) {
 
 $pdo    = conectar();
 $accion = $_GET['accion'] ?? $_POST['accion'] ?? 'listar';
+
+// audit_log_request($pdo, 'api/maquinaria.php', $accion);
 
 switch ($accion) {
 
@@ -42,17 +45,18 @@ switch ($accion) {
         }
 
         echo json_encode($maq);
+        // audit_log($pdo, 'MAQUINARIA_LISTAR', 'maquinaria', null, ['total' => count($maq), 'filtro_estado' => $estado], (int)$_SESSION['id_usuario']);
         break;
 
     case 'detalle':
         $id = (int)($_GET['id'] ?? 0);
-        if (!$id) { http_response_code(400); echo json_encode(['error' => 'ID requerido']); exit; }
+        if (!$id) { http_response_code(400); audit_log($pdo, 'MAQUINARIA_DETALLE_FALLIDO', 'maquinaria', null, ['motivo' => 'id_requerido'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'ID requerido']); exit; }
 
         $stmt = $pdo->prepare("SELECT * FROM maquinaria WHERE id = ?");
         $stmt->execute([$id]);
         $m = $stmt->fetch();
 
-        if (!$m) { http_response_code(404); echo json_encode(['error' => 'No encontrada']); exit; }
+        if (!$m) { http_response_code(404); audit_log($pdo, 'MAQUINARIA_DETALLE_FALLIDO', 'maquinaria', $id, ['motivo' => 'no_encontrada'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'No encontrada']); exit; }
 
         // Historial de alquileres de esta máquina
         $stmt2 = $pdo->prepare("SELECT a.id, a.fecha_inicio, a.fecha_fin, a.monto, a.estado,
@@ -65,29 +69,33 @@ switch ($accion) {
         $m['historial'] = $stmt2->fetchAll();
 
         echo json_encode($m);
+        // audit_log($pdo, 'MAQUINARIA_DETALLE', 'maquinaria', $id, ['historial_items' => count($m['historial'])], (int)$_SESSION['id_usuario']);
         break;
 
     case 'obtener':
         $id = (int)($_GET['id'] ?? 0);
-        if (!$id) { http_response_code(400); echo json_encode(['error' => 'ID requerido']); exit; }
+        if (!$id) { http_response_code(400);
+        }
+        //  audit_log($pdo, 'MAQUINARIA_OBTENER_FALLIDO', 'maquinaria', null, ['motivo' => 'id_requerido'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'ID requerido']); exit; }
 
         $stmt = $pdo->prepare("SELECT * FROM maquinaria WHERE id = ?");
         $stmt->execute([$id]);
         $m = $stmt->fetch();
 
-        if (!$m) { http_response_code(404); echo json_encode(['error' => 'No encontrada']); exit; }
+        if (!$m) { http_response_code(404); audit_log($pdo, 'MAQUINARIA_OBTENER_FALLIDO', 'maquinaria', $id, ['motivo' => 'no_encontrada'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'No encontrada']); exit; }
 
         echo json_encode($m);
+        //  audit_log($pdo, 'MAQUINARIA_OBTENER', 'maquinaria', $id, null, (int)$_SESSION['id_usuario']);
         break;
 
     case 'registrar':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405); echo json_encode(['error' => 'Método no permitido']); exit;
+            http_response_code(405); audit_log($pdo, 'MAQUINARIA_REGISTRAR_DENEGADO', 'maquinaria', null, ['motivo' => 'metodo_no_permitido'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'Método no permitido']); exit;
         }
 
         // Solo admin
         if ($_SESSION['rol'] !== 'admin') {
-            http_response_code(403); echo json_encode(['error' => 'Sin permisos']); exit;
+            http_response_code(403); audit_log($pdo, 'MAQUINARIA_REGISTRAR_DENEGADO', 'maquinaria', null, ['motivo' => 'sin_permisos'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'Sin permisos']); exit;
         }
 
         $nombre         = trim($_POST['nombre']         ?? '');
@@ -98,6 +106,7 @@ switch ($accion) {
 
         if (!$nombre || !$tarifa_alquiler) {
             http_response_code(400);
+            audit_log($pdo, 'MAQUINARIA_REGISTRAR_FALLIDO', 'maquinaria', null, ['motivo' => 'campos_requeridos', 'nombre' => $nombre], (int)$_SESSION['id_usuario']);
             echo json_encode(['error' => 'Nombre y tarifa son requeridos']);
             exit;
         }
@@ -106,6 +115,7 @@ switch ($accion) {
         $estadosValidos = ['disponible', 'alquilada', 'mantenimiento'];
         if (!in_array($estado, $estadosValidos)) {
             http_response_code(400);
+            audit_log($pdo, 'MAQUINARIA_REGISTRAR_FALLIDO', 'maquinaria', null, ['motivo' => 'estado_invalido', 'estado' => $estado], (int)$_SESSION['id_usuario']);
             echo json_encode(['error' => 'Estado no válido']);
             exit;
         }
@@ -176,20 +186,24 @@ switch ($accion) {
                                    VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([$nombre, $descripcion, $estado, $tarifa_alquiler, $img]);
 
-            echo json_encode(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
+            $idNueva = (int)$pdo->lastInsertId();
+            audit_log($pdo, 'MAQUINARIA_REGISTRADA', 'maquinaria', $idNueva, ['nombre' => $nombre, 'estado' => $estado], (int)$_SESSION['id_usuario']);
+
+            echo json_encode(['ok' => true, 'id' => $idNueva]);
         } catch (PDOException $e) {
             http_response_code(500);
+            audit_log($pdo, 'MAQUINARIA_REGISTRAR_ERROR', 'maquinaria', null, ['error' => $e->getMessage(), 'nombre' => $nombre], (int)$_SESSION['id_usuario']);
             echo json_encode(['error' => 'Error al guardar en base de datos: ' . $e->getMessage()]);
         }
         break;
 
     case 'editar':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405); echo json_encode(['error' => 'Método no permitido']); exit;
+            http_response_code(405); audit_log($pdo, 'MAQUINARIA_EDITAR_DENEGADO', 'maquinaria', null, ['motivo' => 'metodo_no_permitido'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'Método no permitido']); exit;
         }
 
         if ($_SESSION['rol'] !== 'admin') {
-            http_response_code(403); echo json_encode(['error' => 'Sin permisos']); exit;
+            http_response_code(403); audit_log($pdo, 'MAQUINARIA_EDITAR_DENEGADO', 'maquinaria', null, ['motivo' => 'sin_permisos'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'Sin permisos']); exit;
         }
 
         $id    = (int)($_POST['id'] ?? 0);
@@ -198,15 +212,16 @@ switch ($accion) {
         $tarifa_alquiler = (float)($_POST['tarifa_alquiler'] ?? 0);
         $estado = trim($_POST['estado'] ?? '');
 
-        if (!$id) { http_response_code(400); echo json_encode(['error' => 'ID requerido']); exit; }
-        if (!$nombre) { http_response_code(400); echo json_encode(['error' => 'Nombre requerido']); exit; }
-        if (!$tarifa_alquiler) { http_response_code(400); echo json_encode(['error' => 'Tarifa requerida']); exit; }
+        if (!$id) { http_response_code(400); audit_log($pdo, 'MAQUINARIA_EDITAR_FALLIDO', 'maquinaria', null, ['motivo' => 'id_requerido'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'ID requerido']); exit; }
+        if (!$nombre) { http_response_code(400); audit_log($pdo, 'MAQUINARIA_EDITAR_FALLIDO', 'maquinaria', $id, ['motivo' => 'nombre_requerido'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'Nombre requerido']); exit; }
+        if (!$tarifa_alquiler) { http_response_code(400); audit_log($pdo, 'MAQUINARIA_EDITAR_FALLIDO', 'maquinaria', $id, ['motivo' => 'tarifa_requerida'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'Tarifa requerida']); exit; }
         
         // Validar estado si fue proporcionado
         if ($estado) {
             $estadosValidos = ['disponible', 'alquilada', 'mantenimiento'];
             if (!in_array($estado, $estadosValidos)) {
                 http_response_code(400);
+                audit_log($pdo, 'MAQUINARIA_EDITAR_FALLIDO', 'maquinaria', $id, ['motivo' => 'estado_invalido', 'estado' => $estado], (int)$_SESSION['id_usuario']);
                 echo json_encode(['error' => 'Estado no válido']);
                 exit;
             }
@@ -220,6 +235,7 @@ switch ($accion) {
 
             if (!$maq) {
                 http_response_code(404);
+                audit_log($pdo, 'MAQUINARIA_EDITAR_FALLIDO', 'maquinaria', $id, ['motivo' => 'no_encontrada'], (int)$_SESSION['id_usuario']);
                 echo json_encode(['error' => 'Maquinaria no encontrada']);
                 exit;
             }
@@ -299,27 +315,30 @@ switch ($accion) {
                                    WHERE id=?");
             $stmt->execute($valores);
 
+            audit_log($pdo, 'MAQUINARIA_EDITADA', 'maquinaria', $id, ['nombre' => $nombre, 'estado' => $estado ?: 'sin_cambio'], (int)$_SESSION['id_usuario']);
+
             echo json_encode(['ok' => true, 'mensaje' => 'Maquinaria actualizada correctamente']);
 
         } catch (PDOException $e) {
             http_response_code(500);
+            audit_log($pdo, 'MAQUINARIA_EDITAR_ERROR', 'maquinaria', $id ?: null, ['error' => $e->getMessage()], (int)$_SESSION['id_usuario']);
             echo json_encode(['error' => 'Error en BD: ' . $e->getMessage()]);
         }
         break;
 
     case 'cambiar_estado':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405); echo json_encode(['error' => 'Método no permitido']); exit;
+            http_response_code(405); audit_log($pdo, 'MAQUINARIA_CAMBIAR_ESTADO_DENEGADO', 'maquinaria', null, ['motivo' => 'metodo_no_permitido'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'Método no permitido']); exit;
         }
 
         if ($_SESSION['rol'] !== 'admin') {
-            http_response_code(403); echo json_encode(['error' => 'Sin permisos']); exit;
+            http_response_code(403); audit_log($pdo, 'MAQUINARIA_CAMBIAR_ESTADO_DENEGADO', 'maquinaria', null, ['motivo' => 'sin_permisos'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'Sin permisos']); exit;
         }
 
         $id = (int)($_POST['id'] ?? 0);
         $activo = (int)($_POST['activo'] ?? 0);
 
-        if (!$id) { http_response_code(400); echo json_encode(['error' => 'ID requerido']); exit; }
+        if (!$id) { http_response_code(400); audit_log($pdo, 'MAQUINARIA_CAMBIAR_ESTADO_FALLIDO', 'maquinaria', null, ['motivo' => 'id_requerido'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'ID requerido']); exit; }
 
         try {
             // Verificar que exista
@@ -328,6 +347,7 @@ switch ($accion) {
 
             if (!$stmt->fetch()) {
                 http_response_code(404);
+                audit_log($pdo, 'MAQUINARIA_CAMBIAR_ESTADO_FALLIDO', 'maquinaria', $id, ['motivo' => 'no_encontrada'], (int)$_SESSION['id_usuario']);
                 echo json_encode(['ok' => false, 'error' => 'Maquinaria no encontrada']);
                 exit;
             }
@@ -336,26 +356,29 @@ switch ($accion) {
             $stmt = $pdo->prepare("UPDATE maquinaria SET activo = ? WHERE id = ?");
             $stmt->execute([$activo, $id]);
 
+            audit_log($pdo, 'MAQUINARIA_ESTADO_ACTUALIZADO', 'maquinaria', $id, ['activo' => $activo], (int)$_SESSION['id_usuario']);
+
             $mensaje = $activo ? 'Maquinaria activada correctamente' : 'Maquinaria desactivada correctamente';
             echo json_encode(['ok' => true, 'mensaje' => $mensaje]);
 
         } catch (PDOException $e) {
             http_response_code(500);
+            audit_log($pdo, 'MAQUINARIA_CAMBIAR_ESTADO_ERROR', 'maquinaria', $id ?: null, ['error' => $e->getMessage()], (int)$_SESSION['id_usuario']);
             echo json_encode(['error' => 'Error en BD: ' . $e->getMessage()]);
         }
         break;
 
     case 'eliminar':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405); echo json_encode(['error' => 'Método no permitido']); exit;
+            http_response_code(405); audit_log($pdo, 'MAQUINARIA_ELIMINAR_DENEGADO', 'maquinaria', null, ['motivo' => 'metodo_no_permitido'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'Método no permitido']); exit;
         }
 
         if ($_SESSION['rol'] !== 'admin') {
-            http_response_code(403); echo json_encode(['error' => 'Sin permisos']); exit;
+            http_response_code(403); audit_log($pdo, 'MAQUINARIA_ELIMINAR_DENEGADO', 'maquinaria', null, ['motivo' => 'sin_permisos'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'Sin permisos']); exit;
         }
 
         $id = (int)($_POST['id'] ?? 0);
-        if (!$id) { http_response_code(400); echo json_encode(['error' => 'ID requerido']); exit; }
+        if (!$id) { http_response_code(400); audit_log($pdo, 'MAQUINARIA_ELIMINAR_FALLIDO', 'maquinaria', null, ['motivo' => 'id_requerido'], (int)$_SESSION['id_usuario']); echo json_encode(['error' => 'ID requerido']); exit; }
 
         try {
             // Verificar que exista
@@ -364,6 +387,7 @@ switch ($accion) {
 
             if (!$stmt->fetch()) {
                 http_response_code(404);
+                audit_log($pdo, 'MAQUINARIA_ELIMINAR_FALLIDO', 'maquinaria', $id, ['motivo' => 'no_encontrada'], (int)$_SESSION['id_usuario']);
                 echo json_encode(['ok' => false, 'error' => 'Maquinaria no encontrada']);
                 exit;
             }
@@ -372,15 +396,19 @@ switch ($accion) {
             $stmt = $pdo->prepare("UPDATE maquinaria SET activo = 0 WHERE id = ?");
             $stmt->execute([$id]);
 
+            audit_log($pdo, 'MAQUINARIA_DESACTIVADA', 'maquinaria', $id, null, (int)$_SESSION['id_usuario']);
+
             echo json_encode(['ok' => true, 'mensaje' => 'Maquinaria desactivada correctamente']);
 
         } catch (PDOException $e) {
             http_response_code(500);
+            audit_log($pdo, 'MAQUINARIA_ELIMINAR_ERROR', 'maquinaria', $id ?: null, ['error' => $e->getMessage()], (int)$_SESSION['id_usuario']);
             echo json_encode(['error' => 'Error en BD: ' . $e->getMessage()]);
         }
         break;
 
     default:
         http_response_code(400);
+        audit_log($pdo, 'ACCION_NO_VALIDA', 'api', null, ['endpoint' => 'api/maquinaria.php', 'accion' => $accion], (int)$_SESSION['id_usuario']);
         echo json_encode(['error' => 'Acción no válida']);
 }

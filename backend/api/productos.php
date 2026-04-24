@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../conexion.php';
+require_once __DIR__ . '/../logger.php';
 
 // ============================================================
 // FUNCIONES AUXILIARES
@@ -117,16 +118,18 @@ $esAdmin = isset($_SESSION['id_usuario']) &&
            isset($_SESSION['rol']) && 
            $_SESSION['rol'] === 'admin';
 
+$pdo = conectar();
+//audit_log_request($pdo, 'api/productos.php', $accion);
+
 // Para listar (pública), no requiere admin
 // Para otras acciones, requiere admin
 if ($accion !== 'listar' && !$esAdmin) {
     http_response_code(401);
     header('Content-Type: application/json');
+    audit_log($pdo, 'PRODUCTO_ACCION_DENEGADA', 'productos', null, ['accion' => $accion, 'motivo' => 'no_autorizado'], $_SESSION['id_usuario'] ?? null);
     echo json_encode(['ok' => false, 'error' => 'No autorizado']);
     exit;
 }
-
-$pdo = conectar();
 
 switch ($accion) {
 
@@ -170,9 +173,11 @@ switch ($accion) {
             }
 
             echo json_encode($productos);
+           // audit_log($pdo, 'PRODUCTOS_LISTAR', 'productos', null, ['total' => count($productos), 'categoria' => $cat], $_SESSION['id_usuario'] ?? null);
 
         } catch (Exception $e) {
             http_response_code(500);
+            audit_log($pdo, 'PRODUCTOS_LISTAR_ERROR', 'productos', null, ['error' => $e->getMessage()], $_SESSION['id_usuario'] ?? null);
             echo json_encode(['error' => 'Error al consultar productos: ' . $e->getMessage()]);
         }
         break;
@@ -275,9 +280,11 @@ switch ($accion) {
                 'imagen' => $nombreImg,
                 'mensaje' => 'Producto creado exitosamente'
             ]);
+            audit_log($pdo, 'PRODUCTO_CREADO', 'productos', $idProducto, ['codigo' => $codigo, 'nombre' => $nombre], $_SESSION['id_usuario'] ?? null);
 
         } catch (Exception $e) {
             http_response_code(500);
+            audit_log($pdo, 'PRODUCTO_CREAR_ERROR', 'productos', null, ['error' => $e->getMessage(), 'codigo' => $codigo ?? null], $_SESSION['id_usuario'] ?? null);
             echo json_encode([
                 'ok' => false,
                 'error' => $e->getMessage(),
@@ -346,10 +353,13 @@ switch ($accion) {
                 $id
             ]);
 
+            audit_log($pdo, 'PRODUCTO_EDITADO', 'productos', $id, ['codigo' => $codigo, 'nombre' => $nombre], $_SESSION['id_usuario'] ?? null);
+
             echo json_encode(['ok' => true, 'mensaje' => 'Producto actualizado']);
 
         } catch (Exception $e) {
             http_response_code(500);
+            audit_log($pdo, 'PRODUCTO_EDITAR_ERROR', 'productos', $id ?? null, ['error' => $e->getMessage()], $_SESSION['id_usuario'] ?? null);
             echo json_encode(['error' => 'Error: ' . $e->getMessage()]);
         }
         break;
@@ -405,11 +415,13 @@ switch ($accion) {
             }
 
             fclose($output);
+            audit_log($pdo, 'PRODUCTOS_EXPORTAR_CSV', 'productos', null, ['total_exportados' => count($productos)], $_SESSION['id_usuario'] ?? null);
             exit;
 
         } catch (Exception $e) {
             header('Content-Type: application/json');
             http_response_code(500);
+            audit_log($pdo, 'PRODUCTOS_EXPORTAR_ERROR', 'productos', null, ['error' => $e->getMessage()], $_SESSION['id_usuario'] ?? null);
             echo json_encode(['error' => 'Error al exportar: ' . $e->getMessage()]);
         }
         break;
@@ -440,6 +452,8 @@ switch ($accion) {
                 $stmt = $pdo->prepare("UPDATE productos SET activo = 0 WHERE id = ?");
                 $stmt->execute([$id]);
 
+                audit_log($pdo, 'PRODUCTO_DESACTIVADO', 'productos', $id, null, $_SESSION['id_usuario'] ?? null);
+
                 echo json_encode(['ok' => true, 'mensaje' => 'Producto eliminado']);
             } else {
                 http_response_code(404);
@@ -448,6 +462,7 @@ switch ($accion) {
 
         } catch (Exception $e) {
             http_response_code(500);
+            audit_log($pdo, 'PRODUCTO_ELIMINAR_ERROR', 'productos', $id ?? null, ['error' => $e->getMessage()], $_SESSION['id_usuario'] ?? null);
             echo json_encode(['error' => 'Error: ' . $e->getMessage()]);
         }
         break;
@@ -489,9 +504,11 @@ switch ($accion) {
             $producto['activo']        = (bool)$producto['activo'];
 
             echo json_encode($producto);
+            //audit_log($pdo, 'PRODUCTO_OBTENER', 'productos', $id, null, $_SESSION['id_usuario'] ?? null);
 
         } catch (Exception $e) {
             http_response_code(500);
+            audit_log($pdo, 'PRODUCTO_OBTENER_ERROR', 'productos', $id ?? null, ['error' => $e->getMessage()], $_SESSION['id_usuario'] ?? null);
             echo json_encode(['error' => 'Error: ' . $e->getMessage()]);
         }
         break;
@@ -525,11 +542,14 @@ switch ($accion) {
             $stmt = $pdo->prepare("UPDATE productos SET activo = ? WHERE id = ?");
             $stmt->execute([$activo, $id]);
 
+            audit_log($pdo, 'PRODUCTO_ESTADO_ACTUALIZADO', 'productos', $id, ['activo' => $activo], $_SESSION['id_usuario'] ?? null);
+
             $mensaje = $activo ? 'Producto activado correctamente' : 'Producto desactivado correctamente';
             echo json_encode(['ok' => true, 'mensaje' => $mensaje]);
 
         } catch (Exception $e) {
             http_response_code(500);
+            audit_log($pdo, 'PRODUCTO_CAMBIAR_ESTADO_ERROR', 'productos', $id ?? null, ['error' => $e->getMessage()], $_SESSION['id_usuario'] ?? null);
             echo json_encode(['error' => 'Error en BD: ' . $e->getMessage()]);
         }
         break;
@@ -575,6 +595,8 @@ switch ($accion) {
             // Confirmar transacción
             $pdo->commit();
 
+            audit_log($pdo, 'PRODUCTO_DESCONTAR_STOCK', 'productos', null, ['items' => count($items)], $_SESSION['id_usuario'] ?? null);
+
             echo json_encode(['ok' => true, 'mensaje' => 'Inventario actualizado correctamente']);
 
         } catch (Exception $e) {
@@ -582,12 +604,14 @@ switch ($accion) {
                 $pdo->rollBack();
             }
             http_response_code(500);
+            audit_log($pdo, 'PRODUCTO_DESCONTAR_ERROR', 'productos', null, ['error' => $e->getMessage()], $_SESSION['id_usuario'] ?? null);
             echo json_encode(['error' => 'Error al actualizar inventario: ' . $e->getMessage()]);
         }
         break;
     default:
         header('Content-Type: application/json');
         http_response_code(400);
+        audit_log($pdo, 'ACCION_NO_VALIDA', 'api', null, ['endpoint' => 'api/productos.php', 'accion' => $accion], $_SESSION['id_usuario'] ?? null);
         echo json_encode(['error' => 'Acción no válida']);
 }
 ?>

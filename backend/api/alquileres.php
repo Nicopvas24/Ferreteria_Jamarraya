@@ -6,11 +6,14 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
 require_once __DIR__ . '/../conexion.php';
+require_once __DIR__ . '/../logger.php';
 
 session_start();
 
 $pdo    = conectar();
 $accion = $_GET['accion'] ?? $_POST['accion'] ?? 'equipos';
+
+audit_log_request($pdo, 'api/alquileres.php', $accion);
 
 switch ($accion) {
 
@@ -43,9 +46,11 @@ switch ($accion) {
             }
 
             echo json_encode($equipos);
+            // audit_log($pdo, 'ALQUILER_EQUIPOS_DISPONIBLES', 'maquinaria', null, ['total' => count($equipos)], $_SESSION['id_usuario'] ?? null);
 
         } catch (PDOException $e) {
             http_response_code(500);
+            audit_log($pdo, 'ALQUILER_EQUIPOS_ERROR', 'maquinaria', null, ['error' => $e->getMessage()], $_SESSION['id_usuario'] ?? null);
             echo json_encode(['error' => 'Error al consultar equipos']);
         }
         break;
@@ -80,6 +85,7 @@ switch ($accion) {
         }
 
         echo json_encode($alq);
+        // audit_log($pdo, 'ALQUILER_LISTAR', 'alquileres', null, ['total' => count($alq), 'estado' => $estado], $_SESSION['id_usuario'] ?? null);
         break;
 
     // ----------------------------------------------------------
@@ -87,7 +93,7 @@ switch ($accion) {
     // ----------------------------------------------------------
     case 'detalle':
         $id = (int)($_GET['id'] ?? 0);
-        if (!$id) { http_response_code(400); echo json_encode(['error' => 'ID requerido']); exit; }
+        if (!$id) { http_response_code(400); audit_log($pdo, 'ALQUILER_DETALLE_FALLIDO', 'alquileres', null, ['motivo' => 'id_requerido'], $_SESSION['id_usuario'] ?? null); echo json_encode(['error' => 'ID requerido']); exit; }
 
         $stmt = $pdo->prepare("
             SELECT a.id, a.fecha_inicio, a.fecha_fin, a.monto, a.estado, a.fecha_registro,
@@ -103,8 +109,9 @@ switch ($accion) {
         $stmt->execute([$id]);
         $alq = $stmt->fetch();
 
-        if (!$alq) { http_response_code(404); echo json_encode(['error' => 'Alquiler no encontrado']); exit; }
+        if (!$alq) { http_response_code(404); audit_log($pdo, 'ALQUILER_DETALLE_FALLIDO', 'alquileres', $id, ['motivo' => 'no_encontrado'], $_SESSION['id_usuario'] ?? null); echo json_encode(['error' => 'Alquiler no encontrado']); exit; }
         echo json_encode($alq);
+        // audit_log($pdo, 'ALQUILER_DETALLE', 'alquileres', $id, null, $_SESSION['id_usuario'] ?? null);
         break;
 
     // ----------------------------------------------------------
@@ -155,11 +162,13 @@ switch ($accion) {
                 ->execute([$id_maquinaria]);
 
             $pdo->commit();
+            audit_log($pdo, 'ALQUILER_REGISTRADO', 'alquileres', $id_alquiler, ['id_cliente' => $id_cliente, 'id_maquinaria' => $id_maquinaria, 'monto' => $monto], $id_usuario);
             echo json_encode(['ok' => true, 'id_alquiler' => $id_alquiler]);
 
         } catch (PDOException $e) {
             $pdo->rollBack();
             http_response_code(500);
+            audit_log($pdo, 'ALQUILER_REGISTRAR_ERROR', 'alquileres', null, ['error' => $e->getMessage(), 'id_cliente' => $id_cliente, 'id_maquinaria' => $id_maquinaria], $id_usuario);
             echo json_encode(['ok' => false, 'error' => 'Error al crear alquiler: ' . $e->getMessage()]);
         }
         break;
@@ -203,16 +212,19 @@ switch ($accion) {
                 ->execute([$alq['id_maquinaria']]);
 
             $pdo->commit();
+            audit_log($pdo, 'ALQUILER_DEVUELTO', 'alquileres', $id, ['id_maquinaria' => (int)$alq['id_maquinaria']], $_SESSION['id_usuario'] ?? null);
             echo json_encode(['ok' => true]);
 
         } catch (PDOException $e) {
             $pdo->rollBack();
             http_response_code(500);
+            audit_log($pdo, 'ALQUILER_DEVOLVER_ERROR', 'alquileres', $id ?: null, ['error' => $e->getMessage()], $_SESSION['id_usuario'] ?? null);
             echo json_encode(['error' => $e->getMessage()]);
         }
         break;
 
     default:
         http_response_code(400);
+        audit_log($pdo, 'ACCION_NO_VALIDA', 'api', null, ['endpoint' => 'api/alquileres.php', 'accion' => $accion], $_SESSION['id_usuario'] ?? null);
         echo json_encode(['error' => 'Acción no válida']);
 }

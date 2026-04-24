@@ -11,10 +11,13 @@
 session_start();
 
 require_once __DIR__ . '/../conexion.php';
+require_once __DIR__ . '/../logger.php';
 
 header('Content-Type: application/json');
 
 $accion = $_POST['accion'] ?? '';
+$pdoLog = conectar();
+audit_log_request($pdoLog, 'api/recuperar-contrasena.php', $accion ?: 'sin_accion');
 
 // ── PASO 1: Solicitar código ───────────────────────────────
 if ($accion === 'solicitar_codigo') {
@@ -22,6 +25,7 @@ if ($accion === 'solicitar_codigo') {
 
     if (!$email) {
         http_response_code(400);
+        audit_log($pdoLog, 'RCP_SOLICITAR_FALLIDO', 'usuarios', null, ['motivo' => 'email_requerido']);
         echo json_encode(['ok' => false, 'mensaje' => 'Email requerido']);
         exit;
     }
@@ -37,6 +41,7 @@ if ($accion === 'solicitar_codigo') {
         if (!$usuario) {
             // Por seguridad, no indicar si el email existe o no
             http_response_code(400);
+            audit_log($pdoLog, 'RCP_SOLICITAR_FALLIDO', 'usuarios', null, ['motivo' => 'email_no_encontrado', 'email' => $email]);
             echo json_encode(['ok' => false, 'mensaje' => 'No se encontró cuenta asociada a este correo']);
             exit;
         }
@@ -168,9 +173,11 @@ if ($accion === 'solicitar_codigo') {
         }
 
         echo json_encode($response);
+        audit_log($pdoLog, 'RCP_SOLICITAR_OK', 'usuarios', (int)$usuario['id'], ['rol' => $usuario['rol'], 'email' => $email], (int)$usuario['id']);
 
     } catch (Exception $e) {
         http_response_code(500);
+        audit_log($pdoLog, 'RCP_SOLICITAR_ERROR', 'usuarios', null, ['error' => $e->getMessage(), 'email' => $email]);
         echo json_encode(['ok' => false, 'mensaje' => 'Error en el servidor']);
     }
     exit;
@@ -184,6 +191,7 @@ if ($accion === 'validar_codigo') {
 
     if (!isset($_SESSION['rcp_codigo'])) {
         http_response_code(400);
+        audit_log($pdoLog, 'RCP_VALIDAR_FALLIDO', 'usuarios', $_SESSION['rcp_id_usuario'] ?? null, ['motivo' => 'sesion_expirada']);
         echo json_encode(['ok' => false, 'mensaje' => 'Sesión expirada. Intenta de nuevo']);
         exit;
     }
@@ -196,6 +204,7 @@ if ($accion === 'validar_codigo') {
         $es_valido = ($codigo_ingresado === $_SESSION['rcp_codigo']);
         if (!$es_valido) {
             http_response_code(400);
+            audit_log($pdoLog, 'RCP_VALIDAR_FALLIDO', 'usuarios', $_SESSION['rcp_id_usuario'] ?? null, ['motivo' => 'codigo_incorrecto']);
             echo json_encode(['ok' => false, 'mensaje' => 'Código incorrecto. Por favor verifica el código enviado a tu correo']);
             exit;
         }
@@ -232,18 +241,21 @@ if ($accion === 'validar_codigo') {
         
         if (!$respuesta_valida && !$token_valido) {
             http_response_code(400);
+            audit_log($pdoLog, 'RCP_VALIDAR_FALLIDO', 'usuarios', $_SESSION['rcp_id_usuario'] ?? null, ['motivo' => 'doble_factor_incorrecto']);
             echo json_encode(['ok' => false, 'mensaje' => 'Verificación fallida. La respuesta de seguridad o el token corporativo son incorrectos']);
             exit;
         }
         
         if (!$respuesta_valida) {
             http_response_code(400);
+            audit_log($pdoLog, 'RCP_VALIDAR_FALLIDO', 'usuarios', $_SESSION['rcp_id_usuario'] ?? null, ['motivo' => 'respuesta_incorrecta']);
             echo json_encode(['ok' => false, 'mensaje' => 'Respuesta de seguridad incorrecta']);
             exit;
         }
         
         if (!$token_valido) {
             http_response_code(400);
+            audit_log($pdoLog, 'RCP_VALIDAR_FALLIDO', 'usuarios', $_SESSION['rcp_id_usuario'] ?? null, ['motivo' => 'token_incorrecto']);
             echo json_encode(['ok' => false, 'mensaje' => 'Token corporativo incorrecto']);
             exit;
         }
@@ -253,6 +265,7 @@ if ($accion === 'validar_codigo') {
 
     // ── Validación completada ──────────────────────────────────
     $_SESSION['rcp_validado'] = true;
+    audit_log($pdoLog, 'RCP_VALIDAR_OK', 'usuarios', $_SESSION['rcp_id_usuario'] ?? null, ['rol' => $_SESSION['rcp_rol'] ?? null], $_SESSION['rcp_id_usuario'] ?? null);
     echo json_encode(['ok' => true, 'mensaje' => 'Verificación exitosa']);
     exit;
 }
@@ -264,6 +277,7 @@ if ($accion === 'cambiar_contrasena') {
     if (!isset($_SESSION['rcp_validado']) || !$_SESSION['rcp_validado']) {
         error_log("DEBUG: No validado. rcp_validado = " . ($_SESSION['rcp_validado'] ?? 'NO EXISTE'));
         http_response_code(403);
+        audit_log($pdoLog, 'RCP_CAMBIO_FALLIDO', 'usuarios', $_SESSION['rcp_id_usuario'] ?? null, ['motivo' => 'no_verificado']);
         echo json_encode(['ok' => false, 'mensaje' => 'Debe completar la verificación primero']);
         exit;
     }
@@ -317,6 +331,8 @@ if ($accion === 'cambiar_contrasena') {
         }
 
         if ($stmt->rowCount() > 0) {
+            $idUsuarioRec = $_SESSION['rcp_id_usuario'] ?? null;
+
             // Limpiar sesión de recuperación
             unset($_SESSION['rcp_email']);
             unset($_SESSION['rcp_id_usuario']);
@@ -326,13 +342,17 @@ if ($accion === 'cambiar_contrasena') {
             unset($_SESSION['rcp_pregunta']);
             unset($_SESSION['rcp_timestamp']);
 
+            audit_log($pdoLog, 'RCP_CAMBIO_OK', 'usuarios', $idUsuarioRec, ['mensaje' => 'Contrasena actualizada'], $idUsuarioRec);
+
             echo json_encode(['ok' => true, 'mensaje' => 'Contraseña actualizada correctamente']);
         } else {
             http_response_code(400);
+            audit_log($pdoLog, 'RCP_CAMBIO_FALLIDO', 'usuarios', $_SESSION['rcp_id_usuario'] ?? null, ['motivo' => 'sin_filas_afectadas']);
             echo json_encode(['ok' => false, 'mensaje' => 'No se pudo actualizar la contraseña']);
         }
     } catch (Exception $e) {
         http_response_code(500);
+        audit_log($pdoLog, 'RCP_CAMBIO_ERROR', 'usuarios', $_SESSION['rcp_id_usuario'] ?? null, ['error' => $e->getMessage()]);
         echo json_encode(['ok' => false, 'mensaje' => 'Error en el servidor']);
     }
     exit;
@@ -367,5 +387,6 @@ function validarContrasena($pass) {
 
 // Acción no válida
 http_response_code(400);
+audit_log($pdoLog, 'ACCION_NO_VALIDA', 'api', null, ['endpoint' => 'api/recuperar-contrasena.php', 'accion' => $accion]);
 echo json_encode(['error' => 'Acción no válida']);
 ?>

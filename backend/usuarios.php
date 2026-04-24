@@ -4,6 +4,7 @@
 // ============================================================
 
 require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/logger.php';
 
 session_start();
 
@@ -13,6 +14,9 @@ $accion = $_POST['accion'] ?? $_GET['accion'] ?? '';
 //  Responde siempre en JSON
 // ------------------------------------------------------------
 header('Content-Type: application/json');
+
+$pdo = conectar();
+//audit_log_request($pdo, 'backend/usuarios.php', $accion ?: 'sin_accion');
 
 switch ($accion) {
 
@@ -24,11 +28,11 @@ switch ($accion) {
         $contrasena = $_POST['contrasena'] ?? '';
 
         if (!$email || !$contrasena) {
+            audit_log($pdo, 'LOGIN_FALLIDO', 'usuarios', null, ['motivo' => 'campos_incompletos', 'email' => $email]);
             echo json_encode(['ok' => false, 'mensaje' => 'Completa todos los campos.']);
             exit;
         }
 
-        $pdo  = conectar();
         $stmt = $pdo->prepare("SELECT id, nombre, email, contrasena_hash, rol
                                FROM usuarios
                                WHERE email = ? AND activo = 1
@@ -37,6 +41,7 @@ switch ($accion) {
         $usuario = $stmt->fetch();
 
         if (!$usuario || !password_verify($contrasena, $usuario['contrasena_hash'])) {
+            audit_log($pdo, 'LOGIN_FALLIDO', 'usuarios', null, ['motivo' => 'credenciales_invalidas', 'email' => $email]);
             echo json_encode(['ok' => false, 'mensaje' => 'Correo o contraseña incorrectos.']);
             exit;
         }
@@ -45,6 +50,8 @@ switch ($accion) {
         $_SESSION['id_usuario'] = $usuario['id'];
         $_SESSION['nombre']     = $usuario['nombre'];
         $_SESSION['rol']        = $usuario['rol'];
+
+        audit_log($pdo, 'LOGIN_EXITOSO', 'usuarios', (int)$usuario['id'], ['email' => $email, 'rol' => $usuario['rol']], (int)$usuario['id']);
 
         echo json_encode([
             'ok'     => true,
@@ -65,16 +72,17 @@ switch ($accion) {
     case 'listar':
         if (!isset($_SESSION['id_usuario']) || $_SESSION['rol'] !== 'admin') {
             http_response_code(403);
+            audit_log($pdo, 'USUARIOS_LISTAR_DENEGADO', 'usuarios', null, ['motivo' => 'sin_permisos']);
             echo json_encode(['error' => 'Acceso denegado']);
             exit;
         }
 
         
-        $pdo  = conectar();
         $stmt = $pdo->query("SELECT id, nombre, email, rol, activo,
                                     DATE_FORMAT(fecha_creacion, '%Y-%m-%d') AS fecha_creacion
                              FROM usuarios
                              ORDER BY id DESC");
+        audit_log($pdo, 'USUARIOS_LISTAR', 'usuarios', null, ['total' => $stmt->rowCount()], (int)$_SESSION['id_usuario']);
         echo json_encode($stmt->fetchAll());
         break;
 
@@ -84,6 +92,7 @@ switch ($accion) {
     case 'crear':
         if (!isset($_SESSION['id_usuario']) || $_SESSION['rol'] !== 'admin') {
             http_response_code(403);
+            audit_log($pdo, 'USUARIO_CREAR_DENEGADO', 'usuarios', null, ['motivo' => 'sin_permisos']);
             echo json_encode(['ok' => false, 'mensaje' => 'Acceso denegado']);
             exit;
         }
@@ -95,25 +104,28 @@ switch ($accion) {
 
         // Validar
         if (!$nombre || !$email || !$contrasena) {
+            audit_log($pdo, 'USUARIO_CREAR_FALLIDO', 'usuarios', null, ['motivo' => 'campos_incompletos', 'email' => $email], (int)$_SESSION['id_usuario']);
             echo json_encode(['ok' => false, 'mensaje' => 'Completa todos los campos.']);
             exit;
         }
 
         if (strlen($contrasena) < 6) {
+            audit_log($pdo, 'USUARIO_CREAR_FALLIDO', 'usuarios', null, ['motivo' => 'password_corta', 'email' => $email], (int)$_SESSION['id_usuario']);
             echo json_encode(['ok' => false, 'mensaje' => 'La contraseña debe tener al menos 6 caracteres.']);
             exit;
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            audit_log($pdo, 'USUARIO_CREAR_FALLIDO', 'usuarios', null, ['motivo' => 'email_invalido', 'email' => $email], (int)$_SESSION['id_usuario']);
             echo json_encode(['ok' => false, 'mensaje' => 'Email inválido.']);
             exit;
         }
 
         // Verificar si email existe
-        $pdo = conectar();
         $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE email = ? LIMIT 1");
         $stmt->execute([$email]);
         if ($stmt->fetch()) {
+            audit_log($pdo, 'USUARIO_CREAR_FALLIDO', 'usuarios', null, ['motivo' => 'email_duplicado', 'email' => $email], (int)$_SESSION['id_usuario']);
             echo json_encode(['ok' => false, 'mensaje' => 'El email ya está registrado.']);
             exit;
         }
@@ -124,9 +136,11 @@ switch ($accion) {
             $stmt = $pdo->prepare("INSERT INTO usuarios (nombre, email, contrasena_hash, rol, activo, fecha_creacion)
                                    VALUES (?, ?, ?, ?, 1, NOW())");
             $stmt->execute([$nombre, $email, $hash, $rol]);
+            audit_log($pdo, 'USUARIO_CREADO', 'usuarios', (int)$pdo->lastInsertId(), ['email' => $email, 'rol' => $rol], (int)$_SESSION['id_usuario']);
             
             echo json_encode(['ok' => true, 'mensaje' => 'Usuario creado exitosamente']);
         } catch (Exception $e) {
+            audit_log($pdo, 'USUARIO_CREAR_ERROR', 'usuarios', null, ['error' => $e->getMessage(), 'email' => $email], (int)$_SESSION['id_usuario']);
             echo json_encode(['ok' => false, 'mensaje' => 'Error al crear usuario: ' . $e->getMessage()]);
         }
         break;
@@ -137,6 +151,7 @@ switch ($accion) {
     case 'editar':
         if (!isset($_SESSION['id_usuario']) || $_SESSION['rol'] !== 'admin') {
             http_response_code(403);
+            audit_log($pdo, 'USUARIO_EDITAR_DENEGADO', 'usuarios', null, ['motivo' => 'sin_permisos']);
             echo json_encode(['ok' => false, 'mensaje' => 'Acceso denegado']);
             exit;
         }
@@ -149,25 +164,28 @@ switch ($accion) {
 
         // Validar
         if (!$id) {
+            audit_log($pdo, 'USUARIO_EDITAR_FALLIDO', 'usuarios', null, ['motivo' => 'id_requerido'], (int)$_SESSION['id_usuario']);
             echo json_encode(['ok' => false, 'mensaje' => 'ID de usuario requerido']);
             exit;
         }
 
         if (!$nombre || !$email) {
+            audit_log($pdo, 'USUARIO_EDITAR_FALLIDO', 'usuarios', $id, ['motivo' => 'campos_requeridos'], (int)$_SESSION['id_usuario']);
             echo json_encode(['ok' => false, 'mensaje' => 'Nombre y email son requeridos']);
             exit;
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            audit_log($pdo, 'USUARIO_EDITAR_FALLIDO', 'usuarios', $id, ['motivo' => 'email_invalido', 'email' => $email], (int)$_SESSION['id_usuario']);
             echo json_encode(['ok' => false, 'mensaje' => 'Email inválido']);
             exit;
         }
 
         // Verificar si email existe (pero no del mismo usuario)
-        $pdo = conectar();
         $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE email = ? AND id != ? LIMIT 1");
         $stmt->execute([$email, $id]);
         if ($stmt->fetch()) {
+            audit_log($pdo, 'USUARIO_EDITAR_FALLIDO', 'usuarios', $id, ['motivo' => 'email_duplicado', 'email' => $email], (int)$_SESSION['id_usuario']);
             echo json_encode(['ok' => false, 'mensaje' => 'El email ya está registrado por otro usuario']);
             exit;
         }
@@ -178,9 +196,11 @@ switch ($accion) {
                                    SET nombre = ?, email = ?, rol = ?, activo = ?
                                    WHERE id = ?");
             $stmt->execute([$nombre, $email, $rol, $activo, $id]);
+            audit_log($pdo, 'USUARIO_EDITADO', 'usuarios', $id, ['email' => $email, 'rol' => $rol, 'activo' => $activo], (int)$_SESSION['id_usuario']);
             
             echo json_encode(['ok' => true, 'mensaje' => 'Usuario actualizado exitosamente']);
         } catch (Exception $e) {
+            audit_log($pdo, 'USUARIO_EDITAR_ERROR', 'usuarios', $id, ['error' => $e->getMessage()], (int)$_SESSION['id_usuario']);
             echo json_encode(['ok' => false, 'mensaje' => 'Error al actualizar usuario: ' . $e->getMessage()]);
         }
         break;
@@ -196,28 +216,30 @@ switch ($accion) {
 
         // Validar campos
         if (!$nombre || !$identificacion || !$email || !$contrasena) {
+            audit_log($pdo, 'REGISTRO_FALLIDO', 'usuarios', null, ['motivo' => 'campos_incompletos', 'email' => $email]);
             echo json_encode(['ok' => false, 'mensaje' => 'Completa todos los campos.']);
             exit;
         }
 
         // Validar email formato
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            audit_log($pdo, 'REGISTRO_FALLIDO', 'usuarios', null, ['motivo' => 'email_invalido', 'email' => $email]);
             echo json_encode(['ok' => false, 'mensaje' => 'El email no es válido.']);
             exit;
         }
 
         // Validar contraseña mínimo 6 caracteres
         if (strlen($contrasena) < 6) {
+            audit_log($pdo, 'REGISTRO_FALLIDO', 'usuarios', null, ['motivo' => 'password_corta', 'email' => $email]);
             echo json_encode(['ok' => false, 'mensaje' => 'La contraseña debe tener mínimo 6 caracteres.']);
             exit;
         }
-
-        $pdo = conectar();
 
         // Verificar si el email ya existe en usuarios
         $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE email = ? LIMIT 1");
         $stmt->execute([$email]);
         if ($stmt->fetch()) {
+            audit_log($pdo, 'REGISTRO_FALLIDO', 'usuarios', null, ['motivo' => 'email_duplicado', 'email' => $email]);
             echo json_encode(['ok' => false, 'mensaje' => 'Este email ya está registrado.']);
             exit;
         }
@@ -226,6 +248,7 @@ switch ($accion) {
         $stmt = $pdo->prepare("SELECT id FROM clientes WHERE identificacion = ? LIMIT 1");
         $stmt->execute([$identificacion]);
         if ($stmt->fetch()) {
+            audit_log($pdo, 'REGISTRO_FALLIDO', 'clientes', null, ['motivo' => 'identificacion_duplicada', 'identificacion' => $identificacion, 'email' => $email]);
             echo json_encode(['ok' => false, 'mensaje' => 'Esta identificación ya está registrada.']);
             exit;
         }
@@ -256,6 +279,8 @@ switch ($accion) {
             $_SESSION['nombre']     = $nombre;
             $_SESSION['rol']        = 'cliente';
 
+            audit_log($pdo, 'REGISTRO_EXITOSO', 'usuarios', (int)$usuarioId, ['cliente_id' => (int)$clienteId, 'email' => $email], (int)$usuarioId);
+
             echo json_encode([
                 'ok'         => true,
                 'nombre'     => $nombre,
@@ -266,6 +291,7 @@ switch ($accion) {
             ]);
         } catch (Exception $e) {
             $pdo->rollBack();
+            audit_log($pdo, 'REGISTRO_ERROR', 'usuarios', null, ['error' => $e->getMessage(), 'email' => $email]);
             echo json_encode(['ok' => false, 'mensaje' => 'Error al registrar: ' . $e->getMessage()]);
         }
         break;
@@ -274,6 +300,8 @@ switch ($accion) {
     //  LOGOUT
     // ----------------------------------------------------------
     case 'logout':
+        $idUsuario = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : null;
+        audit_log($pdo, 'LOGOUT', 'usuarios', $idUsuario, ['mensaje' => 'Cierre de sesion'], $idUsuario);
         session_destroy();
         echo json_encode(['ok' => true]);
         break;
@@ -285,8 +313,6 @@ switch ($accion) {
         if (isset($_SESSION['id_usuario'])) {
             $id_cliente = null;
             if ($_SESSION['rol'] === 'cliente') {
-                $pdo = conectar();
-
                 // 1º Buscar por id_usuario (vínculo directo)
                 $stmt = $pdo->prepare("SELECT id FROM clientes WHERE id_usuario = ? LIMIT 1");
                 $stmt->execute([$_SESSION['id_usuario']]);
@@ -309,6 +335,7 @@ switch ($accion) {
                     }
                 }
             }
+            audit_log($pdo, 'SESION_VERIFICADA', 'usuarios', (int)$_SESSION['id_usuario'], ['rol' => $_SESSION['rol'], 'id_cliente' => $id_cliente], (int)$_SESSION['id_usuario']);
             echo json_encode([
                 'ok'         => true,
                 'nombre'     => $_SESSION['nombre'],
@@ -317,11 +344,13 @@ switch ($accion) {
                 'id_cliente' => $id_cliente
             ]);
         } else {
+            audit_log($pdo, 'SESION_NO_VALIDA', 'usuarios', null, ['motivo' => 'sin_sesion']);
             echo json_encode(['ok' => false]);
         }
         break;
 
     default:
         http_response_code(400);
+        audit_log($pdo, 'ACCION_NO_VALIDA', 'api', null, ['endpoint' => 'backend/usuarios.php', 'accion' => $accion]);
         echo json_encode(['error' => 'Acción no válida.']);
 }

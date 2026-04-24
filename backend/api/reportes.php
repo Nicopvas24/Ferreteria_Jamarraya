@@ -6,6 +6,7 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
 require_once __DIR__ . '/../conexion.php';
+require_once __DIR__ . '/../logger.php';
 
 session_start();
 
@@ -18,6 +19,8 @@ if (!isset($_SESSION['id_usuario'])) {
 
 $pdo  = conectar();
 $tipo = $_GET['tipo'] ?? '';
+
+//audit_log_request($pdo, 'api/reportes.php', $tipo ?: 'sin_tipo');
 
 switch ($tipo) {
 
@@ -99,6 +102,7 @@ switch ($tipo) {
             'top_productos' => $top_productos,
             'por_categoria' => $por_categoria,
         ]);
+        audit_log($pdo, 'REPORTE_VENTAS', 'ventas', null, ['periodo' => $periodo, 'desde' => $desde, 'hasta' => $hasta], (int)$_SESSION['id_usuario']);
         break;
 
     // ----------------------------------------------------------
@@ -150,6 +154,7 @@ switch ($tipo) {
             'productos_bajo_stock' => $bajo_stock,
             'sin_movimiento'  => $sin_movimiento,
         ]);
+        audit_log($pdo, 'REPORTE_INVENTARIO', 'productos', null, ['total_productos' => (int)$resumen['total_productos']], (int)$_SESSION['id_usuario']);
         break;
 
     // ----------------------------------------------------------
@@ -221,6 +226,7 @@ switch ($tipo) {
             'alquileres_activos' => $alquileres_activos,
             'top_maquinaria'     => $top_maquinaria,
         ]);
+        audit_log($pdo, 'REPORTE_ALQUILERES', 'alquileres', null, ['desde' => $desde, 'hasta' => $hasta], (int)$_SESSION['id_usuario']);
         break;
 
     // ----------------------------------------------------------
@@ -274,9 +280,11 @@ switch ($tipo) {
             'total'      => $total,
             'variacion'  => $variacion,
         ]);
+        audit_log($pdo, 'REPORTE_BALANCE', 'ventas', null, ['mes' => $mes, 'total' => $total], (int)$_SESSION['id_usuario']);
         break;
 
     default:
         http_response_code(400);
+        audit_log($pdo, 'ACCION_NO_VALIDA', 'api', null, ['endpoint' => 'api/reportes.php', 'tipo' => $tipo], (int)$_SESSION['id_usuario']);
         echo json_encode(['error' => 'Tipo de reporte no válido. Usa: ventas, inventario, alquileres, balance']);
 }

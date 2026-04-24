@@ -6,11 +6,14 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
 require_once __DIR__ . '/../conexion.php';
+require_once __DIR__ . '/../logger.php';
 
 session_start();
 
 $pdo    = conectar();
 $accion = $_GET['accion'] ?? $_POST['accion'] ?? 'listar';
+
+//audit_log_request($pdo, 'api/ventas.php', $accion);
 
 switch ($accion) {
 
@@ -66,6 +69,7 @@ switch ($accion) {
         }
 
         echo json_encode($ventas);
+        // audit_log($pdo, 'VENTAS_LISTAR', 'ventas', null, ['total' => count($ventas), 'desde' => $desde, 'hasta' => $hasta], $_SESSION['id_usuario'] ?? null);
         break;
 
     // ----------------------------------------------------------
@@ -73,7 +77,7 @@ switch ($accion) {
     // ----------------------------------------------------------
     case 'detalle':
         $id = (int)($_GET['id'] ?? 0);
-        if (!$id) { http_response_code(400); echo json_encode(['error' => 'ID requerido']); exit; }
+        if (!$id) { http_response_code(400); audit_log($pdo, 'VENTA_DETALLE_FALLIDO', 'ventas', null, ['motivo' => 'id_requerido'], $_SESSION['id_usuario'] ?? null); echo json_encode(['error' => 'ID requerido']); exit; }
 
         $stmt = $pdo->prepare("SELECT v.*, c.nombre AS cliente, c.email, c.telefono,
                                       u.nombre AS registrado_por
@@ -84,7 +88,7 @@ switch ($accion) {
         $stmt->execute([$id]);
         $venta = $stmt->fetch();
 
-        if (!$venta) { http_response_code(404); echo json_encode(['error' => 'Venta no encontrada']); exit; }
+        if (!$venta) { http_response_code(404); audit_log($pdo, 'VENTA_DETALLE_FALLIDO', 'ventas', $id, ['motivo' => 'no_encontrada'], $_SESSION['id_usuario'] ?? null); echo json_encode(['error' => 'Venta no encontrada']); exit; }
 
         // Items del detalle
         $stmt2 = $pdo->prepare("SELECT dv.cantidad, dv.precio_unitario,
@@ -97,6 +101,7 @@ switch ($accion) {
         $venta['items'] = $stmt2->fetchAll();
 
         echo json_encode($venta);
+       // audit_log($pdo, 'VENTA_DETALLE', 'ventas', $id, ['items' => count($venta['items'])], $_SESSION['id_usuario'] ?? null);
         break;
 
     // ----------------------------------------------------------
@@ -190,11 +195,13 @@ switch ($accion) {
             }
 
             $pdo->commit();
+            audit_log($pdo, 'VENTA_REGISTRADA', 'ventas', $id_venta, ['id_cliente' => $id_cliente, 'items' => count($items), 'total' => $total], $id_usuario);
             echo json_encode(['ok' => true, 'id_venta' => $id_venta, 'comprobante' => $comprobante, 'total' => $total]);
 
         } catch (PDOException $e) {
             $pdo->rollBack();
             http_response_code(500);
+            audit_log($pdo, 'VENTA_REGISTRAR_ERROR', 'ventas', null, ['error' => $e->getMessage(), 'id_cliente' => $id_cliente], $_SESSION['id_usuario'] ?? null);
             echo json_encode(['error' => 'Error al registrar venta: ' . $e->getMessage()]);
         }
         break;
@@ -277,9 +284,11 @@ switch ($accion) {
         }
 
         echo json_encode(['ok' => true, 'compras' => $ventas, 'alquileres' => $alquileres]);
+       // audit_log($pdo, 'MIS_COMPRAS_CONSULTA', 'ventas', null, ['id_cliente' => $id_cliente, 'ventas' => count($ventas), 'alquileres' => count($alquileres)], $_SESSION['id_usuario'] ?? null);
         break;
 
     default:
         http_response_code(400);
+        audit_log($pdo, 'ACCION_NO_VALIDA', 'api', null, ['endpoint' => 'api/ventas.php', 'accion' => $accion], $_SESSION['id_usuario'] ?? null);
         echo json_encode(['error' => 'Acción no válida']);
 }
