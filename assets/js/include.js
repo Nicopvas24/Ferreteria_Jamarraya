@@ -67,3 +67,27 @@ document.body.appendChild(recuperarScript);
 const loginScript = document.createElement('script');
 loginScript.src = '../assets/js/login.js';
 document.body.appendChild(loginScript);
+
+/* ── Modal de checkout compartido ── */
+if (!document.getElementById('jm-checkout-modal')) {
+  // CSS
+  const checkoutCss = document.createElement('link');
+  checkoutCss.rel  = 'stylesheet';
+  checkoutCss.href = '../assets/css/checkout.css';
+  document.head.appendChild(checkoutCss);
+
+  // HTML del modal (fetch + inject en body)
+  fetch('../components/modals/checkout-modal.html')
+    .then(r => r.text())
+    .then(html => {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = html;
+      document.body.appendChild(wrapper);
+
+      // JS del checkout DESPUÉS de que el HTML ya está en el DOM
+      const checkoutScript = document.createElement('script');
+      checkoutScript.src = '../assets/js/checkout.js';
+      document.body.appendChild(checkoutScript);
+    })
+    .catch(err => console.warn('[include.js] No se pudo cargar checkout-modal:', err));
+}

@@ -1,0 +1,84 @@
+<!-- ══════════════════════════════════════════
+     MODAL DE CHECKOUT COMPARTIDO
+     Usado por productos.js y alquiler.js
+     Se inyecta en el body via include.js
+══════════════════════════════════════════ -->
+<div class="jm-checkout-modal" id="jm-checkout-modal" aria-hidden="true">
+  <div class="jm-checkout-container">
+    <button class="jm-checkout-close" id="jm-checkout-close" aria-label="Cerrar">✕</button>
+
+    <div class="jm-checkout-header">
+      <h2 id="jm-checkout-title">Finalizar Pedido</h2>
+      <p id="jm-checkout-subtitle">Completa tu información para proceder</p>
+    </div>
+
+    <form class="jm-checkout-form" id="jm-checkout-form" novalidate>
+
+      <!-- DATOS PERSONALES -->
+      <div class="jm-checkout-section">
+        <h3 class="jm-section-title">📋 Datos Personales</h3>
+        <div class="jm-form-grid">
+          <div class="jm-form-group">
+            <label for="jm-co-nombre">Nombre completo *</label>
+            <input type="text" id="jm-co-nombre" name="nombre" placeholder="Tu nombre" required />
+          </div>
+          <div class="jm-form-group">
+            <label for="jm-co-email">Correo electrónico *</label>
+            <input type="email" id="jm-co-email" name="email" placeholder="correo@ejemplo.com" required />
+          </div>
+          <div class="jm-form-group">
+            <label for="jm-co-telefono">Teléfono *</label>
+            <input type="tel" id="jm-co-telefono" name="telefono" placeholder="+57 300 000 0000" required />
+          </div>
+          <div class="jm-form-group">
+            <label for="jm-co-identificacion">Identificación *</label>
+            <input type="text" id="jm-co-identificacion" name="identificacion" placeholder="CC / NIT" required />
+          </div>
+        </div>
+      </div>
+
+      <!-- AVISO ASESOR — siempre visible, texto dinámico según el carrito -->
+      <div class="jm-checkout-section">
+        <h3 class="jm-section-title">📞 Coordinación y Entrega</h3>
+        <div class="jm-asesor-notice">
+          <span class="jm-asesor-icon">🙋</span>
+          <div>
+            <p class="jm-asesor-title">Un asesor se contactará contigo</p>
+            <p class="jm-asesor-desc" id="jm-asesor-desc">
+              Una vez registrado tu pedido, uno de nuestros asesores se comunicará contigo para confirmar los detalles de entrega.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTAS -->
+      <div class="jm-checkout-section">
+        <h3 class="jm-section-title">📝 Notas adicionales</h3>
+        <div class="jm-form-group jm-full">
+          <label for="jm-co-notas">Mensaje (opcional)</label>
+          <textarea id="jm-co-notas" name="notas" placeholder="Indica fechas, dirección de entrega u observaciones..." rows="3"></textarea>
+        </div>
+      </div>
+
+      <!-- RESUMEN -->
+      <div class="jm-checkout-section jm-checkout-summary">
+        <h3 class="jm-section-title" id="jm-resumen-title">💰 Resumen del Pedido</h3>
+        <div class="jm-summary-items" id="jm-summary-items"></div>
+        <div class="jm-summary-total">
+          <strong>Total a pagar</strong>
+          <strong id="jm-checkout-total">$0</strong>
+        </div>
+      </div>
+
+      <!-- BOTÓN -->
+      <button type="submit" class="jm-checkout-submit" id="jm-checkout-submit">
+        <span class="jm-submit-text" id="jm-submit-text">Confirmar Pedido</span>
+        <span class="jm-submit-spinner" id="jm-submit-spinner" hidden></span>
+      </button>
+      <div id="jm-gateway-status" class="jm-gateway-status" style="display:none"></div>
+      <p class="jm-checkout-notice">✓ Tu solicitud será procesada de forma segura</p>
+
+    </form>
+  </div>
+</div>
+<div class="jm-checkout-overlay" id="jm-checkout-overlay"></div>

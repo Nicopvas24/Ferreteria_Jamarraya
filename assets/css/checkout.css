@@ -1,0 +1,202 @@
+/* ══════════════════════════════════════════
+   CHECKOUT MODAL COMPARTIDO (jm-checkout)
+   Sin scope de página — aplica globalmente.
+   Usado por productos.js y alquiler.js.
+══════════════════════════════════════════ */
+
+.jm-checkout-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(3px);
+  z-index: 8000;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s;
+}
+.jm-checkout-overlay.open { opacity: 1; pointer-events: all; }
+
+.jm-checkout-modal {
+  position: fixed; inset: 0;
+  z-index: 8100;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s;
+}
+.jm-checkout-modal.open { opacity: 1; pointer-events: all; }
+
+.jm-checkout-container {
+  background: #1a1a1a;
+  border: 1px solid rgba(255,107,0,0.2);
+  border-radius: 14px;
+  width: min(620px, 100%);
+  max-height: 90vh; overflow-y: auto;
+  padding: 36px; position: relative;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+  font-family: 'Barlow', sans-serif;
+  color: #fff;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,107,0,0.3) transparent;
+}
+
+/* Botón cerrar */
+.jm-checkout-close {
+  position: absolute; top: 16px; right: 16px;
+  background: rgba(255,107,0,0.1); border: none;
+  color: #FF6B00; width: 36px; height: 36px;
+  border-radius: 50%; font-size: 1.2rem; cursor: pointer;
+  transition: background .2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.jm-checkout-close:hover { background: rgba(255,107,0,0.25); }
+
+/* Header */
+.jm-checkout-header {
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255,107,0,0.12);
+}
+.jm-checkout-header h2 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.8rem; font-weight: 900;
+  color: #FF6B00; margin: 0 0 6px;
+}
+.jm-checkout-header p { color: rgba(255,255,255,0.5); font-size: .9rem; margin: 0; }
+
+/* Secciones */
+.jm-checkout-section { margin-bottom: 26px; }
+.jm-section-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1rem; font-weight: 800;
+  color: rgba(255,255,255,0.8);
+  margin: 0 0 14px;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+
+/* Formulario */
+.jm-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.jm-form-group { display: flex; flex-direction: column; }
+.jm-form-group.jm-full { grid-column: 1/-1; }
+.jm-form-group label {
+  font-size: .82rem; font-weight: 600;
+  color: rgba(255,255,255,0.55); margin-bottom: 6px;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.jm-form-group input,
+.jm-form-group textarea {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 7px; color: #fff;
+  font-family: 'Barlow', sans-serif; font-size: .95rem;
+  padding: 10px 12px;
+  transition: border-color .2s, background .2s;
+}
+.jm-form-group input:focus,
+.jm-form-group textarea:focus {
+  outline: none;
+  background: rgba(255,255,255,0.07);
+  border-color: #FF6B00;
+}
+.jm-form-group textarea { resize: vertical; min-height: 80px; }
+
+/* Opciones de entrega */
+.jm-delivery-options { display: grid; gap: 10px; }
+.jm-delivery-option { cursor: pointer; display: block; }
+.jm-delivery-option input { display: none; }
+.jm-delivery-box {
+  background: rgba(255,255,255,0.04);
+  border: 2px solid rgba(255,255,255,0.09);
+  border-radius: 8px; padding: 14px;
+  transition: all .2s;
+}
+.jm-delivery-option input:checked + .jm-delivery-box {
+  background: rgba(255,107,0,0.1);
+  border-color: #FF6B00;
+}
+.jm-delivery-box strong { display: block; color: #fff; font-size: .92rem; margin-bottom: 3px; }
+.jm-delivery-box p { margin: 0; color: rgba(255,255,255,0.45); font-size: .82rem; }
+
+/* Aviso asesor alquiler */
+.jm-asesor-notice {
+  background: rgba(249,115,22,.08);
+  border: 1px solid rgba(249,115,22,.3);
+  border-left: 4px solid #F97316;
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  display: flex; gap: .85rem; align-items: flex-start;
+}
+.jm-asesor-icon { font-size: 1.5rem; flex-shrink: 0; margin-top: .1rem; }
+.jm-asesor-title { margin: 0 0 .25rem; font-weight: 700; color: #F97316; font-size: .92rem; }
+.jm-asesor-desc { margin: 0; color: rgba(255,255,255,0.55); font-size: .82rem; line-height: 1.5; }
+
+/* Resumen */
+.jm-checkout-summary {
+  background: rgba(255,107,0,0.07);
+  border: 1px solid rgba(255,107,0,0.14);
+  border-radius: 8px; padding: 16px;
+}
+.jm-summary-items {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 14px; max-height: 160px; overflow-y: auto;
+}
+.jm-summary-item {
+  display: flex; justify-content: space-between;
+  font-size: .85rem; color: rgba(255,255,255,0.7);
+  padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.jm-summary-item:last-child { border-bottom: none; }
+.jm-summary-item strong { color: #FF6B00; }
+.jm-summary-total {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 12px; border-top: 1px solid rgba(255,107,0,0.18);
+}
+.jm-summary-total strong {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.45rem; font-weight: 900; color: #FF6B00;
+}
+
+/* Botón submit */
+.jm-checkout-submit {
+  width: 100%; padding: 14px; border: none; border-radius: 8px;
+  cursor: pointer; margin-top: 8px;
+  background: linear-gradient(135deg, #FF6B00 0%, #FF8C33 100%);
+  color: #fff; font-family: 'Barlow', sans-serif;
+  font-size: 1rem; font-weight: 700;
+  transition: transform .2s, box-shadow .2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.jm-checkout-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255,107,0,0.4);
+}
+.jm-checkout-submit:disabled { opacity: .6; cursor: not-allowed; }
+
+/* Spinner */
+.jm-submit-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: #fff; border-radius: 50%;
+  animation: jm-spin .8s linear infinite;
+}
+@keyframes jm-spin { to { transform: rotate(360deg); } }
+
+/* Estado pasarela */
+.jm-gateway-status {
+  margin-top: .7rem; padding: .6rem .85rem;
+  border: 1px solid rgba(255,107,0,0.2); border-radius: 8px;
+  background: rgba(255,107,0,0.06);
+  font-size: .85rem; color: #FF6B00;
+  text-align: center; font-weight: 600;
+}
+.jm-gateway-status.error { border-color: rgba(248,81,73,0.3); background: rgba(248,81,73,0.06); color: #fc8181; }
+
+/* Nota inferior */
+.jm-checkout-notice {
+  text-align: center; font-size: .78rem;
+  color: rgba(255,255,255,0.35); margin: 10px 0 0;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .jm-checkout-container { padding: 24px; }
+  .jm-form-grid { grid-template-columns: 1fr; }
+}

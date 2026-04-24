@@ -351,7 +351,7 @@ function renderCarrito() {
     .filter(x => (x.kind || 'producto') === 'rental')
     .reduce((s, x) => s + ((x.tarifa || 0) * x.qty), 0);
   const total      = subtotalProductos + subtotalAlquiler;
-  const totalItems = state.carrito.reduce((s, x) => s + x.qty, 0);
+  const totalItems = state.carrito.reduce((s, x) => s + (x.kind === 'rental' ? 1 : x.qty), 0);
 
   if (cartCount) cartCount.textContent = totalItems;
   if (cartTotal) cartTotal.textContent = fmt(total);
@@ -453,72 +453,6 @@ if (cartOverlay) cartOverlay.addEventListener('click', cerrarCarrito);
 ══════════════════════════════════════════ */
 let _cachedClienteId = null; // id_cliente guardado al abrir el checkout
 
-async function abrirCheckout() {
-  const usuario = sessionStorage.getItem('jm_nombre');
-  if (!usuario) {
-    alert('Debes iniciar sesión o registrarte para comprar.');
-    return;
-  }
-
-  const productosCarrito = state.carrito;
-  if (productosCarrito.length === 0) return;
-
-  // 1. Obtener id_cliente real y datos del cliente desde la sesión
-  _cachedClienteId = null;
-  try {
-    const resV = await fetch('../backend/usuarios.php?accion=verificar');
-    const dataV = await resV.json();
-    if (dataV.ok && dataV.id_cliente) {
-      _cachedClienteId = dataV.id_cliente;
-
-      // Rellenar formulario con datos reales de la BD
-      const resC = await fetch(`../backend/api/clientes.php?accion=detalle&id=${_cachedClienteId}`);
-      const cliente = await resC.json();
-      if (!cliente.error) {
-        const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-        set('co-nombre',         cliente.nombre         || usuario);
-        set('co-email',          cliente.email          || '');
-        set('co-telefono',       cliente.telefono       || '');
-        set('co-identificacion', cliente.identificacion || '');
-      }
-    } else {
-      // Sin cliente vinculado — rellenar solo nombre
-      const el = document.getElementById('co-nombre');
-      if (el) el.value = usuario;
-    }
-  } catch (e) {
-    console.warn('No se pudieron obtener datos del cliente:', e);
-    const el = document.getElementById('co-nombre');
-    if (el) el.value = usuario;
-  }
-
-  // Mostrar sección de datos personales
-  const datosSection = document.getElementById('pp-datos-personales');
-  if (datosSection) datosSection.style.display = '';
-
-  // 2. Actualizar resumen
-  const total = productosCarrito.reduce((s,x) => s + (x.precio || x.tarifa || 0) * x.qty, 0);
-  checkoutTotal.textContent = fmt(total);
-
-  summaryItems.innerHTML = productosCarrito.map(item => `
-    <div class="pp-summary-item">
-      <span>${item.nombre} <strong>x${item.qty}</strong> <small style="font-size:0.7em;color:#aaa">${item.kind === 'rental' ? '(Alquiler)' : ''}</small></span>
-      <strong>${fmt((item.precio || item.tarifa || 0) * item.qty)}</strong>
-    </div>
-  `).join('');
-
-  // 3. Abrir modal
-  checkoutModal.classList.add('open');
-  checkoutOverlay.classList.add('open');
-  checkoutModal.setAttribute('aria-hidden', 'false');
-  if (gatewayStatus) {
-    gatewayStatus.style.display = 'none';
-    gatewayStatus.textContent = '';
-  }
-  cerrarCarrito();
-}
-
-
 function esperar(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -537,92 +471,108 @@ function toISODateLocal(fecha) {
   return `${y}-${m}-${d}`;
 }
 
-async function simularPago(total) {
-  const pasos = [
-    'Validando datos de compra...',
-    'Autorizando medio de pago...',
-    `Confirmando transacción por ${fmt(total)}...`
-  ];
-
-  if (gatewayStatus) gatewayStatus.style.display = 'block';
-  for (const paso of pasos) {
-    if (gatewayStatus) gatewayStatus.textContent = `Pasarela ficticia: ${paso}`;
-    checkoutForm.querySelector('.pp-submit-text').textContent = paso;
-    await esperar(650);
+async function abrirCheckout() {
+  const usuario = sessionStorage.getItem('jm_nombre');
+  if (!usuario) {
+    alert('Debes iniciar sesión o registrarte para comprar.');
+    return;
   }
-  if (gatewayStatus) gatewayStatus.textContent = 'Pago aprobado. Registrando compra...';
+  const productosCarrito = state.carrito;
+  if (!productosCarrito.length) return;
+
+  // Pre-cargar datos del cliente desde BD
+  _cachedClienteId = null;
+  try {
+    const resV = await fetch('../backend/usuarios.php?accion=verificar');
+    const dataV = await resV.json();
+    if (dataV.ok && dataV.id_cliente) {
+      _cachedClienteId = dataV.id_cliente;
+      const resC = await fetch(`../backend/api/clientes.php?accion=detalle&id=${_cachedClienteId}`);
+      const cliente = await resC.json();
+      if (!cliente.error) {
+        // Guardar en sessionStorage para que JMCheckout.abrir() los pre-rellene
+        sessionStorage.setItem('jm_nombre',         cliente.nombre         || usuario);
+        sessionStorage.setItem('jm_email',          cliente.email          || '');
+        sessionStorage.setItem('jm_telefono',       cliente.telefono       || '');
+        sessionStorage.setItem('jm_identificacion', cliente.identificacion || '');
+      }
+    }
+  } catch (e) { console.warn('No se pudieron obtener datos del cliente:', e); }
+
+  // Usar modal compartido JMCheckout
+  function abrirConJMCheckout() {
+    window.JMCheckout.abrir({
+      modo: 'compra',
+      carrito: productosCarrito,
+      onConfirmar: procesarCompra,
+    });
+  }
+
+  if (window.JMCheckout) {
+    abrirConJMCheckout();
+  } else {
+    // JMCheckout puede tardar un poco en cargar
+    const t = setInterval(() => {
+      if (window.JMCheckout) { clearInterval(t); abrirConJMCheckout(); }
+    }, 50);
+    setTimeout(() => clearInterval(t), 3000);
+  }
 }
 
 function cerrarCheckout() {
-  checkoutModal.classList.remove('open');
-  checkoutOverlay.classList.remove('open');
-  checkoutModal.setAttribute('aria-hidden', 'true');
+  window.JMCheckout?.cerrar();
 }
 
-async function procesarCompra(e) {
-  e.preventDefault();
-  const submitBtn = checkoutForm.querySelector('button[type="submit"]');
-  const submitText = submitBtn.querySelector('.pp-submit-text');
-  const submitSpinner = submitBtn.querySelector('.pp-submit-spinner');
+async function procesarCompra(formDatos) {
   const productosCarrito = state.carrito;
-  if (productosCarrito.length === 0) {
-    alert('Tu carrito está vacío.');
-    return;
-  }
+  if (!productosCarrito.length) throw new Error('Tu carrito está vacío.');
 
-  // 1. Usar id_cliente cacheado al abrir el checkout, o buscar de nuevo
+  // Obtener id_cliente
   let idClienteSession = _cachedClienteId;
   if (!idClienteSession) {
     try {
       const resVerify = await fetch('../backend/usuarios.php?accion=verificar');
       const dataVerify = await resVerify.json();
-      console.log('🔍 Verificar respuesta:', dataVerify);
-      if (dataVerify.ok) {
-        idClienteSession = dataVerify.id_cliente || null;
-        _cachedClienteId = idClienteSession;
-      }
-    } catch (err) {
-      console.error('Error verificando sesión:', err);
-    }
+      if (dataVerify.ok) { idClienteSession = dataVerify.id_cliente || null; _cachedClienteId = idClienteSession; }
+    } catch (err) { console.error('Error verificando sesión:', err); }
   }
+  if (!idClienteSession) throw new Error('Tu cuenta no tiene un perfil de cliente registrado. Ve a Mi Perfil y guarda tus datos primero.');
 
-  if (!idClienteSession) {
-    alert('Tu cuenta no tiene un perfil de cliente registrado.\n\nVe a Mi Perfil y guarda tus datos de contacto primero, o contacta con la tienda.');
-    return;
-  }
-
-  const formData = new FormData(checkoutForm);
   const datos = {
-    delivery: formData.get('delivery'),
-    direccion: formData.get('delivery') === 'domicilio' ? formData.get('direccion') : 'Recolección en tienda',
-    notas: formData.get('notas'),
-    carrito: productosCarrito,
-    total: productosCarrito.reduce((s,x) => s + (x.precio || x.tarifa || 0) * x.qty, 0)
+    delivery:  formDatos.delivery  || 'tienda',
+    direccion: formDatos.delivery === 'domicilio' ? (formDatos.direccion || '') : 'Recolección en tienda',
+    notas:     formDatos.notas    || '',
+    carrito:   productosCarrito,
+    total:     productosCarrito.reduce((s,x) => s + (x.precio || x.tarifa || 0) * x.qty, 0)
   };
-  
-  // Simular envío
-  submitBtn.disabled = true;
-  submitText.style.display = '';
-  submitSpinner.hidden = false;
-  await simularPago(datos.total);
-  submitText.style.display = 'none';
-  
-  // Registrar venta usando el id_cliente real de sesión
-  registrarVenta(datos, idClienteSession, (resultados) => {
-    cerrarCheckout();
-    submitBtn.disabled = false;
-    submitText.style.display = '';
-    submitSpinner.hidden = true;
-    checkoutForm.reset();
-    state.carrito = [];
-    renderCarrito();
-    
-    const ventaResult = resultados && resultados.find(r => r.id_venta);
-    if (ventaResult) {
-      verDetalleVentaCheckout(ventaResult.id_venta);
-    } else {
-      mostrarMensajeExito();
-    }
+
+  // Simular pasarela
+  const pasos = ['Validando datos de compra...', 'Autorizando medio de pago...', `Confirmando ${fmt(datos.total)}...`];
+  for (const paso of pasos) {
+    window.JMCheckout?.setStatus('⟳ ' + paso);
+    await esperar(650);
+  }
+  window.JMCheckout?.setStatus('✓ Aprobado. Registrando compra...');
+
+  // Guardar snapshot del carrito ANTES de vaciarlo
+  const carritoSnapshot = [...productosCarrito];
+
+  // Registrar venta
+  await new Promise((resolve, reject) => {
+    registrarVenta(datos, idClienteSession, (resultados) => {
+      window.JMCheckout?.cerrar();
+
+      state.carrito = [];
+      guardarCarritoCompartido([]);
+      if (window.GlobalCart) window.GlobalCart.vaciar();
+      else renderCarrito();
+
+      // Mostrar comprobante unificado con productos Y alquileres
+      const ventaResult    = resultados && resultados.find(r => r.id_venta);
+      const alqResultados  = (resultados || []).filter(r => r.id_alquiler);
+      mostrarComprobanteUnificado(ventaResult, alqResultados, carritoSnapshot);
+      resolve();
+    });
   });
 }
 
@@ -700,13 +650,8 @@ function registrarVenta(datos, idClienteDirecto, callback) {
   })
   .catch(err => {
     console.error('Error registrando el pedido:', err);
-    alert('❌ Error: ' + err.message);
-    const submitBtn = checkoutForm.querySelector('button[type="submit"]');
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.querySelector('.pp-submit-text').style.display = '';
-      submitBtn.querySelector('.pp-submit-spinner').hidden = true;
-    }
+    window.JMCheckout?.setStatus('❌ ' + err.message, true);
+    window.JMCheckout?.resetStatus();
   });
 }
 
@@ -718,170 +663,196 @@ function procesarInventario(carrito) {
 
 function mostrarMensajeExito() {
   const msg = document.createElement('div');
-  msg.style.cssText = `
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: #1a1a1a; border: 2px solid #FF6B00; border-radius: 12px;
-    padding: 32px; text-align: center; z-index: 3000; max-width: 400px;
-    box-shadow: 0 20px 60px rgba(255,107,0,0.3);
-  `;
+  msg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a1a;border:2px solid #FF6B00;border-radius:12px;padding:32px;text-align:center;z-index:9999;max-width:400px;box-shadow:0 20px 60px rgba(255,107,0,0.3);font-family:Barlow,sans-serif;color:#fff';
   msg.innerHTML = `
-    <div style="font-size: 2.4rem; margin-bottom: 16px;">✓</div>
-    <h3 style="font-size: 1.3rem; font-weight: 700; margin: 0 0 8px; color: #FF6B00;">¡Compra exitosa!</h3>
-    <p style="color: rgba(255,255,255,0.6); margin: 0 0 24px;">Tu pedido ha sido confirmado.</p>
-    <button onclick="this.parentElement.remove()" style="background: #FF6B00; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-weight: 700;">Cerrar</button>
+    <div style="font-size:2.4rem;margin-bottom:16px">✓</div>
+    <h3 style="font-size:1.3rem;font-weight:700;margin:0 0 8px;color:#FF6B00">¡Pedido Confirmado!</h3>
+    <p style="color:rgba(255,255,255,0.6);margin:0 0 24px">Un asesor se pondrá en contacto contigo pronto.</p>
+    <button onclick="this.parentElement.remove()" style="background:#FF6B00;color:#fff;border:none;padding:10px 24px;border-radius:6px;cursor:pointer;font-weight:700">Cerrar</button>
   `;
   document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 4000);
+  setTimeout(() => msg.remove(), 5000);
 }
 
-async function verDetalleVentaCheckout(idVenta) {
-  try {
-    const response = await fetch('../backend/api/ventas.php?accion=detalle&id=' + idVenta);
-    const venta = await response.json();
-    if (venta.error) { mostrarMensajeExito(); return; }
+/**
+ * Comprobante unificado que muestra productos y alquileres.
+ * @param {object|null}  ventaResult   - respuesta de ventas.php con id_venta
+ * @param {object[]}     alqResultados - array de respuestas de alquileres.php
+ * @param {object[]}     carritoSnap   - snapshot del carrito al momento de pagar
+ */
+async function mostrarComprobanteUnificado(ventaResult, alqResultados, carritoSnap) {
+  const fmt2 = (n) => new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', minimumFractionDigits:0 }).format(n);
+  const hoy  = new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
 
-    const fmt2 = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n);
+  // ── Separar items del snapshot ──────────────────────────
+  const itemsProducto  = carritoSnap.filter(x => x.kind !== 'rental');
+  const itemsAlquiler  = carritoSnap.filter(x => x.kind === 'rental');
 
-    // Eliminar modal anterior si existe
-    document.getElementById('pp-detalle-checkout-modal')?.remove();
-
-    const overlay = document.createElement('div');
-    overlay.id = 'pp-detalle-checkout-modal';
-    overlay.style.cssText = [
-      'position:fixed', 'inset:0', 'z-index:99999',
-      'background:rgba(0,0,0,0.85)', 'backdrop-filter:blur(6px)',
-      'display:flex', 'align-items:center', 'justify-content:center',
-      'padding:20px', 'font-family:Barlow,sans-serif'
-    ].join(';');
-
-    const itemsHTML = (venta.items || []).map(item => `
-      <tr>
-        <td style="padding:.6rem .75rem;color:#aaa;font-size:.82rem">${item.codigo || '-'}</td>
-        <td style="padding:.6rem .75rem;font-weight:600">${item.nombre}</td>
-        <td style="padding:.6rem .75rem;text-align:center">${item.cantidad}</td>
-        <td style="padding:.6rem .75rem;text-align:right">${fmt2(item.precio_unitario)}</td>
-        <td style="padding:.6rem .75rem;text-align:right;color:#4CAF50;font-weight:700">${fmt2(item.subtotal)}</td>
-      </tr>
-    `).join('');
-
-    overlay.innerHTML = `
-      <div style="
-        background:#181818;
-        border:1px solid rgba(255,255,255,0.12);
-        border-radius:16px;
-        padding:0;
-        max-width:620px;
-        width:100%;
-        max-height:90vh;
-        overflow-y:auto;
-        box-shadow:0 24px 80px rgba(0,0,0,0.7);
-        color:#fff;
-      ">
-        <!-- Header -->
-        <div style="
-          background:linear-gradient(135deg,#FF6B00,#e55a00);
-          padding:1.5rem 2rem;
-          border-radius:16px 16px 0 0;
-          display:flex;
-          justify-content:space-between;
-          align-items:flex-start;
-        ">
-          <div>
-            <div style="font-size:.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.8;margin-bottom:.4rem">✓ Compra Exitosa</div>
-            <h2 style="margin:0;font-size:1.4rem;font-weight:900">${venta.comprobante}</h2>
-            <p style="margin:.3rem 0 0;font-size:.85rem;opacity:.85">${venta.fecha}</p>
-          </div>
-          <button id="pp-detalle-close-btn" style="
-            background:rgba(255,255,255,0.2);
-            border:none;
-            color:#fff;
-            width:34px;height:34px;
-            border-radius:50%;
-            font-size:1.1rem;
-            cursor:pointer;
-            display:flex;align-items:center;justify-content:center;
-            flex-shrink:0;
-          ">✕</button>
-        </div>
-
-        <!-- Info cliente -->
-        <div style="padding:1rem 2rem;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;gap:2rem;flex-wrap:wrap">
-          <div><span style="font-size:.75rem;color:#aaa;display:block;margin-bottom:.2rem">CLIENTE</span><strong>${venta.cliente || '-'}</strong></div>
-          <div><span style="font-size:.75rem;color:#aaa;display:block;margin-bottom:.2rem">REGISTRADO POR</span><strong>${venta.registrado_por || 'Sistema Web'}</strong></div>
-        </div>
-
-        <!-- Tabla productos -->
-        <div style="padding:1.5rem 2rem">
-          <h3 style="margin:0 0 1rem;font-size:.8rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#aaa">Productos Adquiridos</h3>
-          <div style="overflow-x:auto;border-radius:8px;border:1px solid rgba(255,255,255,0.08)">
-            <table style="width:100%;border-collapse:collapse;font-size:.88rem">
-              <thead>
-                <tr style="background:rgba(255,107,0,0.12)">
-                  <th style="padding:.6rem .75rem;text-align:left;font-size:.75rem;font-weight:700;letter-spacing:1px;color:#FF6B00">CÓDIGO</th>
-                  <th style="padding:.6rem .75rem;text-align:left;font-size:.75rem;font-weight:700;letter-spacing:1px;color:#FF6B00">PRODUCTO</th>
-                  <th style="padding:.6rem .75rem;text-align:center;font-size:.75rem;font-weight:700;letter-spacing:1px;color:#FF6B00">CANT.</th>
-                  <th style="padding:.6rem .75rem;text-align:right;font-size:.75rem;font-weight:700;letter-spacing:1px;color:#FF6B00">P.U.</th>
-                  <th style="padding:.6rem .75rem;text-align:right;font-size:.75rem;font-weight:700;letter-spacing:1px;color:#FF6B00">SUBTOTAL</th>
-                </tr>
-              </thead>
-              <tbody style="color:#fff">${itemsHTML}</tbody>
-            </table>
-          </div>
-
-          <!-- Total -->
-          <div style="
-            margin-top:1rem;
-            padding:1rem 1.25rem;
-            background:rgba(76,175,80,0.1);
-            border:1px solid rgba(76,175,80,0.25);
-            border-radius:8px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-          ">
-            <span style="font-weight:600;color:#aaa">Total Pagado</span>
-            <span style="font-size:1.4rem;font-weight:900;color:#4CAF50">${fmt2(venta.total)}</span>
-          </div>
-
-          <!-- Botón cerrar -->
-          <button id="pp-detalle-accept-btn" style="
-            display:block;
-            width:100%;
-            margin-top:1.25rem;
-            padding:.85rem;
-            background:#FF6B00;
-            color:#fff;
-            border:none;
-            border-radius:8px;
-            font-size:1rem;
-            font-weight:700;
-            cursor:pointer;
-            transition:background .2s;
-          ">Aceptar y cerrar</button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(overlay);
-
-    // Cerrar con botones o click fuera
-    const closeModal = () => overlay.remove();
-    document.getElementById('pp-detalle-close-btn').addEventListener('click', closeModal);
-    document.getElementById('pp-detalle-accept-btn').addEventListener('click', closeModal);
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
-
-  } catch (e) {
-    console.error('Error modal detalle:', e);
-    mostrarMensajeExito();
+  // ── Intentar traer detalle de venta de la API si hay productos ──
+  let ventaAPI = null;
+  if (ventaResult?.id_venta) {
+    try {
+      const r = await fetch('../backend/api/ventas.php?accion=detalle&id=' + ventaResult.id_venta);
+      const d = await r.json();
+      if (!d.error) ventaAPI = d;
+    } catch(_) {}
   }
+
+  // ── Número de comprobante ────────────────────────────────
+  const comprobante = ventaAPI?.comprobante
+    || (ventaResult?.id_venta ? `VTA-${String(ventaResult.id_venta).padStart(5,'0')}` : null)
+    || (alqResultados[0]?.id_alquiler ? `ALQ-${String(alqResultados[0].id_alquiler).padStart(5,'0')}` : null)
+    || 'PED-' + Date.now().toString().slice(-6);
+
+  const clienteNombre = ventaAPI?.cliente || sessionStorage.getItem('jm_nombre') || '—';
+
+  // ── HTML tabla productos ─────────────────────────────────
+  let tablaProductosHTML = '';
+  if (itemsProducto.length > 0) {
+    const filas = (ventaAPI?.items?.length ? ventaAPI.items : itemsProducto.map(p => ({
+      codigo: p.codigo || '—',
+      nombre: p.nombre,
+      cantidad: p.qty,
+      precio_unitario: p.precio,
+      subtotal: p.precio * p.qty,
+    }))).map(item => `
+      <tr>
+        <td style="padding:.55rem .75rem;color:#aaa;font-size:.8rem">${item.codigo || '—'}</td>
+        <td style="padding:.55rem .75rem;font-weight:600">${item.nombre}</td>
+        <td style="padding:.55rem .75rem;text-align:center">${item.cantidad}</td>
+        <td style="padding:.55rem .75rem;text-align:right">${fmt2(item.precio_unitario)}</td>
+        <td style="padding:.55rem .75rem;text-align:right;color:#4CAF50;font-weight:700">${fmt2(item.subtotal)}</td>
+      </tr>`).join('');
+
+    tablaProductosHTML = `
+      <div style="margin-bottom:1.5rem">
+        <h3 style="margin:0 0 .75rem;font-size:.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#aaa">🛒 Productos Adquiridos</h3>
+        <div style="overflow-x:auto;border-radius:8px;border:1px solid rgba(255,255,255,0.08)">
+          <table style="width:100%;border-collapse:collapse;font-size:.86rem">
+            <thead>
+              <tr style="background:rgba(255,107,0,0.12)">
+                <th style="padding:.55rem .75rem;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:1px;color:#FF6B00">CÓD.</th>
+                <th style="padding:.55rem .75rem;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:1px;color:#FF6B00">PRODUCTO</th>
+                <th style="padding:.55rem .75rem;text-align:center;font-size:.72rem;font-weight:700;letter-spacing:1px;color:#FF6B00">CANT.</th>
+                <th style="padding:.55rem .75rem;text-align:right;font-size:.72rem;font-weight:700;letter-spacing:1px;color:#FF6B00">P.U.</th>
+                <th style="padding:.55rem .75rem;text-align:right;font-size:.72rem;font-weight:700;letter-spacing:1px;color:#FF6B00">SUBTOTAL</th>
+              </tr>
+            </thead>
+            <tbody style="color:#fff">${filas}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  // ── HTML tabla alquileres ────────────────────────────────
+  let tablaAlquilerHTML = '';
+  if (itemsAlquiler.length > 0) {
+    const hoyDate = new Date(); hoyDate.setHours(0,0,0,0);
+    const filas = itemsAlquiler.map((alq, i) => {
+      const dias     = alq.qty;
+      const tarifa   = alq.tarifa || 0;
+      const monto    = tarifa * dias;
+      const idAlq    = alqResultados[i]?.id_alquiler;
+      const finDate  = new Date(hoyDate); finDate.setDate(hoyDate.getDate() + Math.max(0, dias - 1));
+      const fechaFin = finDate.toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
+      return `
+        <tr>
+          <td style="padding:.55rem .75rem;color:#aaa;font-size:.8rem">${idAlq ? 'ALQ-' + String(idAlq).padStart(4,'0') : '—'}</td>
+          <td style="padding:.55rem .75rem;font-weight:600">${alq.nombre}</td>
+          <td style="padding:.55rem .75rem;text-align:center">${dias} día${dias !== 1 ? 's' : ''}</td>
+          <td style="padding:.55rem .75rem;text-align:right">${fmt2(tarifa)}/día</td>
+          <td style="padding:.55rem .75rem;text-align:right">${hoy}</td>
+          <td style="padding:.55rem .75rem;text-align:right">${fechaFin}</td>
+          <td style="padding:.55rem .75rem;text-align:right;color:#58a6ff;font-weight:700">${fmt2(monto)}</td>
+        </tr>`;
+    }).join('');
+
+    tablaAlquilerHTML = `
+      <div style="margin-bottom:1.5rem">
+        <h3 style="margin:0 0 .75rem;font-size:.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#aaa">🔧 Equipos en Alquiler</h3>
+        <div style="overflow-x:auto;border-radius:8px;border:1px solid rgba(88,166,255,0.15)">
+          <table style="width:100%;border-collapse:collapse;font-size:.86rem">
+            <thead>
+              <tr style="background:rgba(88,166,255,0.08)">
+                <th style="padding:.55rem .75rem;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:1px;color:#58a6ff">ID</th>
+                <th style="padding:.55rem .75rem;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:1px;color:#58a6ff">EQUIPO</th>
+                <th style="padding:.55rem .75rem;text-align:center;font-size:.72rem;font-weight:700;letter-spacing:1px;color:#58a6ff">DURACIÓN</th>
+                <th style="padding:.55rem .75rem;text-align:right;font-size:.72rem;font-weight:700;letter-spacing:1px;color:#58a6ff">TARIFA</th>
+                <th style="padding:.55rem .75rem;text-align:right;font-size:.72rem;font-weight:700;letter-spacing:1px;color:#58a6ff">INICIO</th>
+                <th style="padding:.55rem .75rem;text-align:right;font-size:.72rem;font-weight:700;letter-spacing:1px;color:#58a6ff">FIN EST.</th>
+                <th style="padding:.55rem .75rem;text-align:right;font-size:.72rem;font-weight:700;letter-spacing:1px;color:#58a6ff">MONTO</th>
+              </tr>
+            </thead>
+            <tbody style="color:#fff">${filas}</tbody>
+          </table>
+        </div>
+        <div style="margin-top:.75rem;padding:.7rem 1rem;background:rgba(88,166,255,0.07);border:1px solid rgba(88,166,255,0.18);border-radius:8px;font-size:.82rem;color:rgba(255,255,255,0.65);line-height:1.5">
+          📞 <strong style="color:#58a6ff">Un asesor se contactará contigo</strong> para coordinar la entrega y condiciones del alquiler.
+        </div>
+      </div>`;
+  }
+
+  // ── Total global ─────────────────────────────────────────
+  const totalGlobal = carritoSnap.reduce((s, x) => s + (x.tarifa || x.precio || 0) * x.qty, 0);
+
+  // ── Montar modal ─────────────────────────────────────────
+  document.getElementById('pp-detalle-checkout-modal')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'pp-detalle-checkout-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;font-family:Barlow,sans-serif';
+
+  overlay.innerHTML = `
+    <div style="background:#181818;border:1px solid rgba(255,255,255,0.12);border-radius:16px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7);color:#fff">
+
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#FF6B00,#e55a00);padding:1.4rem 2rem;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.85;margin-bottom:.3rem">✓ Pedido Confirmado</div>
+          <h2 style="margin:0;font-size:1.4rem;font-weight:900">${comprobante}</h2>
+          <p style="margin:.3rem 0 0;font-size:.82rem;opacity:.85">${hoy}</p>
+        </div>
+        <button id="pp-detalle-close-btn" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:34px;height:34px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
+      </div>
+
+      <!-- Info cliente -->
+      <div style="padding:.9rem 2rem;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;gap:2rem;flex-wrap:wrap">
+        <div><span style="font-size:.72rem;color:#aaa;display:block;margin-bottom:.2rem">CLIENTE</span><strong>${clienteNombre}</strong></div>
+        <div><span style="font-size:.72rem;color:#aaa;display:block;margin-bottom:.2rem">FECHA</span><strong>${hoy}</strong></div>
+      </div>
+
+      <!-- Tablas -->
+      <div style="padding:1.5rem 2rem">
+        ${tablaProductosHTML}
+        ${tablaAlquilerHTML}
+
+        <!-- Total -->
+        <div style="padding:1rem 1.25rem;background:rgba(255,107,0,0.08);border:1px solid rgba(255,107,0,0.2);border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+          <span style="font-weight:600;color:#aaa">Total del Pedido</span>
+          <span style="font-size:1.45rem;font-weight:900;color:#FF6B00">${fmt2(totalGlobal)}</span>
+        </div>
+
+        <button id="pp-detalle-accept-btn" style="display:block;width:100%;padding:.85rem;background:#FF6B00;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;transition:background .2s">Aceptar y cerrar</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  document.getElementById('pp-detalle-close-btn').addEventListener('click', close);
+  document.getElementById('pp-detalle-accept-btn').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 }
 
-
-
+// Mantener alias para compatibilidad
+async function verDetalleVentaCheckout(idVenta) {
+  mostrarComprobanteUnificado({ id_venta: idVenta }, [], state.carrito);
+}
 
 checkoutClose?.addEventListener('click', cerrarCheckout);
 checkoutOverlay?.addEventListener('click', cerrarCheckout);
 checkoutForm?.addEventListener('submit', procesarCompra);
+
 
 // Toggle dirección
 function toggleDireccionSection() {

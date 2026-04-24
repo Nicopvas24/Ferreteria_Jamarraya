@@ -428,7 +428,9 @@ function abrirCarrito() {
   cartOverlay?.classList.add('open');
   cartPanel?.setAttribute('aria-hidden', 'false');
 }
+
 function cerrarCarrito() {
+  if (window.GlobalCart) { window.GlobalCart.cerrar(); return; }
   cartPanel?.classList.remove('open');
   cartOverlay?.classList.remove('open');
   cartPanel?.setAttribute('aria-hidden', 'true');
@@ -453,87 +455,104 @@ if (cartCta) {
 
 cartQuote?.addEventListener('click', () => {
   if (carrito.length === 0) return;
-
-  const lineas = carrito
-    .map(x => {
-      const unit = Number(x.kind === 'rental' ? x.tarifa : x.precio) || 0;
-      const detalle = x.kind === 'rental'
-        ? `${x.qty} día${x.qty !== 1 ? 's' : ''}`
-        : `x${x.qty}`;
-      return `• ${x.nombre} (${x.kind === 'rental' ? 'Alquiler' : 'Producto'}) ${detalle} = ${fmt(unit * x.qty)}`;
-    })
-    .join('%0A');
-
-  const total = carrito.reduce((s, x) => {
-    const unit = Number(x.kind === 'rental' ? x.tarifa : x.precio) || 0;
-    return s + unit * x.qty;
-  }, 0);
-
-  const msg = encodeURIComponent(
-    `Hola, quiero cotizar estos items del carrito:%0A${lineas}%0A%0ATotal estimado: ${fmt(total)}`
-  );
+  const lineas = carrito.map(x => {
+    const unit   = Number(x.kind === 'rental' ? x.tarifa : x.precio) || 0;
+    const detalle = x.kind === 'rental' ? `${x.qty} día${x.qty!==1?'s':''}` : `x${x.qty}`;
+    return `• ${x.nombre} (${x.kind === 'rental' ? 'Alquiler' : 'Producto'}) ${detalle} = $${(unit*x.qty).toLocaleString('es-CO')}`;
+  }).join('%0A');
+  const total = carrito.reduce((s,x) => s + (Number(x.kind==='rental'?x.tarifa:x.precio)||0)*x.qty, 0);
+  const msg = encodeURIComponent(`Hola, quiero cotizar:%0A${lineas}%0A%0ATotal estimado: $${total.toLocaleString('es-CO')}`);
   window.open(`https://wa.me/573017213193?text=${msg}`, '_blank');
 });
 
 /* ══════════════════════════════════════════
-   CHECKOUT MODAL
+   CHECKOUT MODAL (usa JMCheckout compartido)
 ══════════════════════════════════════════ */
-let checkoutModal = null;
+
+function esperar(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function abrirCheckout() {
-  // Crear modal dinámico si no existe
-  if (!checkoutModal) {
-    checkoutModal = document.createElement('div');
-    checkoutModal.id = 'alq-checkout-modal';
-    checkoutModal.style.cssText = `
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;
-      background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center;
-    `;
-    checkoutModal.innerHTML = `
-      <div style="background: #fff; border-radius: 12px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; padding: 2rem">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem">
-          <h2 style="margin: 0; font-size: 1.5rem">Procesar alquiler</h2>
-          <button id="alq-checkout-close" style="background: none; border: none; font-size: 1.5rem; cursor: pointer">✕</button>
-        </div>
-        <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #eee">
-          <h3 style="margin-top: 0; font-size: 0.9rem; color: #666">Resumen del alquiler</h3>
-          <div id="alq-checkout-summary" style="font-size: 0.9rem"></div>
-          <div style="display: flex; justify-content: space-between; margin-top: 1rem; font-weight: 700; font-size: 1.1rem">
-            <span>Total estimado:</span>
-            <span id="alq-checkout-total">$0</span>
-          </div>
-        </div>
-        <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f5f5f5; border-radius: 8px">
-          <p style="margin: 0; font-size: 0.85rem; color: #666">📧 Los detalles se enviarán al correo registrado en tu cuenta. Recibirás confirmación y fechas de entrega.</p>
-        </div>
-        <button id="alq-checkout-submit" style="width: 100%; padding: 0.8rem; background: var(--blue); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem">
-          Confirmar solicitud de alquiler
-        </button>
-      </div>
-    `;
-    document.body.appendChild(checkoutModal);
-    
-    document.getElementById('alq-checkout-close').addEventListener('click', cerrarCheckoutAlquiler);
-    checkoutModal.addEventListener('click', (e) => { if (e.target === checkoutModal) cerrarCheckoutAlquiler(); });
-    document.getElementById('alq-checkout-submit').addEventListener('click', procesarAlquiler);
+  const usuario = sessionStorage.getItem('jm_nombre');
+  if (!usuario) { alert('Debes iniciar sesión para continuar.'); return; }
+  if (!carrito.length) return;
+
+  function abrirConJMCheckout() {
+    window.JMCheckout.abrir({
+      modo: 'alquiler',
+      carrito,
+      onConfirmar: procesarAlquiler,
+    });
   }
-  
-  // Actualizar resumen
-  const total = carrito.reduce((s,x) => s + (x.tarifa || x.precio || 0) * x.qty, 0);
-  document.getElementById('alq-checkout-total').textContent = fmt(total);
-  document.getElementById('alq-checkout-summary').innerHTML = carrito.map(item => `
-    <div style="display: flex; justify-content: space-between; margin: 0.5rem 0">
-      <span>${item.nombre} ${item.kind === 'rental' ? `<strong>${item.qty} día${item.qty !== 1 ? 's' : ''}</strong>` : `<strong>x${item.qty}</strong>`}</span>
-      <strong>${fmt((item.tarifa || item.precio || 0) * item.qty)}</strong>
-    </div>
-  `).join('');
-  
-  checkoutModal.style.display = 'flex';
-  cerrarCarrito();
+
+  if (window.JMCheckout) {
+    abrirConJMCheckout();
+  } else {
+    const t = setInterval(() => {
+      if (window.JMCheckout) { clearInterval(t); abrirConJMCheckout(); }
+    }, 50);
+    setTimeout(() => clearInterval(t), 3000);
+  }
 }
 
 function cerrarCheckoutAlquiler() {
-  if (checkoutModal) checkoutModal.style.display = 'none';
+  window.JMCheckout?.cerrar();
+}
+
+async function procesarAlquiler() {
+  const usuario = sessionStorage.getItem('jm_nombre');
+  if (!usuario || !carrito.length) throw new Error('Datos incompletos');
+
+  const carritoSnapshot = [...carrito];
+  const total = carritoSnapshot.reduce((s,x) => s + (x.tarifa || 0) * x.qty, 0);
+
+  // Simular pasarela
+  const pasos = ['Validando datos del alquiler...', 'Autorizando solicitud...', `Confirmando alquiler por ${fmt(total)}...`];
+  for (const paso of pasos) {
+    window.JMCheckout?.setStatus('⟳ ' + paso);
+    await esperar(650);
+  }
+  window.JMCheckout?.setStatus('✓ Aprobado. Registrando alquiler...');
+
+  // Obtener id_cliente
+  let idCliente = null;
+  const resV = await fetch('../backend/usuarios.php?accion=verificar');
+  const dV   = await resV.json();
+  if (dV.ok) idCliente = dV.id_cliente;
+
+  if (!idCliente) {
+    const email          = sessionStorage.getItem('jm_email') || '';
+    const telefono       = sessionStorage.getItem('jm_telefono') || '';
+    const identificacion = sessionStorage.getItem('jm_identificacion') || '';
+    const clienteRes  = await fetch('../backend/api/clientes.php?accion=registrar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: usuario, identificacion, telefono, email, direccion: 'Alquiler web' })
+    });
+    const clienteData = await clienteRes.json();
+    idCliente = clienteData.id || clienteData.id_cliente;
+  }
+  if (!idCliente) throw new Error('No se pudo identificar el cliente');
+
+  // Registrar alquileres
+  const hoyDate = new Date(); hoyDate.setHours(0,0,0,0);
+  const fechaInicio = toISODateLocal(hoyDate);
+  const alquileres  = carritoSnapshot.filter(x => x.kind === 'rental');
+
+  for (const alq of alquileres) {
+    const fechaFin = toISODateLocal(sumarDiasIncluyente(hoyDate, alq.qty));
+    await fetch('../backend/api/alquileres.php?accion=registrar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_cliente: idCliente, id_maquinaria: alq.id, fecha_inicio: fechaInicio, fecha_fin: fechaFin, monto: (alq.tarifa || 0) * alq.qty })
+    });
+  }
+
+  // Limpiar carrito
+  carrito = [];
+  guardarCarritoCompartido([]);
+  if (window.GlobalCart) window.GlobalCart.vaciar(); else renderCarrito();
+  window.JMCheckout?.cerrar();
+
+  // Modal de éxito
+  mostrarExitoAlquiler(alquileres, total, fechaInicio);
 }
 
 function sumarDiasIncluyente(fechaBase, dias) {
@@ -550,79 +569,92 @@ function toISODateLocal(fecha) {
   return `${y}-${m}-${d}`;
 }
 
-async function procesarAlquiler() {
-  const usuario = sessionStorage.getItem('jm_nombre');
-  const email = sessionStorage.getItem('jm_email');
-  const telefono = sessionStorage.getItem('jm_telefono');
-  const identificacion = sessionStorage.getItem('jm_identificacion');
-  
-  if (!usuario || carrito.length === 0) {
-    alert('Datos incompletos');
-    return;
-  }
-  
-  const submitBtn = document.getElementById('alq-checkout-submit');
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Procesando...';
-  
-  try {
-    // Obtener id_cliente real de la sesión
-    let idCliente = null;
-    if (window.GlobalCart) {
-      const resV = await fetch('../backend/usuarios.php?accion=verificar');
-      const dV   = await resV.json();
-      if (dV.ok) idCliente = dV.id_cliente;
-    }
+function mostrarExitoAlquiler(alquileres, total, fechaInicio) {
+  document.getElementById('alq-detalle-modal')?.remove();
 
-    if (!idCliente) {
-      // Fallback: registrar/buscar cliente por nombre
-      const clienteRes = await fetch('../backend/api/clientes.php?accion=registrar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: usuario, identificacion, telefono, email, direccion: 'Alquiler web' })
-      });
-      const clienteData = await clienteRes.json();
-      idCliente = clienteData.id || clienteData.id_cliente;
-    }
+  const overlay = document.createElement('div');
+  overlay.id = 'alq-detalle-modal';
+  overlay.style.cssText =
+    'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.85);' +
+    'backdrop-filter:blur(6px);display:flex;align-items:center;' +
+    'justify-content:center;padding:20px;font-family:Barlow,sans-serif;';
 
-    if (!idCliente) throw new Error('No se pudo identificar el cliente');
-    
-    // Registrar cada alquiler
-    const hoyDate = new Date();
-    hoyDate.setHours(0, 0, 0, 0);
-    const fechaInicio = toISODateLocal(hoyDate);
-    const alquileres = carrito.filter(x => x.kind === 'rental');
-    
-    for (const alq of alquileres) {
-      const fechaFin = toISODateLocal(sumarDiasIncluyente(hoyDate, alq.qty));
-      await fetch('../backend/api/alquileres.php?accion=registrar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_cliente: idCliente,
-          id_maquinaria: alq.id,
-          fecha_inicio: fechaInicio,
-          fecha_fin: fechaFin,
-          monto: (alq.tarifa || 0) * alq.qty
-        })
-      });
-    }
-    
-    // Limpiar carrito
-    carrito = [];
-    guardarCarritoCompartido(carrito);
-    renderCarrito();
-    cerrarCheckoutAlquiler();
-    
-    alert('✓ Solicitud de alquiler enviada. Nos contactaremos pronto.');
-  } catch (err) {
-    console.error(err);
-    alert('Error: ' + err.message);
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Confirmar solicitud de alquiler';
-  }
+  const itemsHTML = alquileres.map(alq => {
+    const fechaFin = toISODateLocal(sumarDiasIncluyente(new Date(fechaInicio + 'T00:00:00'), alq.qty));
+    return `
+      <tr>
+        <td style="padding:.6rem .75rem;color:rgba(255,255,255,.7);font-size:.82rem">🔧 Maquinaria</td>
+        <td style="padding:.6rem .75rem;font-weight:600">${alq.nombre}</td>
+        <td style="padding:.6rem .75rem;text-align:center;color:rgba(255,255,255,.8)">${alq.qty} día${alq.qty!==1?'s':''}<br><small style="color:rgba(255,255,255,.4);font-size:.75rem">${fechaInicio} → ${fechaFin}</small></td>
+        <td style="padding:.6rem .75rem;text-align:right;color:#F97316;font-weight:700">${fmt((alq.tarifa||0)*alq.qty)}</td>
+      </tr>`;
+  }).join('');
+
+  overlay.innerHTML = `
+    <div style="
+      background:#181818;border:1px solid rgba(255,255,255,.1);
+      border-radius:16px;padding:0;max-width:580px;width:100%;
+      max-height:90vh;overflow-y:auto;
+      box-shadow:0 24px 80px rgba(0,0,0,.7);color:#fff;
+    ">
+      <div style="
+        background:linear-gradient(135deg,#F97316,#C2540A);
+        padding:1.5rem 2rem;border-radius:16px 16px 0 0;
+        display:flex;justify-content:space-between;align-items:flex-start;
+      ">
+        <div>
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.85;margin-bottom:.4rem">✓ Alquiler Confirmado</div>
+          <h2 style="margin:0;font-size:1.4rem;font-weight:900;font-family:'Barlow Condensed',sans-serif;">Solicitud Registrada</h2>
+          <p style="margin:.3rem 0 0;font-size:.85rem;opacity:.85;">Inicio: ${fechaInicio}</p>
+        </div>
+        <button id="alq-detalle-close" style="
+          background:rgba(255,255,255,.2);border:none;color:#fff;
+          width:34px;height:34px;border-radius:50%;font-size:1.1rem;
+          cursor:pointer;display:flex;align-items:center;justify-content:center;
+        ">✕</button>
+      </div>
+
+      <div style="padding:1.5rem 2rem;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,.1);">
+              <th style="padding:.5rem .75rem;text-align:left;font-size:.72rem;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Tipo</th>
+              <th style="padding:.5rem .75rem;text-align:left;font-size:.72rem;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Equipo</th>
+              <th style="padding:.5rem .75rem;text-align:center;font-size:.72rem;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Días / Fechas</th>
+              <th style="padding:.5rem .75rem;text-align:right;font-size:.72rem;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>${itemsHTML}</tbody>
+        </table>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;
+          border-top:1px solid rgba(255,255,255,.1);margin-top:1rem;padding-top:1rem;">
+          <span style="color:rgba(255,255,255,.5);font-size:.9rem;">Total</span>
+          <strong style="font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;color:#F97316;">${fmt(total)}</strong>
+        </div>
+
+        <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);
+          border-radius:8px;padding:.85rem 1rem;margin-top:1.25rem;">
+          <p style="margin:0;font-size:.82rem;color:rgba(255,255,255,.6);line-height:1.5;">
+            📧 Recibirás un correo de confirmación con los detalles de tu alquiler y las fechas de entrega.
+          </p>
+        </div>
+
+        <button id="alq-detalle-ok" style="
+          width:100%;margin-top:1.25rem;padding:.85rem;border:none;border-radius:8px;cursor:pointer;
+          background:linear-gradient(135deg,#F97316,#C2540A);color:#fff;
+          font-family:'Barlow Condensed',sans-serif;font-size:1.05rem;font-weight:700;
+          letter-spacing:.04em;text-transform:uppercase;
+        ">Cerrar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('alq-detalle-close').addEventListener('click', () => overlay.remove());
+  document.getElementById('alq-detalle-ok').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (ev) => { if (ev.target === overlay) overlay.remove(); });
 }
+
 
 /* ══════════════════════════════════════════
    FILTROS – EVENTOS

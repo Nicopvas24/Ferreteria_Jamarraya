@@ -132,6 +132,10 @@
   function cerrar() {
     const panel = document.getElementById('global-cart-panel');
     if (!panel) return;
+    // Quitar foco de cualquier elemento dentro del panel antes de ocultarlo
+    if (panel.contains(document.activeElement)) {
+      document.activeElement.blur();
+    }
     panel.style.transform = 'translateX(100%)';
     panel.setAttribute('aria-hidden', 'true');
     document.getElementById('global-cart-overlay').style.display = 'none';
@@ -144,7 +148,7 @@
     const items = leer();
 
     /* contador en navbar */
-    const totalItems = items.reduce((s, x) => s + x.qty, 0);
+    const totalItems = items.reduce((s, x) => s + (x.kind === 'rental' ? 1 : x.qty), 0);
     const badge = document.getElementById('gc-badge');
     const navBtn = document.getElementById('headerCartBtn');
     const navCount = document.getElementById('headerCartCount');
@@ -261,14 +265,15 @@
     if (!usuario) { alert('Debes iniciar sesión para comprar.'); return; }
     const items = leer();
     if (!items.length) return;
-    cerrar();
-    // Delegar al checkout de la página actual si existe
-    if (typeof window._gcAbrirCheckout === 'function') {
-      window._gcAbrirCheckout();
-    } else {
-      // Si no hay checkout local, redirigir a productos con el carrito ya cargado
-      window.location.href = '../pages/productos.html';
-    }
+    cerrar(); // blur + aria-hidden ya aplicados
+    // Esperar un frame para que el panel termine de cerrarse antes de abrir el checkout
+    setTimeout(() => {
+      if (typeof window._gcAbrirCheckout === 'function') {
+        window._gcAbrirCheckout();
+      } else {
+        window.location.href = '../pages/productos.html';
+      }
+    }, 50);
   }
 
   function onCotizar() {
