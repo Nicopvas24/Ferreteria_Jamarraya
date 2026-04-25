@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 24-04-2026 a las 23:58:02
+-- Tiempo de generación: 25-04-2026 a las 22:49:58
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS `alquileres` (
   KEY `idx_alquileres_estado` (`estado`),
   KEY `idx_alquileres_fecha_fin` (`fecha_fin`),
   KEY `idx_alquileres_cliente` (`id_cliente`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `alquileres`
@@ -61,17 +61,173 @@ INSERT INTO `alquileres` (`id`, `id_cliente`, `id_maquinaria`, `id_usuario`, `fe
 (6, 4, 6, 4, '2026-03-10', '2026-03-12', 140000.00, 'finalizado', '2026-03-10 08:00:00'),
 (7, 8, 2, 7, '2026-03-18', '2026-03-20', 90000.00, 'finalizado', '2026-03-18 10:00:00'),
 (8, 6, 10, 5, '2026-03-25', '2026-04-24', 280000.00, 'finalizado', '2026-03-25 09:00:00'),
-(9, 9, 4, 8, '2026-04-18', '2026-04-26', 800000.00, 'activo', '2026-04-18 08:30:00'),
-(10, 10, 8, 3, '2026-04-10', '2026-04-11', 450000.00, 'vencido', '2026-04-20 09:00:00'),
-(11, 6, 5, 1, '2026-04-24', '2026-04-30', 420000.00, 'activo', '2026-04-24 16:19:46');
+(9, 9, 4, 8, '2026-04-03', '2026-04-25', 800000.00, 'finalizado', '2026-04-18 08:30:00'),
+(10, 10, 8, 3, '2026-04-10', '2026-04-25', 450000.00, 'finalizado', '2026-04-20 09:00:00'),
+(11, 6, 5, 1, '2026-04-24', '2026-04-30', 420000.00, 'activo', '2026-04-24 16:19:46'),
+(12, 1, 12, 9, '2026-04-25', '2026-04-25', 35000.00, 'activo', '2026-04-25 15:46:00'),
+(13, 1, 2, 9, '2026-04-25', '2026-04-30', 270000.00, 'activo', '2026-04-25 15:46:00'),
+(14, 1, 1, 9, '2026-04-25', '2026-04-26', 160000.00, 'activo', '2026-04-25 15:48:25');
 
 --
 -- Disparadores `alquileres`
 --
+DROP TRIGGER IF EXISTS `trg_alerta_alquiler_insert`;
+DELIMITER $$
+CREATE TRIGGER `trg_alerta_alquiler_insert` AFTER INSERT ON `alquileres` FOR EACH ROW BEGIN
+    DECLARE v_cliente VARCHAR(100) DEFAULT '';
+    DECLARE v_maquinaria VARCHAR(100) DEFAULT '';
+
+    SELECT COALESCE(nombre, '') INTO v_cliente
+    FROM clientes
+    WHERE id = NEW.id_cliente
+    LIMIT 1;
+
+    SELECT COALESCE(nombre, '') INTO v_maquinaria
+    FROM maquinaria
+    WHERE id = NEW.id_maquinaria
+    LIMIT 1;
+
+    IF NEW.estado = 'activo' AND DATEDIFF(NEW.fecha_fin, CURDATE()) BETWEEN 0 AND 2 THEN
+        INSERT INTO logs (id_usuario, accion, tabla_afectada, id_registro, detalle, ip_origen)
+        SELECT NULL,
+               'ALERTA_ALQUILER_POR_VENCER',
+               'alquileres',
+               NEW.id,
+               JSON_OBJECT(
+                   'cliente', v_cliente,
+                   'maquinaria', v_maquinaria,
+                   'fecha_fin', NEW.fecha_fin,
+                   'color', 'amarillo',
+                   'accion_sugerida', 'Contactar cliente para devolucion'
+               ),
+               NULL
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM logs l
+            WHERE l.accion = 'ALERTA_ALQUILER_POR_VENCER'
+              AND l.id_registro = NEW.id
+              AND DATE(l.fecha) = CURDATE()
+        );
+    END IF;
+
+    IF NEW.estado = 'vencido' THEN
+        INSERT INTO logs (id_usuario, accion, tabla_afectada, id_registro, detalle, ip_origen)
+        SELECT NULL,
+               'ALERTA_ALQUILER_VENCIDO',
+               'alquileres',
+               NEW.id,
+               JSON_OBJECT(
+                   'cliente', v_cliente,
+                   'maquinaria', v_maquinaria,
+                   'fecha_fin', NEW.fecha_fin,
+                   'color', 'rojo',
+                   'accion_sugerida', 'Alquiler vencido - Contactar urgente'
+               ),
+               NULL
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM logs l
+            WHERE l.accion = 'ALERTA_ALQUILER_VENCIDO'
+              AND l.id_registro = NEW.id
+              AND DATE(l.fecha) = CURDATE()
+        );
+    END IF;
+END
+$$
+DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_alerta_alquiler_update`;
+DELIMITER $$
+CREATE TRIGGER `trg_alerta_alquiler_update` AFTER UPDATE ON `alquileres` FOR EACH ROW BEGIN
+    DECLARE v_cliente VARCHAR(100) DEFAULT '';
+    DECLARE v_maquinaria VARCHAR(100) DEFAULT '';
+
+    SELECT COALESCE(nombre, '') INTO v_cliente
+    FROM clientes
+    WHERE id = NEW.id_cliente
+    LIMIT 1;
+
+    SELECT COALESCE(nombre, '') INTO v_maquinaria
+    FROM maquinaria
+    WHERE id = NEW.id_maquinaria
+    LIMIT 1;
+
+    IF NEW.estado = 'activo'
+       AND DATEDIFF(NEW.fecha_fin, CURDATE()) BETWEEN 0 AND 2
+       AND (
+            OLD.estado <> NEW.estado
+            OR OLD.fecha_fin <> NEW.fecha_fin
+            OR OLD.id_cliente <> NEW.id_cliente
+            OR OLD.id_maquinaria <> NEW.id_maquinaria
+       ) THEN
+        INSERT INTO logs (id_usuario, accion, tabla_afectada, id_registro, detalle, ip_origen)
+        SELECT NULL,
+               'ALERTA_ALQUILER_POR_VENCER',
+               'alquileres',
+               NEW.id,
+               JSON_OBJECT(
+                   'cliente', v_cliente,
+                   'maquinaria', v_maquinaria,
+                   'fecha_fin', NEW.fecha_fin,
+                   'color', 'amarillo',
+                   'accion_sugerida', 'Contactar cliente para devolucion'
+               ),
+               NULL
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM logs l
+            WHERE l.accion = 'ALERTA_ALQUILER_POR_VENCER'
+              AND l.id_registro = NEW.id
+              AND DATE(l.fecha) = CURDATE()
+        );
+    END IF;
+
+    IF NEW.estado = 'vencido' AND OLD.estado <> 'vencido' THEN
+        INSERT INTO logs (id_usuario, accion, tabla_afectada, id_registro, detalle, ip_origen)
+        SELECT NULL,
+               'ALERTA_ALQUILER_VENCIDO',
+               'alquileres',
+               NEW.id,
+               JSON_OBJECT(
+                   'cliente', v_cliente,
+                   'maquinaria', v_maquinaria,
+                   'fecha_fin', NEW.fecha_fin,
+                   'color', 'rojo',
+                   'accion_sugerida', 'Alquiler vencido - Contactar urgente'
+               ),
+               NULL
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM logs l
+            WHERE l.accion = 'ALERTA_ALQUILER_VENCIDO'
+              AND l.id_registro = NEW.id
+              AND DATE(l.fecha) = CURDATE()
+        );
+    END IF;
+END
+$$
+DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_alquiler_estado_vencido_insert`;
+DELIMITER $$
+CREATE TRIGGER `trg_alquiler_estado_vencido_insert` BEFORE INSERT ON `alquileres` FOR EACH ROW BEGIN
+    IF NEW.estado = 'activo' AND NEW.fecha_fin < CURDATE() THEN
+        SET NEW.estado = 'vencido';
+    END IF;
+END
+$$
+DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_alquiler_estado_vencido_update`;
+DELIMITER $$
+CREATE TRIGGER `trg_alquiler_estado_vencido_update` BEFORE UPDATE ON `alquileres` FOR EACH ROW BEGIN
+    IF NEW.estado = 'activo' AND NEW.fecha_fin < CURDATE() THEN
+        SET NEW.estado = 'vencido';
+    END IF;
+END
+$$
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_maquinaria_alquilada`;
 DELIMITER $$
 CREATE TRIGGER `trg_maquinaria_alquilada` AFTER INSERT ON `alquileres` FOR EACH ROW BEGIN
-    IF NEW.estado = 'activo' THEN
+    IF NEW.estado IN ('activo', 'vencido') THEN
         UPDATE maquinaria
         SET estado = 'alquilada'
         WHERE id = NEW.id_maquinaria;
@@ -82,7 +238,7 @@ DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_maquinaria_devuelta`;
 DELIMITER $$
 CREATE TRIGGER `trg_maquinaria_devuelta` AFTER UPDATE ON `alquileres` FOR EACH ROW BEGIN
-    IF NEW.estado IN ('finalizado', 'vencido') AND OLD.estado = 'activo' THEN
+    IF NEW.estado = 'finalizado' AND OLD.estado <> 'finalizado' THEN
         UPDATE maquinaria
         SET estado = 'disponible'
         WHERE id = NEW.id_maquinaria;
@@ -144,7 +300,7 @@ CREATE TABLE IF NOT EXISTS `detalle_venta` (
   PRIMARY KEY (`id`),
   KEY `fk_detalle_venta_venta` (`id_venta`),
   KEY `fk_detalle_venta_producto` (`id_producto`)
-) ENGINE=InnoDB AUTO_INCREMENT=56 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `detalle_venta`
@@ -205,7 +361,10 @@ INSERT INTO `detalle_venta` (`id`, `id_venta`, `id_producto`, `cantidad`, `preci
 (52, 19, 30, 3, 22000.00, 66000.00),
 (53, 20, 7, 1, 260000.00, 260000.00),
 (54, 20, 5, 1, 210000.00, 210000.00),
-(55, 21, 27, 2, 15000.00, 30000.00);
+(55, 21, 27, 2, 15000.00, 30000.00),
+(56, 22, 25, 1, 9000.00, 9000.00),
+(57, 23, 25, 1, 9000.00, 9000.00),
+(58, 24, 25, 1, 9000.00, 9000.00);
 
 --
 -- Disparadores `detalle_venta`
@@ -258,7 +417,7 @@ CREATE TABLE IF NOT EXISTS `logs` (
   `fecha` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_logs_usuario_fecha` (`id_usuario`,`fecha`)
-) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=97 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `logs`
@@ -310,7 +469,57 @@ INSERT INTO `logs` (`id`, `id_usuario`, `accion`, `tabla_afectada`, `id_registro
 (43, 1, 'ALQUILER_DEVUELTO', 'alquileres', 8, '{\"id_maquinaria\":10}', '::1', '2026-04-24 16:22:18'),
 (44, 1, 'CLIENTE_REGISTRADO', 'clientes', 11, '{\"identificacion\":\"1111111\",\"email\":\"11111@gmail.com\"}', '::1', '2026-04-24 16:55:56'),
 (45, 1, 'VENTA_REGISTRADA', 'ventas', 21, '{\"id_cliente\":5,\"items\":1,\"total\":30000}', '::1', '2026-04-24 16:57:24'),
-(46, 1, 'LOGOUT', 'usuarios', 1, '{\"mensaje\":\"Cierre de sesion\"}', '::1', '2026-04-24 16:57:33');
+(46, 1, 'LOGOUT', 'usuarios', 1, '{\"mensaje\":\"Cierre de sesion\"}', '::1', '2026-04-24 16:57:33'),
+(47, 1, 'LOGIN_EXITOSO', 'usuarios', 1, '{\"email\":\"admin@jamarraya.com\",\"rol\":\"admin\"}', '::1', '2026-04-25 14:58:41'),
+(48, NULL, 'ALERTA_STOCK_BAJO', 'productos', 20, '{\"nombre\": \"Varilla Corrugada 3/8\\\" x6m\", \"stock_actual\": 5, \"stock_minimo\": 15, \"color\": \"rojo\", \"accion_sugerida\": \"Reabastecer producto\"}', NULL, '2026-04-25 15:03:15'),
+(49, 1, 'PRODUCTO_EDITADO', 'productos', 20, '{\"codigo\":\"MC-002\",\"nombre\":\"Varilla Corrugada 3/8\\\" x6m\"}', '::1', '2026-04-25 15:03:15'),
+(50, NULL, 'ALERTA_ALQUILER_VENCIDO', 'alquileres', 9, '{\"cliente\": \"Sebastián Cano\", \"maquinaria\": \"Compresor Industrial 100L\", \"fecha_fin\": \"2026-04-08\", \"color\": \"rojo\", \"accion_sugerida\": \"Alquiler vencido - Contactar urgente\"}', NULL, '2026-04-25 15:05:56'),
+(51, 1, 'LOGOUT', 'usuarios', 1, '{\"mensaje\":\"Cierre de sesion\"}', '::1', '2026-04-25 15:06:46'),
+(52, NULL, 'LOGIN_FALLIDO', 'usuarios', NULL, '{\"motivo\":\"credenciales_invalidas\",\"email\":\"empleado@jamarraya\"}', '::1', '2026-04-25 15:07:24'),
+(53, 3, 'LOGIN_EXITOSO', 'usuarios', 3, '{\"email\":\"empleado@jamarraya.com\",\"rol\":\"empleado\"}', '::1', '2026-04-25 15:07:29'),
+(54, 3, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/alquileres.php\",\"operacion\":\"devolver\",\"method\":\"POST\",\"query\":{\"accion\":\"devolver\"}}', '::1', '2026-04-25 15:07:59'),
+(55, 3, 'ALQUILER_DEVUELTO', 'alquileres', 9, '{\"id_maquinaria\":4}', '::1', '2026-04-25 15:07:59'),
+(56, 3, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/alquileres.php\",\"operacion\":\"devolver\",\"method\":\"POST\",\"query\":{\"accion\":\"devolver\"}}', '::1', '2026-04-25 15:11:22'),
+(57, 3, 'ALQUILER_DEVUELTO', 'alquileres', 10, '{\"id_maquinaria\":8}', '::1', '2026-04-25 15:11:22'),
+(58, 3, 'LOGOUT', 'usuarios', 3, '{\"mensaje\":\"Cierre de sesion\"}', '::1', '2026-04-25 15:11:43'),
+(59, 1, 'LOGIN_EXITOSO', 'usuarios', 1, '{\"email\":\"admin@jamarraya.com\",\"rol\":\"admin\"}', '::1', '2026-04-25 15:11:46'),
+(60, 1, 'PRODUCTO_EDITADO', 'productos', 20, '{\"codigo\":\"MC-002\",\"nombre\":\"Varilla Corrugada 3/8\\\" x6m\"}', '::1', '2026-04-25 15:12:07'),
+(61, NULL, 'ALERTA_STOCK_BAJO', 'productos', 1, '{\"nombre\": \"Taladro Percutor 13mm\", \"stock_actual\": 1, \"stock_minimo\": 3, \"color\": \"rojo\", \"accion_sugerida\": \"Reabastecer producto\"}', NULL, '2026-04-25 15:12:38'),
+(62, 1, 'PRODUCTO_EDITADO', 'productos', 1, '{\"codigo\":\"HE-001\",\"nombre\":\"Taladro Percutor 13mm\"}', '::1', '2026-04-25 15:12:38'),
+(63, 1, 'PRODUCTO_EDITADO', 'productos', 27, '{\"codigo\":\"FP-001\",\"nombre\":\"Tubo PVC Presión 1/2\\\" x6m\"}', '::1', '2026-04-25 15:25:15'),
+(64, 1, 'LOGOUT', 'usuarios', 1, '{\"mensaje\":\"Cierre de sesion\"}', '::1', '2026-04-25 15:25:30'),
+(65, 3, 'LOGIN_EXITOSO', 'usuarios', 3, '{\"email\":\"empleado@jamarraya.com\",\"rol\":\"empleado\"}', '::1', '2026-04-25 15:25:51'),
+(66, 3, 'LOGOUT', 'usuarios', 3, '{\"mensaje\":\"Cierre de sesion\"}', '::1', '2026-04-25 15:26:52'),
+(67, 3, 'LOGIN_EXITOSO', 'usuarios', 3, '{\"email\":\"empleado@jamarraya.com\",\"rol\":\"empleado\"}', '::1', '2026-04-25 15:27:14'),
+(68, 3, 'LOGOUT', 'usuarios', 3, '{\"mensaje\":\"Cierre de sesion\"}', '::1', '2026-04-25 15:27:53'),
+(69, 3, 'LOGIN_EXITOSO', 'usuarios', 3, '{\"email\":\"empleado@jamarraya.com\",\"rol\":\"empleado\"}', '::1', '2026-04-25 15:35:32'),
+(70, 3, 'LOGOUT', 'usuarios', 3, '{\"mensaje\":\"Cierre de sesion\"}', '::1', '2026-04-25 15:36:05'),
+(71, 3, 'LOGIN_EXITOSO', 'usuarios', 3, '{\"email\":\"empleado@jamarraya.com\",\"rol\":\"empleado\"}', '::1', '2026-04-25 15:38:41'),
+(72, 3, 'PRODUCTO_EDITADO', 'productos', 25, '{\"codigo\":\"MC-007\",\"nombre\":\"Tornillo Drywall 3½\\\" x100und\"}', '::1', '2026-04-25 15:39:13'),
+(73, 3, 'LOGOUT', 'usuarios', 3, '{\"mensaje\":\"Cierre de sesion\"}', '::1', '2026-04-25 15:43:01'),
+(74, 1, 'LOGIN_EXITOSO', 'usuarios', 1, '{\"email\":\"admin@jamarraya.com\",\"rol\":\"admin\"}', '::1', '2026-04-25 15:43:09'),
+(75, 1, 'LOGOUT', 'usuarios', 1, '{\"mensaje\":\"Cierre de sesion\"}', '::1', '2026-04-25 15:44:07'),
+(76, NULL, 'LOGIN_FALLIDO', 'usuarios', NULL, '{\"motivo\":\"credenciales_invalidas\",\"email\":\"cliente@jamarraya.com\"}', '::1', '2026-04-25 15:44:35'),
+(77, NULL, 'LOGIN_FALLIDO', 'usuarios', NULL, '{\"motivo\":\"credenciales_invalidas\",\"email\":\"cliente@jamarraya.com\"}', '::1', '2026-04-25 15:44:44'),
+(78, 9, 'LOGIN_EXITOSO', 'usuarios', 9, '{\"email\":\"cliente@gmail.com\",\"rol\":\"cliente\"}', '::1', '2026-04-25 15:44:54'),
+(79, 9, 'LOGOUT', 'usuarios', 9, '{\"mensaje\":\"Cierre de sesion\"}', '::1', '2026-04-25 15:45:18'),
+(80, 9, 'LOGIN_EXITOSO', 'usuarios', 9, '{\"email\":\"cliente@gmail.com\",\"rol\":\"cliente\"}', '::1', '2026-04-25 15:45:21'),
+(81, 9, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/alquileres.php\",\"operacion\":\"registrar\",\"method\":\"POST\",\"query\":{\"accion\":\"registrar\"}}', '::1', '2026-04-25 15:45:59'),
+(82, 9, 'VENTA_REGISTRADA', 'ventas', 22, '{\"id_cliente\":1,\"items\":1,\"total\":9000}', '::1', '2026-04-25 15:46:00'),
+(83, 9, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/alquileres.php\",\"operacion\":\"registrar\",\"method\":\"POST\",\"query\":{\"accion\":\"registrar\"}}', '::1', '2026-04-25 15:46:00'),
+(84, NULL, 'ALERTA_ALQUILER_POR_VENCER', 'alquileres', 12, '{\"cliente\": \"Pedro Gómez\", \"maquinaria\": \"Dobladora de Varilla Manual\", \"fecha_fin\": \"2026-04-25\", \"color\": \"amarillo\", \"accion_sugerida\": \"Contactar cliente para devolucion\"}', NULL, '2026-04-25 15:46:00'),
+(85, 9, 'ALQUILER_REGISTRADO', 'alquileres', 12, '{\"id_cliente\":1,\"id_maquinaria\":12,\"monto\":35000}', '::1', '2026-04-25 15:46:00'),
+(86, 9, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/alquileres.php\",\"operacion\":\"registrar\",\"method\":\"POST\",\"query\":{\"accion\":\"registrar\"}}', '::1', '2026-04-25 15:46:00'),
+(87, 9, 'ALQUILER_REGISTRADO', 'alquileres', 13, '{\"id_cliente\":1,\"id_maquinaria\":2,\"monto\":270000}', '::1', '2026-04-25 15:46:00'),
+(88, 9, 'VENTA_REGISTRADA', 'ventas', 23, '{\"id_cliente\":1,\"items\":1,\"total\":9000}', '::1', '2026-04-25 15:46:33'),
+(89, 9, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/alquileres.php\",\"operacion\":\"registrar\",\"method\":\"POST\",\"query\":{\"accion\":\"registrar\"}}', '::1', '2026-04-25 15:46:33'),
+(90, 9, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/alquileres.php\",\"operacion\":\"registrar\",\"method\":\"POST\",\"query\":{\"accion\":\"registrar\"}}', '::1', '2026-04-25 15:46:33'),
+(91, 9, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/alquileres.php\",\"operacion\":\"registrar\",\"method\":\"POST\",\"query\":{\"accion\":\"registrar\"}}', '::1', '2026-04-25 15:46:33'),
+(92, 9, 'LOGIN_EXITOSO', 'usuarios', 9, '{\"email\":\"cliente@gmail.com\",\"rol\":\"cliente\"}', '::1', '2026-04-25 15:47:41'),
+(93, 9, 'VENTA_REGISTRADA', 'ventas', 24, '{\"id_cliente\":1,\"items\":1,\"total\":9000}', '::1', '2026-04-25 15:47:57'),
+(94, 9, 'REQUEST', 'api', NULL, '{\"endpoint\":\"api/alquileres.php\",\"operacion\":\"registrar\",\"method\":\"POST\",\"query\":{\"accion\":\"registrar\"}}', '::1', '2026-04-25 15:48:25'),
+(95, NULL, 'ALERTA_ALQUILER_POR_VENCER', 'alquileres', 14, '{\"cliente\": \"Pedro Gómez\", \"maquinaria\": \"Concretera 1 Saco\", \"fecha_fin\": \"2026-04-26\", \"color\": \"amarillo\", \"accion_sugerida\": \"Contactar cliente para devolucion\"}', NULL, '2026-04-25 15:48:25'),
+(96, 9, 'ALQUILER_REGISTRADO', 'alquileres', 14, '{\"id_cliente\":1,\"id_maquinaria\":1,\"monto\":160000}', '::1', '2026-04-25 15:48:25');
 
 -- --------------------------------------------------------
 
@@ -335,10 +544,10 @@ CREATE TABLE IF NOT EXISTS `maquinaria` (
 --
 
 INSERT INTO `maquinaria` (`id`, `nombre`, `descripcion`, `estado`, `tarifa_alquiler`, `activo`, `img`) VALUES
-(1, 'Concretera 1 Saco', 'Mezcladora de concreto capacidad 1 saco, motor eléctrico 1HP, tambor de 160L', 'disponible', 80000.00, 1, NULL),
-(2, 'Vibrador de Concreto 1.5\"', 'Vibrador eléctrico para concreto, aguja flexible 1.5\", cable 6m, 1450W', 'disponible', 45000.00, 1, NULL),
+(1, 'Concretera 1 Saco', 'Mezcladora de concreto capacidad 1 saco, motor eléctrico 1HP, tambor de 160L', 'alquilada', 80000.00, 1, NULL),
+(2, 'Vibrador de Concreto 1.5\"', 'Vibrador eléctrico para concreto, aguja flexible 1.5\", cable 6m, 1450W', 'alquilada', 45000.00, 1, NULL),
 (3, 'Cortadora de Piso 14\"', 'Cortadora de piso disco diamantado 14\" 3HP gasolina para concreto, cerámica y asfalto', 'disponible', 120000.00, 1, NULL),
-(4, 'Compresor Industrial 100L', 'Compresor de tornillo 100L 3HP eléctrico, presión máx 125PSI con set de manguera y pistola', 'alquilada', 100000.00, 1, NULL),
+(4, 'Compresor Industrial 100L', 'Compresor de tornillo 100L 3HP eléctrico, presión máx 125PSI con set de manguera y pistola', 'disponible', 100000.00, 1, NULL),
 (5, 'Andamio Tubular x3 tramos', 'Andamio multidireccional galvanizado, juego de 3 tramos altura máx 6m con plataforma y ruedas', 'alquilada', 60000.00, 1, NULL),
 (6, 'Martillo Demoledor 11kg', 'Martillo demoledor eléctrico SDS-MAX 1500W 11kg con cinceles plano y punta', 'disponible', 70000.00, 1, NULL),
 (7, 'Generador Eléctrico 5kW', 'Generador a gasolina 5kW monofásico 120/240V con AVR, tanque 15L autonomía 8h', 'disponible', 150000.00, 1, NULL),
@@ -346,7 +555,7 @@ INSERT INTO `maquinaria` (`id`, `nombre`, `descripcion`, `estado`, `tarifa_alqui
 (9, 'Elevador de Materiales 200kg', 'Montacargas/elevador de materiales 200kg, altura máx 30m, motor eléctrico trifásico', 'disponible', 200000.00, 1, NULL),
 (10, 'Esmeril de Banco 8\"', 'Esmeril de banco 750W disco doble 8\" para afilado y desbaste de metales y herramientas', 'disponible', 40000.00, 1, NULL),
 (11, 'Hidrolavadora 2500PSI', 'Hidrolavadora de alta presión 2500PSI 2HP eléctrica con manguera 8m y lanza regulable', 'disponible', 85000.00, 1, NULL),
-(12, 'Dobladora de Varilla Manual', 'Dobladora manual de varilla hasta 5/8\", capacidad de doble y corte, estructura metálica reforzada', 'disponible', 35000.00, 1, NULL);
+(12, 'Dobladora de Varilla Manual', 'Dobladora manual de varilla hasta 5/8\", capacidad de doble y corte, estructura metálica reforzada', 'alquilada', 35000.00, 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -377,7 +586,7 @@ CREATE TABLE IF NOT EXISTS `productos` (
 --
 
 INSERT INTO `productos` (`id`, `codigo`, `nombre`, `descripcion`, `categoria`, `precio`, `stock_actual`, `stock_minimo`, `activo`, `img`) VALUES
-(1, 'HE-001', 'Taladro Percutor 13mm', 'Taladro percutor 700W con reversa y velocidad variable', 'herramientas_electricas', 289000.00, 14, 3, 1, NULL),
+(1, 'HE-001', 'Taladro Percutor 13mm', 'Taladro percutor 700W con reversa y velocidad variable', 'herramientas_electricas', 289000.00, 1, 3, 1, NULL),
 (2, 'HE-002', 'Taladro Inalámbrico 20V', 'Taladro inalámbrico brushless con batería de litio 2Ah', 'herramientas_electricas', 480000.00, 10, 2, 1, NULL),
 (3, 'HE-003', 'Pulidora Angular 4½\"', 'Pulidora angular 800W con disco de corte incluido', 'herramientas_electricas', 195000.00, 11, 3, 1, NULL),
 (4, 'HE-004', 'Sierra Circular 7¼\"', 'Sierra circular 1200W con guía paralela y disco 24 dientes', 'herramientas_electricas', 320000.00, 8, 2, 1, NULL),
@@ -396,12 +605,12 @@ INSERT INTO `productos` (`id`, `codigo`, `nombre`, `descripcion`, `categoria`, `
 (17, 'HM-009', 'Llave Stilson 14\"', 'Llave stilson de 14\" con mandíbulas reforzadas', 'herramientas_manuales', 48000.00, 11, 2, 1, NULL),
 (18, 'HM-010', 'Espátula Metálica 4\"', 'Espátula metálica 4\" mango plástico reforzado', 'herramientas_manuales', 14000.00, 30, 5, 1, NULL),
 (19, 'MC-001', 'Cemento Gris 50kg', 'Cemento Portland gris tipo I resistencia 3000 PSI', 'materiales', 28000.00, 72, 20, 1, NULL),
-(20, 'MC-002', 'Varilla Corrugada 3/8\" x6m', 'Varilla corrugada acero 60 3/8\" longitud 6 metros', 'materiales', 18500.00, 50, 15, 1, NULL),
+(20, 'MC-002', 'Varilla Corrugada 3/8\" x6m', 'Varilla corrugada acero 60 3/8\" longitud 6 metros', 'materiales', 18500.00, 50, 10, 1, NULL),
 (21, 'MC-003', 'Arena Fina x bulto 40kg', 'Arena fina lavada para repellos y enchapes, bulto 40kg', 'materiales', 8000.00, 95, 25, 1, NULL),
 (22, 'MC-004', 'Ladrillo Bloque #4 x unidad', 'Bloque de arcilla #4 para mampostería estructural', 'materiales', 1800.00, 450, 50, 1, NULL),
 (23, 'MC-005', 'Plancha Fibrocemento 1.22x2.44', 'Plancha fibrocemento 6mm para cielos rasos y paredes', 'materiales', 55000.00, 26, 5, 1, NULL),
 (24, 'MC-006', 'Puntilla 2½\" x500g', 'Puntilla lisa brillante 2½\" presentación 500 gramos', 'materiales', 6500.00, 48, 10, 1, NULL),
-(25, 'MC-007', 'Tornillo Drywall 3½\" x100und', 'Tornillo drywall fosfatado 3½\" x 100 unidades', 'materiales', 9000.00, 38, 8, 1, NULL),
+(25, 'MC-007', 'Tornillo Drywall 3½\" x100und', 'Tornillo drywall fosfatado 3½\" x 100 unidades', 'materiales', 9000.00, 35, 8, 1, NULL),
 (26, 'MC-008', 'Pernos Expansores 3/8\" x25und', 'Taco fisher 3/8\" con perno, bolsa x25 unidades', 'materiales', 12000.00, 33, 5, 1, NULL),
 (27, 'FP-001', 'Tubo PVC Presión 1/2\" x6m', 'Tubo PVC presión RDE-13.5 diámetro 1/2\" longitud 6m', 'plomeria', 15000.00, 28, 8, 1, NULL),
 (28, 'FP-002', 'Tubo PVC Presión 1\" x6m', 'Tubo PVC presión RDE-21 diámetro 1\" longitud 6m', 'plomeria', 24000.00, 28, 6, 1, NULL),
@@ -427,6 +636,72 @@ INSERT INTO `productos` (`id`, `codigo`, `nombre`, `descripcion`, `categoria`, `
 (48, 'PA-007', 'Sellador Acrílico Blanco 300ml', 'Sellador acrílico blanco para juntas interiores, cartucho', 'pintura', 15000.00, 22, 5, 1, NULL),
 (49, 'SI-001', 'Casco Seguridad Tipo I Blanco', 'Casco de seguridad Tipo I ABS blanco con ajuste deslizante', 'seguridad', 28000.00, 15, 4, 1, NULL),
 (50, 'SI-002', 'Gafas de Seguridad Clara', 'Gafas de seguridad policarbonato clara antiempañante ANSI', 'seguridad', 12000.00, 28, 5, 1, NULL);
+
+--
+-- Disparadores `productos`
+--
+DROP TRIGGER IF EXISTS `trg_alerta_stock_bajo_insert`;
+DELIMITER $$
+CREATE TRIGGER `trg_alerta_stock_bajo_insert` AFTER INSERT ON `productos` FOR EACH ROW BEGIN
+    IF NEW.activo = 1 AND NEW.stock_actual < NEW.stock_minimo THEN
+        INSERT INTO logs (id_usuario, accion, tabla_afectada, id_registro, detalle, ip_origen)
+        SELECT NULL,
+               'ALERTA_STOCK_BAJO',
+               'productos',
+               NEW.id,
+               JSON_OBJECT(
+                   'nombre', NEW.nombre,
+                   'stock_actual', NEW.stock_actual,
+                   'stock_minimo', NEW.stock_minimo,
+                   'color', 'rojo',
+                   'accion_sugerida', 'Reabastecer producto'
+               ),
+               NULL
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM logs l
+            WHERE l.accion = 'ALERTA_STOCK_BAJO'
+              AND l.id_registro = NEW.id
+              AND DATE(l.fecha) = CURDATE()
+        );
+    END IF;
+END
+$$
+DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_alerta_stock_bajo_update`;
+DELIMITER $$
+CREATE TRIGGER `trg_alerta_stock_bajo_update` AFTER UPDATE ON `productos` FOR EACH ROW BEGIN
+    IF NEW.activo = 1
+       AND NEW.stock_actual < NEW.stock_minimo
+       AND (
+            OLD.stock_actual >= OLD.stock_minimo
+            OR OLD.stock_minimo <> NEW.stock_minimo
+            OR OLD.activo <> NEW.activo
+       ) THEN
+        INSERT INTO logs (id_usuario, accion, tabla_afectada, id_registro, detalle, ip_origen)
+        SELECT NULL,
+               'ALERTA_STOCK_BAJO',
+               'productos',
+               NEW.id,
+               JSON_OBJECT(
+                   'nombre', NEW.nombre,
+                   'stock_actual', NEW.stock_actual,
+                   'stock_minimo', NEW.stock_minimo,
+                   'color', 'rojo',
+                   'accion_sugerida', 'Reabastecer producto'
+               ),
+               NULL
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM logs l
+            WHERE l.accion = 'ALERTA_STOCK_BAJO'
+              AND l.id_registro = NEW.id
+              AND DATE(l.fecha) = CURDATE()
+        );
+    END IF;
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -490,7 +765,7 @@ CREATE TABLE IF NOT EXISTS `ventas` (
   KEY `fk_ventas_usuario` (`id_usuario`),
   KEY `idx_ventas_fecha` (`fecha`),
   KEY `idx_ventas_cliente` (`id_cliente`)
-) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `ventas`
@@ -517,7 +792,10 @@ INSERT INTO `ventas` (`id`, `id_cliente`, `id_usuario`, `fecha`, `total`, `compr
 (18, 8, 6, '2026-04-16 13:00:00', 132000.00, 'VTA-20260416-018'),
 (19, 9, 7, '2026-04-20 10:45:00', 204000.00, 'VTA-20260420-019'),
 (20, 10, 4, '2026-04-22 16:30:00', 470000.00, 'VTA-20260422-020'),
-(21, 5, 1, '2026-04-24 16:57:24', 30000.00, 'VTA-20260424-11062');
+(21, 5, 1, '2026-04-24 16:57:24', 30000.00, 'VTA-20260424-11062'),
+(22, 1, 9, '2026-04-25 15:45:59', 9000.00, 'VTA-20260425-F0895'),
+(23, 1, 9, '2026-04-25 15:46:33', 9000.00, 'VTA-20260425-C6F5A'),
+(24, 1, 9, '2026-04-25 15:47:57', 9000.00, 'VTA-20260425-2FDB0');
 
 --
 -- Restricciones para tablas volcadas
@@ -556,6 +834,98 @@ ALTER TABLE `logs`
 ALTER TABLE `ventas`
   ADD CONSTRAINT `fk_ventas_cliente` FOREIGN KEY (`id_cliente`) REFERENCES `clientes` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_ventas_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON UPDATE CASCADE;
+
+DELIMITER $$
+--
+-- Eventos
+--
+DROP EVENT IF EXISTS `ev_actualizar_alquileres_vencidos`$$
+CREATE DEFINER=`root`@`localhost` EVENT `ev_actualizar_alquileres_vencidos` ON SCHEDULE EVERY 1 MINUTE STARTS '2026-04-25 15:58:06' ON COMPLETION NOT PRESERVE ENABLE DO BEGIN
+    UPDATE alquileres
+    SET estado = 'vencido'
+    WHERE estado = 'activo'
+      AND fecha_fin < CURDATE();
+END$$
+
+DROP EVENT IF EXISTS `ev_generar_alertas_dashboard`$$
+CREATE DEFINER=`root`@`localhost` EVENT `ev_generar_alertas_dashboard` ON SCHEDULE EVERY 1 MINUTE STARTS '2026-04-25 15:58:06' ON COMPLETION NOT PRESERVE ENABLE DO BEGIN
+    INSERT INTO logs (id_usuario, accion, tabla_afectada, id_registro, detalle, ip_origen)
+    SELECT NULL,
+           'ALERTA_STOCK_BAJO',
+           'productos',
+           p.id,
+           JSON_OBJECT(
+               'nombre', p.nombre,
+               'stock_actual', p.stock_actual,
+               'stock_minimo', p.stock_minimo,
+               'color', 'rojo',
+               'accion_sugerida', 'Reabastecer producto'
+           ),
+           NULL
+    FROM productos p
+    WHERE p.activo = 1
+      AND p.stock_actual < p.stock_minimo
+      AND NOT EXISTS (
+          SELECT 1
+          FROM logs l
+          WHERE l.accion = 'ALERTA_STOCK_BAJO'
+            AND l.id_registro = p.id
+            AND DATE(l.fecha) = CURDATE()
+      );
+
+    INSERT INTO logs (id_usuario, accion, tabla_afectada, id_registro, detalle, ip_origen)
+    SELECT NULL,
+           'ALERTA_ALQUILER_POR_VENCER',
+           'alquileres',
+           a.id,
+           JSON_OBJECT(
+               'cliente', c.nombre,
+               'maquinaria', m.nombre,
+               'fecha_fin', a.fecha_fin,
+               'color', 'amarillo',
+               'accion_sugerida', 'Contactar cliente para devolucion'
+           ),
+           NULL
+    FROM alquileres a
+    INNER JOIN clientes c ON c.id = a.id_cliente
+    INNER JOIN maquinaria m ON m.id = a.id_maquinaria
+    WHERE a.estado = 'activo'
+      AND DATEDIFF(a.fecha_fin, CURDATE()) BETWEEN 0 AND 2
+      AND NOT EXISTS (
+          SELECT 1
+          FROM logs l
+          WHERE l.accion = 'ALERTA_ALQUILER_POR_VENCER'
+            AND l.id_registro = a.id
+            AND DATE(l.fecha) = CURDATE()
+      );
+
+    INSERT INTO logs (id_usuario, accion, tabla_afectada, id_registro, detalle, ip_origen)
+    SELECT NULL,
+           'ALERTA_ALQUILER_VENCIDO',
+           'alquileres',
+           a.id,
+           JSON_OBJECT(
+               'cliente', c.nombre,
+               'maquinaria', m.nombre,
+               'fecha_fin', a.fecha_fin,
+               'color', 'rojo',
+               'accion_sugerida', 'Alquiler vencido - Contactar urgente'
+           ),
+           NULL
+    FROM alquileres a
+    INNER JOIN clientes c ON c.id = a.id_cliente
+    INNER JOIN maquinaria m ON m.id = a.id_maquinaria
+    WHERE a.estado = 'vencido'
+      AND NOT EXISTS (
+          SELECT 1
+          FROM logs l
+          WHERE l.accion = 'ALERTA_ALQUILER_VENCIDO'
+            AND l.id_registro = a.id
+            AND DATE(l.fecha) = CURDATE()
+      );
+END$$
+
+DELIMITER ;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

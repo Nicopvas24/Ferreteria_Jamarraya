@@ -74,7 +74,8 @@ const EditarProductoModal = {
     
     // Establecer categoría
     if (elementos.categoria) {
-      elementos.categoria.value = producto.categoria || '';
+      const categoriaNormalizada = (producto.categoria === 'fontaneria') ? 'plomeria' : (producto.categoria || '');
+      elementos.categoria.value = categoriaNormalizada;
     }
     
     if (elementos.precio) elementos.precio.value = producto.precio || '';

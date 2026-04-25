@@ -117,13 +117,19 @@ $accion = $_GET['accion'] ?? $_POST['accion'] ?? 'listar';
 $esAdmin = isset($_SESSION['id_usuario']) && 
            isset($_SESSION['rol']) && 
            $_SESSION['rol'] === 'admin';
+$esEmpleado = isset($_SESSION['id_usuario']) &&
+              isset($_SESSION['rol']) &&
+              $_SESSION['rol'] === 'empleado';
+
+$accionesPermitidasEmpleado = ['listar', 'obtener', 'editar', 'cambiar_estado'];
+
+$autorizado = $esAdmin || ($esEmpleado && in_array($accion, $accionesPermitidasEmpleado, true));
 
 $pdo = conectar();
 //audit_log_request($pdo, 'api/productos.php', $accion);
 
-// Para listar (pública), no requiere admin
-// Para otras acciones, requiere admin
-if ($accion !== 'listar' && !$esAdmin) {
+// Listar es publico. Empleado puede editar inventario como admin (sin crear/eliminar/exportar).
+if ($accion !== 'listar' && !$autorizado) {
     http_response_code(401);
     header('Content-Type: application/json');
     audit_log($pdo, 'PRODUCTO_ACCION_DENEGADA', 'productos', null, ['accion' => $accion, 'motivo' => 'no_autorizado'], $_SESSION['id_usuario'] ?? null);

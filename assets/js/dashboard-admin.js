@@ -490,6 +490,7 @@ function abrirModalDevolver(id) {
 ══════════════════════════════════════════ */
 async function cargarInventario() {
   const cat   = document.getElementById('filtroCategoria')?.value || '';
+  const nombre = (document.getElementById('filtroNombreProducto')?.value || '').trim().toLowerCase();
   const solo  = document.getElementById('soloBajoStock')?.checked;
   let url = API.productos + '?accion=listar' + (cat ? `&categoria=${encodeURIComponent(cat)}` : '');
 
@@ -499,6 +500,9 @@ async function cargarInventario() {
   try {
     const r = await fetch(url);
     let prods = await r.json();
+    if (nombre) {
+      prods = prods.filter(p => (p.nombre || '').toLowerCase().includes(nombre));
+    }
     if (solo) prods = prods.filter(p => p.stock_actual < (p.stock_minimo||0));
 
     tbody.innerHTML = prods.length

@@ -15,9 +15,6 @@ $accion = $_GET['accion'] ?? $_POST['accion'] ?? 'equipos';
 
 audit_log_request($pdo, 'api/alquileres.php', $accion);
 
-// Auto-actualizar estado de alquileres vencidos en la BD
-$pdo->exec("UPDATE alquileres SET estado = 'vencido' WHERE estado = 'activo' AND fecha_fin < CURDATE()");
-
 switch ($accion) {
 
     // ----------------------------------------------------------
@@ -163,10 +160,6 @@ switch ($accion) {
             $stmt->execute([$id_usuario, $id_cliente, $id_maquinaria, $fecha_inicio, $fecha_fin, $monto]);
             $id_alquiler = (int)$pdo->lastInsertId();
 
-            // Cambiar estado de maquinaria
-            $pdo->prepare("UPDATE maquinaria SET estado = 'alquilada' WHERE id = ?")
-                ->execute([$id_maquinaria]);
-
             $pdo->commit();
             audit_log($pdo, 'ALQUILER_REGISTRADO', 'alquileres', $id_alquiler, ['id_cliente' => $id_cliente, 'id_maquinaria' => $id_maquinaria, 'monto' => $monto], $id_usuario);
             echo json_encode(['ok' => true, 'id_alquiler' => $id_alquiler]);
@@ -211,11 +204,8 @@ switch ($accion) {
                 exit;
             }
 
-            $pdo->prepare("UPDATE alquileres SET estado = 'finalizado', fecha_fin = NOW() WHERE id = ?")
+            $pdo->prepare("UPDATE alquileres SET estado = 'finalizado', fecha_fin = CURDATE() WHERE id = ?")
                 ->execute([$id]);
-
-            $pdo->prepare("UPDATE maquinaria SET estado = 'disponible' WHERE id = ?")
-                ->execute([$alq['id_maquinaria']]);
 
             $pdo->commit();
             audit_log($pdo, 'ALQUILER_DEVUELTO', 'alquileres', $id, ['id_maquinaria' => (int)$alq['id_maquinaria']], $_SESSION['id_usuario'] ?? null);

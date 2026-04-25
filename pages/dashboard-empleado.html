@@ -374,22 +374,35 @@
             <span class="panel__title">Inventario</span>
           </div>
           <div class="panel__body">
-            <div class="readonly-notice">ℹ️ Vista de solo consulta. Para modificar productos, contacta al administrador.</div>
+            <div class="readonly-notice">ℹ️ Puedes editar productos con la misma interfaz del panel administrador.</div>
             <div class="filter-bar" style="margin-bottom:1rem">
+              <label for="filtroCategoriaEmpleado">Categoría</label>
+              <select id="filtroCategoriaEmpleado">
+                <option value="">Todas</option>
+                <option value="herramientas_electricas">Herramientas Eléctricas</option>
+                <option value="herramientas_manuales">Herramientas Manuales</option>
+                <option value="materiales">Materiales</option>
+                <option value="plomeria">Plomería</option>
+                <option value="electricidad">Electricidad</option>
+                <option value="pintura">Pintura</option>
+                <option value="seguridad">Seguridad</option>
+              </select>
+              <label for="filtroNombreProductoEmpleado">Nombre</label>
+              <input type="text" id="filtroNombreProductoEmpleado" placeholder="Buscar por nombre"/>
               <label>
                 <input type="checkbox" id="soloBajoStock"> Solo stock bajo
               </label>
-              <button class="btn-sm btn-orange" onclick="cargarInventario()">Actualizar</button>
+              <button class="btn-sm btn-orange" onclick="cargarInventario()">Filtrar</button>
             </div>
           </div>
           <div class="table-wrap">
             <table>
               <thead><tr>
                 <th>Código</th><th>Nombre</th><th>Categoría</th>
-                <th>Precio</th><th>Stock</th><th>Estado</th>
+                <th>Precio</th><th>Stock</th><th>Stock Mín.</th><th>Estado</th><th>Acción</th>
               </tr></thead>
               <tbody id="tablaInventario">
-                <tr><td colspan="6"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>
+                <tr><td colspan="8"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>
               </tbody>
             </table>
           </div>
@@ -493,7 +506,8 @@ async function cargarModulosEmpleado() {
 
   const modals = [
     '../components/modals/venta/crear-modal.html',
-    '../components/modals/alquiler/crear-modal.html'
+    '../components/modals/alquiler/crear-modal.html',
+    '../components/modals/producto/editar-modal.html'
   ];
 
   for (const url of modals) {
@@ -507,7 +521,8 @@ async function cargarModulosEmpleado() {
 
   const scripts = [
     '../assets/js/crear-venta.js',
-    '../assets/js/crear-alquiler.js'
+    '../assets/js/crear-alquiler.js',
+    '../assets/js/editar-producto.js'
   ];
 
   for (const src of scripts) {
@@ -523,6 +538,7 @@ async function cargarModulosEmpleado() {
 
   window.CrearVentaModal?.init?.();
   window.CrearAlquilerModal?.init?.();
+  window.EditarProductoModal?.init?.();
 }
 
 function abrirCrearVenta() {
@@ -724,27 +740,59 @@ async function cargarAlquileres() {
 }
 
 async function cargarInventario() {
+  const cat = document.getElementById('filtroCategoriaEmpleado')?.value || '';
+  const nombre = (document.getElementById('filtroNombreProductoEmpleado')?.value || '').trim().toLowerCase();
   const solo = document.getElementById('soloBajoStock')?.checked;
   const tbody = document.getElementById('tablaInventario');
-  tbody.innerHTML = filaVacia(6, 'Cargando…');
+  tbody.innerHTML = filaVacia(8, 'Cargando…');
   try {
-    const r = await fetch(API.productos);
+    const url = API.productos + '?accion=listar&solo_activos=0' + (cat ? `&categoria=${encodeURIComponent(cat)}` : '');
+    const r = await fetch(url);
     let prods = await r.json();
+    if (nombre) prods = prods.filter(p => (p.nombre || '').toLowerCase().includes(nombre));
     if (solo) prods = prods.filter(p => p.stock_actual < (p.stock_minimo||0));
     tbody.innerHTML = prods.length
       ? prods.map(p => {
           const bajo = p.stock_actual < (p.stock_minimo||0);
+          const inactivo = !p.activo || p.activo === 0 || p.activo === '0';
+          const estiloFila = inactivo ? 'opacity:0.6;background:rgba(0,0,0,0.1)' : (bajo ? 'background:rgba(248,81,73,.04)' : '');
           return `
-          <tr ${bajo?'style="background:rgba(248,81,73,.04)"':''}>
-            <td><code style="font-size:.78rem;color:var(--text-muted)">${p.codigo||'—'}</code></td>
+          <tr style="${estiloFila}">
+            <td><code style="font-size:.78rem;color:var(--text-muted)">${p.codigo||'—'}${inactivo ? ' ❌' : ''}</code></td>
             <td style="font-weight:500">${p.nombre}</td>
             <td style="font-size:.8rem;color:var(--text-muted)">${p.categoria||'—'}</td>
             <td>${fmt$(p.precio)}</td>
             <td style="font-weight:700;color:${bajo?'var(--red)':'var(--green)'}">${p.stock_actual}</td>
-            <td>${bajo?'<span class="badge badge-red">Bajo stock</span>':'<span class="badge badge-green">OK</span>'}</td>
+            <td style="color:var(--text-muted)">${p.stock_minimo||0}</td>
+            <td>${inactivo ? '<span class="badge" style="background:rgba(248,81,73,.2);color:var(--red)">Desactivado</span>' : (bajo?'<span class="badge badge-red">Bajo stock</span>':'<span class="badge badge-green">OK</span>')}</td>
+            <td><button class="btn-sm btn-ghost" onclick="editarProducto(${p.id})">Editar</button></td>
           </tr>`;}).join('')
-      : filaVacia(6, 'Sin productos');
-  } catch { tbody.innerHTML = filaVacia(6, 'Error cargando inventario'); }
+      : filaVacia(8, 'Sin productos');
+  } catch { tbody.innerHTML = filaVacia(8, 'Error cargando inventario'); }
+}
+
+function editarProducto(id) {
+  if (typeof window.EditarProductoModal === 'undefined') {
+    if (typeof window.reinicializarEditarProductoModal === 'function') {
+      window.reinicializarEditarProductoModal();
+      setTimeout(() => {
+        if (window.EditarProductoModal) {
+          window.EditarProductoModal.abrirConId(id);
+        } else {
+          alert('Por favor, espera a que se carguen todos los módulos');
+        }
+      }, 200);
+    } else {
+      alert('Por favor, espera a que se carguen todos los módulos');
+    }
+    return;
+  }
+
+  if (window.EditarProductoModal && typeof window.EditarProductoModal.abrirConId === 'function') {
+    window.EditarProductoModal.abrirConId(id);
+  } else {
+    alert('Error al cargar la funcionalidad de edición');
+  }
 }
 
 document.getElementById('btnLogout').addEventListener('click', async () => {
