@@ -183,12 +183,15 @@ function renderGrid() {
 function cardHTML(p) {
   const agotado = p.stock <= 0;
   const { text: stockTxt, cls: stockCls } = stockLabel(p.stock);
+  const rutaImagen = p.imagen.startsWith('http') || p.imagen.startsWith('../') 
+    ? p.imagen 
+    : `../assets/img/productos/${p.imagen}`;
   return `
     <div class="pp-card" data-id="${p.id}">
       <div class="pp-card-img-wrap">
         ${badgeHTML(p.badge, agotado)}
         <img
-          src="../assets/img/productos/${p.imagen}"
+          src="${rutaImagen}"
           alt="${p.nombre}"
           class="pp-card-img"
           onerror="this.src='../assets/img/productos/nombreimagen.webp'"
@@ -253,7 +256,11 @@ function abrirModal(id) {
   state.modalProducto = p;
   state.modalCantidad = 1;
 
-  $('#pp-modal-img').src     = `../assets/img/productos/${p.imagen}`;
+  const rutaImagen = p.imagen.startsWith('http') || p.imagen.startsWith('../') 
+    ? p.imagen 
+    : `../assets/img/productos/${p.imagen}`;
+
+  $('#pp-modal-img').src     = rutaImagen;
   $('#pp-modal-img').onerror = () => { $('#pp-modal-img').src = '../assets/img/productos/nombreimagen.webp'; };
   $('#pp-modal-cat').textContent   = p.categoria.replace(/-/g,' ');
   $('#pp-modal-name').textContent  = p.nombre;
@@ -1009,6 +1016,18 @@ async function cargarProductos() {
     state.productos = productos;
     state.carrito = leerCarritoCompartido();
     state.filtrados = productos;
+    
+    // Check initial hash
+    if (window.location.hash) {
+      const hashCat = window.location.hash.substring(1);
+      if (hashCat) {
+        state.categoriaActiva = hashCat;
+        document.querySelectorAll('.pp-cat-btn').forEach(b => b.classList.remove('active'));
+        const activeBtn = document.querySelector(`.pp-cat-btn[data-cat="${hashCat}"]`);
+        if (activeBtn) activeBtn.classList.add('active');
+      }
+    }
+
     aplicarFiltros();
     renderCarrito();
 
@@ -1022,6 +1041,24 @@ async function cargarProductos() {
 }
 
 cargarProductos();
+
+window.addEventListener('hashchange', () => {
+  const hash = window.location.hash.substring(1);
+  if (hash) {
+    const btn = document.querySelector(`.pp-cat-btn[data-cat="${hash}"]`);
+    if (btn) {
+      document.querySelectorAll('.pp-cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.categoriaActiva = hash;
+      aplicarFiltros();
+    }
+  } else {
+    document.querySelectorAll('.pp-cat-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.pp-cat-btn[data-cat="todos"]')?.classList.add('active');
+    state.categoriaActiva = 'todos';
+    aplicarFiltros();
+  }
+});
 
 /* ══════════════════════════════════════════
    INTEGRACIÓN CON CARRITO GLOBAL

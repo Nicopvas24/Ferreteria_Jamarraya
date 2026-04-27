@@ -321,10 +321,16 @@
               <button class="btn-sm btn-orange" onclick="cargarUsuarios()">Filtrar</button>
             </div>
           </div>
-          <div class="users-grid-wrap" style="padding: 0 1.25rem 1.25rem; max-height: 600px; overflow-y: auto;">
-            <div class="users-grid" id="gridUsuarios">
-              <div style="grid-column: 1 / -1;"><div class="empty"><span>⏳</span>Cargando…</div></div>
-            </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>Nombre</th><th>Email</th>
+                <th>Rol</th><th>Creado</th><th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="tablaUsuarios">
+                <tr><td colspan="7"><div class="empty"><span>⏳</span>Cargando…</div></td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div><!-- /sec-usuarios -->
