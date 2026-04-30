@@ -10,10 +10,11 @@ const isDevelopment = window.location.hostname === 'localhost' || window.locatio
 
 // Base URL del API
 // - En localhost: usa URLs locales
-// - En GitHub Pages (o cualquier producción): usa InfinityFree
+// - En GitHub Pages (o cualquier producción): usa Vercel
+// IMPORTANTE: Reemplaza "tu-proyecto.vercel.app" con tu URL real de Vercel
 const API_BASE_URL = isDevelopment 
   ? 'http://localhost/Ferreteria_Jamarraya/backend'
-  : 'https://ferreteriajamarraya.rf.gd/backend';  // HTTPS ✅
+  : 'https://ferreteria-jamarraya.vercel.app/backend';  // ✅ Vercel
 
 // URLs de los endpoints
 const API_URLS = {
