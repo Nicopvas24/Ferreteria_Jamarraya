@@ -12,7 +12,7 @@ const isDevelopment = window.location.hostname === 'localhost' || window.locatio
 // - En localhost: usa URLs locales
 // - En GitHub Pages (o cualquier producción): usa InfinityFree
 const API_BASE_URL = isDevelopment 
-  ? 'http://localhost/Ferreteria_Jamarraya/backend'
+  ? 'https://localhost/Ferreteria_Jamarraya/backend'
   : 'https://ferreteriajamarraya.rf.gd/backend';  // HTTPS ✅
 
 // URLs de los endpoints
