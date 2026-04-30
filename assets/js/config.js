@@ -13,7 +13,7 @@ const isDevelopment = window.location.hostname === 'localhost' || window.locatio
 // - En GitHub Pages (o cualquier producción): usa InfinityFree
 const API_BASE_URL = isDevelopment 
   ? 'https://localhost/Ferreteria_Jamarraya/backend'
-  : 'https://ferreteriajamarraya.rf.gd/backend';  // HTTPS ✅
+  : 'https://ferreteriajamarraya.rf.gd/backend/proxy.php';  // ← Usa proxy.php
 
 // URLs de los endpoints
 const API_URLS = {
