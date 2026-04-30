@@ -8,61 +8,72 @@
 // Detectar el entorno automáticamente
 const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-// Base URL del API
-// - En localhost: usa URLs locales
-// - En GitHub Pages (o cualquier producción): usa Vercel
-// IMPORTANTE: Reemplaza "tu-proyecto.vercel.app" con tu URL real de Vercel
-const API_BASE_URL = isDevelopment 
-  ? 'http://localhost/Ferreteria_Jamarraya/backend'
-  : 'https://ferreteria-jamarraya.vercel.app/backend';  // ✅ Vercel
+// Base URLs del API
+const API_BASE_LOCALHOST = 'http://localhost/Ferreteria_Jamarraya/backend';
+const API_BASE_PRODUCTION = 'https://ferreteria-jamarraya.vercel.app';
+
+// Función para construir URLs según el entorno
+function buildApiUrl(endpoint) {
+  if (isDevelopment) {
+    // En localhost: /backend/api/auth.php
+    return `${API_BASE_LOCALHOST}/api/${endpoint}.php`;
+  } else {
+    // En producción: /api/auth (sin .php, proxy Node.js lo maneja)
+    return `${API_BASE_PRODUCTION}/api/${endpoint}`;
+  }
+}
 
 // URLs de los endpoints
 const API_URLS = {
   // Auth
-  login: `${API_BASE_URL}/api/auth.php?accion=login`,
-  logout: `${API_BASE_URL}/api/auth.php?accion=logout`,
-  register: `${API_BASE_URL}/api/auth.php?accion=registrar`,
-  verificar: `${API_BASE_URL}/usuarios.php?accion=verificar`,
+  login: buildApiUrl('auth') + '?accion=login',
+  logout: buildApiUrl('auth') + '?accion=logout',
+  register: buildApiUrl('auth') + '?accion=registrar',
+  verificar: isDevelopment 
+    ? `${API_BASE_LOCALHOST}/usuarios.php?accion=verificar`
+    : `${API_BASE_PRODUCTION}/api/usuarios?accion=verificar`,
 
   // Clientes
-  clientes: `${API_BASE_URL}/api/clientes.php`,
-  clientesListar: `${API_BASE_URL}/api/clientes.php?accion=listar`,
-  clientesRegistrar: `${API_BASE_URL}/api/clientes.php?accion=registrar`,
+  clientes: buildApiUrl('clientes'),
+  clientesListar: buildApiUrl('clientes') + '?accion=listar',
+  clientesRegistrar: buildApiUrl('clientes') + '?accion=registrar',
 
   // Maquinaria
-  maquinaria: `${API_BASE_URL}/api/alquileres.php?accion=equipos`,
-  maquinariaListar: `${API_BASE_URL}/api/maquinaria.php?accion=listar`,
-  maquinariaRegistrar: `${API_BASE_URL}/api/maquinaria.php?accion=registrar`,
+  maquinaria: buildApiUrl('alquileres') + '?accion=equipos',
+  maquinariaListar: buildApiUrl('maquinaria') + '?accion=listar',
+  maquinariaRegistrar: buildApiUrl('maquinaria') + '?accion=registrar',
 
   // Alquileres
-  alquileres: `${API_BASE_URL}/api/alquileres.php`,
-  alquileresRegistrar: `${API_BASE_URL}/api/alquileres.php?accion=registrar`,
-  alquileresListar: `${API_BASE_URL}/api/alquileres.php?accion=listar`,
+  alquileres: buildApiUrl('alquileres'),
+  alquileresRegistrar: buildApiUrl('alquileres') + '?accion=registrar',
+  alquileresListar: buildApiUrl('alquileres') + '?accion=listar',
 
   // Ventas
-  ventas: `${API_BASE_URL}/api/ventas.php`,
-  ventasRegistrar: `${API_BASE_URL}/api/ventas.php?accion=registrar`,
-  ventasListar: `${API_BASE_URL}/api/ventas.php?accion=listar`,
+  ventas: buildApiUrl('ventas'),
+  ventasRegistrar: buildApiUrl('ventas') + '?accion=registrar',
+  ventasListar: buildApiUrl('ventas') + '?accion=listar',
 
   // Productos
-  productos: `${API_BASE_URL}/api/productos.php`,
-  productosListar: `${API_BASE_URL}/api/productos.php?accion=listar`,
-  productosRegistrar: `${API_BASE_URL}/api/productos.php?accion=registrar`,
+  productos: buildApiUrl('productos'),
+  productosListar: buildApiUrl('productos') + '?accion=listar',
+  productosRegistrar: buildApiUrl('productos') + '?accion=registrar',
 
   // Reportes
-  reportes: `${API_BASE_URL}/api/reportes.php`,
+  reportes: buildApiUrl('reportes'),
 
   // Recuperar contraseña
-  recuperarContrasena: `${API_BASE_URL}/api/recuperar-contrasena.php`,
+  recuperarContrasena: buildApiUrl('recuperar-contrasena'),
 
   // Usuarios (para login, logout, verificar)
-  usuarios: `${API_BASE_URL}/usuarios.php`,
+  usuarios: isDevelopment 
+    ? `${API_BASE_LOCALHOST}/usuarios.php`
+    : `${API_BASE_PRODUCTION}/api/usuarios`,
 };
 
 // Log del entorno actual (solo en desarrollo)
 if (isDevelopment) {
   console.log('🔧 Modo DESARROLLO - URLs locales');
 } else {
-  console.log('🚀 Modo PRODUCCIÓN - URLs remotas');
-  console.log('📡 API Base:', API_BASE_URL);
+  console.log('🚀 Modo PRODUCCIÓN - URLs remotas con proxy Node.js');
+  console.log('📡 API Base:', API_BASE_PRODUCTION);
 }
